@@ -32,6 +32,13 @@ test("legacy ADMIN_TOKEN does not bypass identity-protected routes", async () =>
   }
 });
 
+test("legacy lead administration no longer accepts the shared ADMIN_TOKEN", async () => {
+  const response = await request("/api/admin/leads", "Bearer test-only-legacy-token");
+  assert.equal(response.status, 503, "lead administration must fail closed when identity storage is unavailable");
+  const body = await response.json();
+  assert.equal(body.error.code, "SERVICE_UNAVAILABLE");
+});
+
 test("unimplemented customer portal routes remain unavailable", async () => {
   for (const path of ["/api/v1/admin/quotes", "/api/v1/me/projects"]) {
     const response = await request(path);

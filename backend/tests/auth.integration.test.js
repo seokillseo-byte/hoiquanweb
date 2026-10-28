@@ -86,6 +86,20 @@ test("invalid credentials fail and sign-out invalidates the session", async () =
   assert.equal(await session.json(), null);
 });
 
+test("sign-in attempts are rate limited per client IP", async () => {
+  const ip = "198.51.100." + (20 + Math.floor(Math.random() * 100));
+  const attempts = [];
+  for (let i = 0; i < 6; i++) {
+    attempts.push(await authRequest("/api/v1/auth/sign-in/email", {
+      email: "missing-" + crypto.randomUUID() + "@example.test",
+      password: "Invalid-Test-Password-123!"
+    }, { "x-forwarded-for": ip }));
+  }
+  assert.ok(attempts.slice(0, 5).every(response => response.status >= 400 && response.status !== 429),
+    "the first five invalid credentials should be rejected as credentials, not rate limited");
+  assert.equal(attempts[5].status, 429, "the sixth sign-in attempt from the same IP should be rate limited");
+});
+
 test("trusted Origin receives credentialed CORS headers without wildcard origins", async () => {
   const response = await server.fetch(origin + "/api/v1/auth/session", {
     headers: { origin }

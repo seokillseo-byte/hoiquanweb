@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex,nofollow">
+  <meta name="description" content="Công cụ nội bộ để xem và phân loại yêu cầu tư vấn Hội Quán Web.">
+  <meta name="hq-api-base" content="">
+  <title>Quản lý lead — Hội Quán Web</title>
+  <style>
+    :root{font-family:system-ui,-apple-system,"Segoe UI",sans-serif;color:#101b2d;background:#f5f7fb;line-height:1.55;--line:#dfe5ef;--blue:#4567f5}*{box-sizing:border-box}body{margin:0}.wrap{max-width:1200px;width:calc(100% - 32px);margin:32px auto}h1{letter-spacing:-.04em;margin-bottom:4px}.muted{color:#657187;font-size:13px}.panel{background:#fff;border:1px solid var(--line);border-radius:16px;padding:20px;margin:20px 0}.controls{display:grid;grid-template-columns:minmax(220px,1fr) minmax(220px,1fr) auto;gap:12px;align-items:end}.field{display:grid;gap:6px}.field label{font-size:12px;font-weight:750}.field input,.field select{width:100%;min-width:0;border:1px solid #ccd5e5;border-radius:9px;padding:11px;background:#fff;color:inherit}.btn{border:0;border-radius:9px;padding:12px 16px;background:var(--blue);color:#fff;font-weight:800;cursor:pointer}.btn:disabled{opacity:.6;cursor:wait}.message{min-height:22px;font-size:13px;color:#304fe0;margin-top:12px}.table-wrap{overflow:auto}table{border-collapse:collapse;width:100%;min-width:850px;font-size:12px}th,td{text-align:left;padding:12px;border-bottom:1px solid var(--line);vertical-align:top}th{background:#f8f9fc}td p{white-space:pre-wrap;max-width:260px;margin:4px 0}td select{max-width:160px;padding:7px;border:1px solid #ccd5e5;border-radius:7px;background:white}.danger{color:#9b3a22}.topline{display:flex;justify-content:space-between;align-items:center;gap:20px;flex-wrap:wrap}.back{color:var(--blue);font-weight:750}@media(max-width:760px){.controls{grid-template-columns:1fr}.panel{padding:14px}.wrap{width:calc(100% - 20px);margin:20px auto}}
+  </style>
+</head>
+<body>
+<main class="wrap">
+  <div class="topline"><div><p><a class="back" href="./">← Hội Quán Web</a></p><h1>Quản lý yêu cầu tư vấn</h1><p class="muted">Công cụ nội bộ tối giản. API phải được triển khai và bảo vệ bằng ADMIN_TOKEN trước khi sử dụng.</p></div><span class="muted">Không lưu token vào localStorage/cookie.</span></div>
+  <section class="panel">
+    <form id="connectForm" class="controls">
+      <div class="field"><label for="apiBase">API base URL</label><input id="apiBase" type="url" placeholder="https://your-worker.workers.dev" autocomplete="url" required></div>
+      <div class="field"><label for="adminToken">Admin token</label><input id="adminToken" type="password" autocomplete="current-password" required></div>
+      <button class="btn" type="submit" id="loadButton">Kết nối / tải lead</button>
+    </form>
+    <p id="statusMessage" class="message" role="status" aria-live="polite">Nhập URL Worker và token quản trị. Token chỉ được giữ trong bộ nhớ của trang đến khi tải lại.</p>
+  </section>
+  <section class="panel">
+    <div class="topline"><div><h2>Lead gần đây</h2><p class="muted">Tối đa 100 yêu cầu mới nhất. Nội dung do khách hàng nhập được hiển thị dưới dạng văn bản thuần.</p></div><button class="btn" type="button" id="refreshButton">Làm mới</button></div>
+    <div class="table-wrap"><table><thead><tr><th>Thời gian</th><th>Khách hàng</th><th>Yêu cầu</th><th>Ngân sách</th><th>Trạng thái</th></tr></thead><tbody id="leadRows"><tr><td colspan="5">Chưa tải dữ liệu.</td></tr></tbody></table></div>
+  </section>
+</main>
+<script>
+(() => {
+  const $ = (selector, root=document) => root.querySelector(selector);
+  const statuses = ["new","contacted","qualified","proposal_sent","won","lost","spam"];
+  const labels = {new:"Mới",contacted:"Đã liên hệ",qualified:"Đủ điều kiện",proposal_sent:"Đã gửi đề xuất",won:"Thành công",lost:"Không tiếp tục",spam:"Spam"};
+  let apiBase = ($("#apiBase").value || document.querySelector('meta[name="hq-api-base"]')?.content || "").trim().replace(/\/$/, "");
+  let token = "";
+  const message = (text, error=false) => { $("#statusMessage").textContent=text; $("#statusMessage").classList.toggle("danger",error); };
+  async function request(path, options={}) {
+    const response = await fetch(apiBase + path, { ...options, headers: { ...(options.headers || {}), authorization: "Bearer " + token, ...(options.body ? {"content-type":"application/json"} : {}) } });
+    const body = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(body.message || body.error || ("HTTP " + response.status));
+    return body;
+  }
+  function cell(row, text) { const td=document.createElement("td"); td.textContent=text || "—"; row.appendChild(td); return td; }
+  function renderLeads(leads) {
+    const body=$("#leadRows"); body.replaceChildren();
+    if (!leads.length) { const tr=document.createElement("tr"), td=cell(tr,"Chưa có lead phù hợp."); td.colSpan=5; body.appendChild(tr); return; }
+    for (const lead of leads) {
+      const tr=document.createElement("tr");
+      cell(tr, new Date(lead.created_at).toLocaleString("vi-VN"));
+      const contact=cell(tr,""); const name=document.createElement("strong"); name.textContent=lead.name; const email=document.createElement("p"); email.textContent=lead.email; contact.append(name,email);
+      const requestCell=cell(tr,""); const service=document.createElement("strong"); service.textContent=lead.service; const goals=document.createElement("p"); goals.textContent=lead.goals || "Chưa có mô tả"; requestCell.append(service,goals);
+      cell(tr,lead.budget);
+      const statusCell=cell(tr,""); const select=document.createElement("select"); select.setAttribute("aria-label","Trạng thái lead của "+lead.name);
+      for (const status of statuses) { const option=document.createElement("option"); option.value=status; option.textContent=labels[status]; option.selected=status===lead.status; select.appendChild(option); }
+      select.addEventListener("change",async()=>{select.disabled=true;try{await request("/api/admin/leads",{method:"PATCH",body:JSON.stringify({id:lead.id,status:select.value})});message("Đã cập nhật trạng thái lead.");}catch(error){select.value=lead.status;message("Không cập nhật được: "+error.message,true);}finally{select.disabled=false;}});
+      statusCell.appendChild(select); body.appendChild(tr);
+    }
+  }
+  async function load() { if(!apiBase || !token){message("Nhập URL API và admin token trước khi tải lead.",true);return;} $("#loadButton").disabled=true;$("#refreshButton").disabled=true;message("Đang tải dữ liệu…");try{const data=await request("/api/admin/leads?limit=100");renderLeads(data.leads||[]);message("Đã tải "+(data.leads||[]).length+" lead.");}catch(error){message("Không thể tải lead: "+error.message,true);}finally{$("#loadButton").disabled=false;$("#refreshButton").disabled=false;} }
+  $("#connectForm").addEventListener("submit",event=>{event.preventDefault();apiBase=$("#apiBase").value.trim().replace(/\/$/,"");token=$("#adminToken").value;load();});
+  $("#refreshButton").addEventListener("click",load);
+  const configured=document.querySelector('meta[name="hq-api-base"]')?.content?.trim(); if(configured){$("#apiBase").value=configured;apiBase=configured.replace(/\/$/,"");}
+})();
+</script>
+</body>
+</html>

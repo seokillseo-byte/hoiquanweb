@@ -89,12 +89,15 @@ Mục tiêu: dựng nền tảng có thể mở rộng, không chỉ thêm HTML 
 
 ## Phase 5 — CRM và vận hành kinh doanh
 
+**Đã bắt đầu trên nhánh feature (chưa merge):** migration `0003_crm_foundation.sql` bổ sung bảng khách hàng CRM, timeline hoạt động, báo giá, dòng báo giá và audit events; validator kiểm tra schema/foreign keys/ràng buộc tính tổng. Đây mới là nền dữ liệu, chưa có API CRM bảo vệ bằng tài khoản người dùng và chưa deploy production.
+
 - Lead pipeline, nguồn lead, lịch sử liên hệ, assignment, khách hàng, báo giá theo hạng mục, đơn hàng, hợp đồng/tài liệu, dự án, tasks, milestone và ticket hỗ trợ.
 - Thông báo email khi provider và sender được cấu hình; lỗi gửi thông báo không làm mất giao dịch đã lưu.
 - Dashboard chỉ hiển thị số liệu tính từ dữ liệu thật, có định nghĩa metric.
 - Tích hợp booking/payment/e-signature chỉ sau khi chốt nhà cung cấp, bảo mật webhook, idempotency và xử lý hoàn tiền/thất bại.
 
 **Acceptance gates**
+- [x] Migration nền CRM có customer/activity/quote/quote-item/audit schema và ràng buộc dữ liệu cơ bản (CI cần xác nhận trên PR).
 - [ ] Tính giá và trạng thái quan trọng do backend quyết định.
 - [ ] Audit trail và idempotency cho các hành động tạo đơn/duyệt/billing.
 - [ ] Kiểm thử email/webhook và lỗi mạng; không báo thành công giả.

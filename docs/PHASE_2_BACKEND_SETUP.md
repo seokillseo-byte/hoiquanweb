@@ -20,6 +20,9 @@
 
 Trạng thái CRM: new, contacted, qualified, proposal_sent, won, lost, spam.
 
+## Kiểm tra tự động
+Workflow .github/workflows/validate.yml chạy kiểm tra cú pháp JavaScript, cấu trúc HTML/anchor và migration SQL khi push hoặc mở pull request. Workflow Pages chỉ publish các tệp public website (index.html, privacy.html, 404.html, robots.txt, sitemap.xml), không đưa thư mục backend và tài liệu triển khai vào artifact website.
+
 ## Triển khai lần đầu
 1. Tạo tài khoản Cloudflare và D1 database tên hoiquanweb-production.
 2. Trong thư mục backend, chạy npx wrangler d1 create hoiquanweb-production.

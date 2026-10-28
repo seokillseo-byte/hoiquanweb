@@ -1,3 +1,4 @@
+import { getAuth, migrateAuthDatabase } from "./better-auth.js";
 const JSON_HEADERS = { "content-type": "application/json; charset=utf-8", "cache-control": "no-store" };
 const LEAD_STATUSES = new Set(["new", "contacted", "qualified", "proposal_sent", "won", "lost", "spam"]);
 const SERVICES = new Set(["Website doanh nghiệp", "Website thương mại điện tử", "Landing page", "Website chuẩn SEO", "UX/UI và Design System", "Bảo trì và tăng trưởng", "Chưa xác định"]);
@@ -99,7 +100,20 @@ export default { async fetch(request, env) {
   if (!["GET", "POST", "PATCH"].includes(request.method)) return withSecurity(json({ error: "METHOD_NOT_ALLOWED" }, 405, { allow: "GET, POST, PATCH, OPTIONS" }));
   if (origin && !allowed.includes(origin)) return withSecurity(json({ error: "ORIGIN_NOT_ALLOWED" }, 403));
   try { let response;
-    if (url.pathname === "/api/health" && request.method === "GET") response = json({ ok: true, service: "hoiquanweb-api", version: "phase-2" });
+    if (url.pathname === "/_test/migrate" && request.method === "POST" && env.TEST_MODE === "true") {
+      const auth = getAuth(env, request);
+      await migrateAuthDatabase(auth);
+      response = new Response(null, { status: 204, headers: { "cache-control": "no-store" } });
+    }
+    else if (url.pathname === "/api/v1/auth/session" && request.method === "GET") {
+      const auth = getAuth(env, request);
+      response = json(await auth.api.getSession({ headers: request.headers }));
+    }
+    else if (url.pathname.startsWith("/api/v1/auth/") && ["GET", "POST"].includes(request.method)) {
+      const auth = getAuth(env, request);
+      response = await auth.handler(request);
+    }
+    else if (url.pathname === "/api/health" && request.method === "GET") response = json({ ok: true, service: "hoiquanweb-api", version: "phase-2" });
     else if (url.pathname.startsWith("/api/v1/public/")) response = await publicContent(request, env, url) || json({ error: { code: "NOT_FOUND", message: "Không tìm thấy tài nguyên." } }, 404);
     else if (url.pathname === "/api/leads" && request.method === "POST") response = await createLead(request, env);
     else if (url.pathname === "/api/estimate" && request.method === "POST") response = await estimate(request);

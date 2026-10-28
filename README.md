@@ -25,7 +25,7 @@ Sau đó mở `http://localhost:4173`.
 
 - Cloudflare Worker API: tiếp nhận lead, validation, CORS allowlist, honeypot, rate limit cơ bản và security headers.
 - Cloudflare D1 schema/migration cho lead, lịch sử thay đổi và rate limit.
-- API ước tính khoảng chi phí; trạng thái CRM; endpoint quản trị bảo vệ bằng bearer token.
+- API ước tính khoảng chi phí; trạng thái CRM; endpoint quản trị bảo vệ bằng bearer token và trang admin.html để xem/phân loại lead.
 - Tích hợp email qua Resend theo cấu hình; lỗi email không làm mất lead.
 - Biểu mẫu có consent, fallback tải/copy brief khi API chưa cấu hình và bộ ước tính giá ở frontend.
 - Trang thông tin quyền riêng tư nêu rõ các hạng mục phải xác nhận trước khi nhận dữ liệu thật.

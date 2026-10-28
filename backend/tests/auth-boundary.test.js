@@ -48,3 +48,15 @@ test("test-only D1 migration endpoint is unavailable when TEST_MODE is not enabl
   assert.equal(response.status, 404);
   assert.equal((await response.json()).error, "NOT_FOUND");
 });
+
+test("test-only identity fixture endpoint is unavailable outside TEST_MODE", async () => {
+  const response = await worker.fetch(new Request("https://api.example.test/_test/seed-identity", {
+    method: "POST",
+    headers: { Origin: "https://example.test", "content-type": "application/json" },
+    body: JSON.stringify({ userA: "a", userB: "b", adminUser: "c" }),
+  }), env);
+
+  assert.equal(response.status, 404);
+  assert.equal((await response.json()).error, "NOT_FOUND");
+});
+

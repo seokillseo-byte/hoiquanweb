@@ -65,7 +65,7 @@ Tạo sender đã xác minh ở Resend và đặt EMAIL_FROM thành sender đó.
 POST /api/estimate nhận JSON gồm pages, complexity (simple/standard/advanced), integrations và trả khoảng min/max VND kèm disclaimer. Quy tắc hiện tại là mức tham khảo kỹ thuật; chủ doanh nghiệp cần xác nhận hoặc điều chỉnh trước khi dùng công khai.
 
 ## Quản trị CRM
-Trang admin.html cung cấp giao diện tối giản để xem tối đa 100 lead gần nhất và đổi trạng thái. Trang được đánh dấu noindex; URL không phải cơ chế bảo mật. Người quản trị đăng nhập bằng Better Auth và phải có vai trò admin/staff được cấp từ phía máy chủ. Phiên dùng cookie và yêu cầu CORS/credentials được cấu hình đúng cho origin quản trị. Vai trò được gán ngoài luồng; không cho phép tự đăng ký thành admin.
+Trang admin.html cung cấp giao diện tối giản để xem tối đa 100 lead gần nhất và đổi trạng thái. Trang được đánh dấu noindex; URL không phải cơ chế bảo mật. Người quản trị đăng nhập bằng Better Auth và phải có vai trò admin/staff được cấp từ phía máy chủ. Phiên dùng cookie và yêu cầu CORS/credentials được cấu hình đúng cho origin quản trị. Vai trò được gán ngoài luồng; không cho phép tự đăng ký thành admin. Lưu ý: do session cookie là thông tin xác thực, nên host trang quản trị và API trên cùng site đáng tin cậy (ví dụ cùng custom domain) trước khi sử dụng thật; GitHub Pages và workers.dev là hai site khác nhau và có thể bị chặn cookie bên thứ ba. Chưa coi giao diện hiện tại là staging/production accepted cho đến khi xác minh cookie/CORS trên origin thực.
 
 ## Quyền riêng tư và production gate
 - Chỉ thu thập trường cần cho tư vấn; consent phải rõ ràng và có timestamp.

@@ -14,10 +14,8 @@ async function request(path, authorization) {
   return worker.fetch(new Request("https://api.example.test" + path, { headers }), env);
 }
 
-test("auth and CRM routes remain unavailable until the identity integration is implemented", async () => {
+test("CRM and customer routes remain unavailable until identity-based authorization is implemented", async () => {
   const paths = [
-    "/api/v1/auth/session",
-    "/api/v1/auth/logout",
     "/api/v1/me",
     "/api/v1/admin/customers",
     "/api/v1/admin/quotes",
@@ -27,7 +25,7 @@ test("auth and CRM routes remain unavailable until the identity integration is i
 
   for (const path of paths) {
     const response = await request(path);
-    assert.equal(response.status, 404, `${path} must not imply a working auth/CRM API`);
+    assert.equal(response.status, 404, `${path} must not imply a working authorized CRM API`);
   }
 });
 

@@ -37,6 +37,20 @@ export function getAuth(env, request) {
         minPasswordLength: 12,
         maxPasswordLength: 128
       },
+      // Explicit limits for credential endpoints; Better Auth persists counters
+      // through its configured database adapter instead of per-isolate memory.
+      rateLimit: {
+        enabled: true,
+        window: 60,
+        max: 100,
+        storage: "database",
+        customRules: {
+          "/sign-in/email": { window: 60, max: 5 },
+          "/sign-up/email": { window: 60, max: 5 },
+          "/forget-password": { window: 60, max: 3 },
+          "/reset-password": { window: 60, max: 5 }
+        }
+      },
       advanced: {
         // Insecure cookies are permitted only in the isolated local test harness.
         useSecureCookies: isTest && env.AUTH_USE_SECURE_COOKIES === "false" ? false : true,

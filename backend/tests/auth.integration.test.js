@@ -92,7 +92,7 @@ test("trusted Origin receives credentialed CORS headers without wildcard origins
   });
   assert.equal(response.headers.get("access-control-allow-origin"), origin);
   assert.equal(response.headers.get("access-control-allow-credentials"), "true");
-  assert.doesNotMatch(response.headers.get("access-control-allow-origin") || "", /\\*/);
+  assert.equal((response.headers.get("access-control-allow-origin") || "").includes("*"), false);
   assert.match(response.headers.get("vary") || "", /Origin/i);
 });
 

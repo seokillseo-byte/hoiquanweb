@@ -1,0 +1,18 @@
+name = "hoiquanweb-api-staging"
+main = "src/worker.js"
+compatibility_date = "2026-10-01"
+workers_dev = true
+
+# STAGING ONLY. Create a NEW D1 database and replace both placeholders.
+# Never copy the production database ID here.
+[[d1_databases]]
+binding = "DB"
+database_name = "hoiquanweb-staging"
+database_id = "REPLACE_WITH_STAGING_D1_DATABASE_ID"
+migrations_dir = "migrations"
+
+[vars]
+# Replace with the exact HTTPS origin of the separate staging frontend.
+AUTH_BASE_URL = "https://REPLACE_WITH_STAGING_FRONTEND_HOST"
+ALLOWED_ORIGINS = "https://REPLACE_WITH_STAGING_FRONTEND_HOST"
+EMAIL_FROM = "Hoi Quan Web <onboarding@resend.dev>"

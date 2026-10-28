@@ -56,7 +56,7 @@ INSERT INTO crm_customer_members (customer_id, user_id, membership_role, created
 VALUES ('<verified-crm-customer-id>', '<verified-better-auth-user-id>', 'owner', '<UTC-ISO-8601-timestamp>');
 ```
 
-Do not run these statements against production until the account/database has been explicitly verified and a backup/rollback plan exists. Automated local Worker/D1 integration tests now exercise two distinct customer identities, customer and quote isolation, no-membership behavior, and server-assigned admin-role enforcement. Remaining acceptance work includes role-assignment auditability, verified account recovery/email verification, and staging validation. Existing legacy `/api/admin/leads` still uses the shared `ADMIN_TOKEN` and must be migrated to identity-based authorization before treating CRM as production-ready. Do not treat the new endpoints as production accepted.
+Do not run these statements against production until the account/database has been explicitly verified and a backup/rollback plan exists. Automated local Worker/D1 integration tests now exercise two distinct customer identities, customer and quote isolation, no-membership behavior, and server-assigned admin-role enforcement. Remaining acceptance work includes role-assignment auditability, verified account recovery/email verification, and staging validation. Legacy `GET/PATCH /api/admin/leads` is also protected by Better Auth session plus server-assigned `admin`/`staff` roles; the legacy shared `ADMIN_TOKEN` no longer authorizes lead management. Do not treat these endpoints as production accepted until staging/browser acceptance is complete.
 
 ## Email và lịch tư vấn
 Tạo sender đã xác minh ở Resend và đặt EMAIL_FROM thành sender đó. Giá trị mặc định onboarding@resend.dev chỉ phù hợp thử nghiệm theo giới hạn của nhà cung cấp. Booking chưa được xem là hoạt động cho đến khi có URL nhà cung cấp lịch đã xác minh.
@@ -103,3 +103,6 @@ Không dùng workflow GitHub Pages production để preview PR vì workflow Page
 - [ ] Chạy migrations trên D1 staging và cấu hình `AUTH_BASE_URL`, `ALLOWED_ORIGINS` theo origin đã xác minh.
 - [ ] Kiểm tra login/logout, session cookie, CORS, role admin/staff, từ chối user thường và từ chối token legacy.
 - [ ] Không merge hoặc deploy production chỉ dựa trên CI xanh hay static preview artifact.
+
+
+Staging-specific runbook and isolated config template: [CLOUDFLARE_STAGING_RUNBOOK.md](CLOUDFLARE_STAGING_RUNBOOK.md) and [wrangler.staging.example.toml](../backend/wrangler.staging.example.toml). The local `backend/wrangler.staging.toml` is intentionally gitignored.

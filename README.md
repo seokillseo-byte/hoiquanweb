@@ -1,19 +1,31 @@
 # Hội Quán Web
 
-Website dịch vụ thiết kế website — SEO-first, responsive, lấy khách hàng làm trung tâm.
+Hội Quán Web được định hướng thành nền tảng vận hành công ty thiết kế website: website dịch vụ nhiều trang, CMS riêng, kho mẫu WordPress + HTML/CSS, quản trị kinh doanh và cổng khách hàng.
 
-## Preview tự động
+**Tình trạng hiện tại:** repository vẫn chủ yếu là frontend tĩnh và backend scaffold. CMS, template marketplace có dữ liệu thật, xác thực/phân quyền và cổng khách hàng chưa được triển khai hoặc nghiệm thu production. Không coi CI xanh là bằng chứng các chức năng này đang chạy.
 
-Workflow GitHub Actions tại `.github/workflows/pages.yml` triển khai site lên GitHub Pages mỗi khi có thay đổi trên nhánh `main`.
+## Tài liệu dự án
 
-1. Mở **Settings → Pages** và chọn **GitHub Actions** làm build/deployment source nếu GitHub yêu cầu.
-2. Mở tab **Actions**, chọn workflow **Deploy preview to GitHub Pages** và đợi job thành công.
-3. URL mặc định dự kiến: https://seokillseo-byte.github.io/hoiquanweb/
-4. Mỗi lần cập nhật giao diện, push lên `main` sẽ kích hoạt một lần deploy mới. Có thể xem trạng thái và URL preview trong **Actions / Deployments**.
+- [Kiến trúc đích](docs/ARCHITECTURE.md)
+- [Mô hình dữ liệu logic](docs/DATA_MODEL.md)
+- [API contract ban đầu](docs/API_CONTRACT.md)
+- [ADR — lựa chọn stack ban đầu](docs/adr/0001-initial-platform-stack.md)
+- [Roadmap và tiêu chí nghiệm thu](docs/IMPLEMENTATION_ROADMAP.md)
+- [Hướng dẫn cấu hình backend lead hiện có](docs/PHASE_2_BACKEND_SETUP.md)
+- [SEO foundation và design system hiện tại](docs/SEO_AND_DESIGN_SYSTEM.md)
 
-## Chạy local
+## Preview hiện tại
 
-Mở `index.html` trực tiếp, hoặc chạy static server trong thư mục dự án:
+GitHub Actions triển khai frontend tĩnh lên GitHub Pages khi có thay đổi trên `main`.
+
+- Preview URL dự kiến: https://seokillseo-byte.github.io/hoiquanweb/
+- Workflows: https://github.com/seokillseo-byte/hoiquanweb/actions
+
+GitHub Pages chỉ phục vụ frontend tĩnh; nó không chạy Cloudflare Worker, tạo D1 database hoặc cung cấp xác thực/cơ sở dữ liệu cho portal.
+
+## Chạy frontend hiện tại ở local
+
+Mở `index.html` hoặc chạy server tĩnh trong thư mục dự án:
 
 ```bash
 python -m http.server 4173
@@ -21,35 +33,25 @@ python -m http.server 4173
 
 Sau đó mở `http://localhost:4173`.
 
-## Phase 2 — Backend scaffold và chuyển đổi lead
+## Backend hiện có — chưa được xác minh production
 
-- Cloudflare Worker API: tiếp nhận lead, validation, CORS allowlist, honeypot, rate limit cơ bản và security headers.
-- Cloudflare D1 schema/migration cho lead, lịch sử thay đổi và rate limit.
-- API ước tính khoảng chi phí; trạng thái CRM; endpoint quản trị bảo vệ bằng bearer token và trang admin.html để xem/phân loại lead.
-- Tích hợp email qua Resend theo cấu hình; lỗi email không làm mất lead.
-- Biểu mẫu có consent, fallback tải/copy brief khi API chưa cấu hình và bộ ước tính giá ở frontend.
-- Trang thông tin quyền riêng tư nêu rõ các hạng mục phải xác nhận trước khi nhận dữ liệu thật.
-- Hướng dẫn triển khai: [docs/PHASE_2_BACKEND_SETUP.md](docs/PHASE_2_BACKEND_SETUP.md).
+Có Cloudflare Worker scaffold và D1 migration cho lead, lịch sử lead và rate limiting. Cấu hình hiện tại vẫn chứa placeholder D1 database ID, còn API base frontend chưa cấu hình. Không gửi dữ liệu khách hàng thật cho đến khi backend được cấu hình, deploy và kiểm thử.
 
-**Chưa deploy backend:** cần tài khoản Cloudflare, D1 database ID, URL Worker và secrets do chủ dự án cấu hình. GitHub Pages chỉ phục vụ frontend tĩnh; backend không thể chạy trực tiếp trên GitHub Pages.
+Xem [docs/PHASE_2_BACKEND_SETUP.md](docs/PHASE_2_BACKEND_SETUP.md). Không commit secrets và không gửi token/password vào chat hoặc mã nguồn.
 
-## Đã có trong bản giao diện đầu tiên
+## Mục tiêu sản phẩm
 
-- Trang giới thiệu dịch vụ, quy trình, portfolio concept, lợi ích, gói giá tham khảo, FAQ và CTA.
-- Brief dự án có kiểm tra trường bắt buộc và xuất/copy bản tóm tắt.
-- Responsive mobile/desktop, menu mobile, FAQ tương tác, trạng thái focus, reduced motion, skip link.
-- Metadata SEO cơ bản, canonical, Open Graph, JSON-LD.
-- Preview deployment bằng GitHub Pages.
+1. Website công khai nhiều trang với SEO, dịch vụ, dự án, blog, FAQ và trang pháp lý.
+2. CMS riêng để quản lý trang, bài viết, media, SEO, dịch vụ, giá và nội dung xuất bản.
+3. Kho mẫu WordPress và HTML/CSS, có tìm kiếm, lọc, preview, phiên bản, compatibility và license.
+4. Cổng khách hàng ngay từ bản phát hành đầu tiên: tài khoản an toàn, báo giá, đơn hàng, tiến độ, file, duyệt và hỗ trợ.
+5. CRM và vận hành: leads, khách hàng, báo giá, dự án, công việc, thông báo và báo cáo.
+6. Giai đoạn sau: page builder, triển khai WordPress có kiểm soát, hosting/domain và AI automation.
 
-## Chưa phải tính năng production
+## Quy tắc phát triển
 
-Các chức năng sau chưa kết nối backend trong bản front-end này: đăng nhập/cổng khách hàng, CRM, lưu lead, đặt lịch thực, báo giá tự động có tính ràng buộc, thanh toán, chat/ticket, quản lý dự án và duyệt phiên bản thiết kế, CMS, analytics thực tế, gửi email, sao lưu/monitoring. Chúng cần backend, cơ sở dữ liệu, phân quyền, tích hợp dịch vụ và chính sách bảo mật trước khi dùng với khách hàng thật.
-
-Các case study trên trang hiện là **concept minh họa**, không phải dự án khách hàng đã xác minh. Giá hiển thị là mức tham khảo cần được xác nhận trước khi công bố chính thức.
-
-## Roadmap đề xuất
-
-- Phase 1 — Public website, design system, SEO foundations, preview.
-- Phase 2 — Lead API/ước tính/CRM scaffold đã có trong repo; cần cấu hình và deploy Cloudflare để vận hành. Booking/email cần provider và secrets.
-- Phase 3 — Authenticated customer portal, milestones, design review and approval.
-- Phase 4 — CMS, analytics, support workflows, monitoring, backups and production QA.
+- Thực hiện thay đổi qua feature branch và pull request; không sửa thẳng `main` cho các thay đổi kiến trúc.
+- Mỗi tính năng cần kiểm thử tương ứng, kiểm tra bảo mật và tiêu chí nghiệm thu.
+- Phân biệt rõ mã nguồn, deploy và nghiệm thu runtime.
+- Không công bố dữ liệu demo, giá tham khảo, case study hoặc chức năng chưa xác minh như sự thật production.
+- Chỉ chuyển giai đoạn khi acceptance gates trong roadmap đạt; các thao tác cần tài khoản, billing hoặc secrets của chủ dự án phải được ghi rõ là blocker.

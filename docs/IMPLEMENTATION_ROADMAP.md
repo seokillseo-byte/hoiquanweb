@@ -134,6 +134,7 @@ Không công bố hệ thống là production-ready cho đến khi có domain v�
 ## Cập nhật triển khai xác thực — 2026-10-28
 
 - [x] Better Auth Worker/D1 integration spike có CI local integration xanh tại [run #62](https://github.com/seokillseo-byte/hoiquanweb/actions/runs/40716709043), xác minh trên commit `f75174ffefcd8d6ac71af6c0be915402e0e6b002`; bao gồm `npm ci`, API/auth integration tests, typecheck và frontend build.
+- [x] CI chạy thành công trên commit cập nhật roadmap `7930fe02895e1ad72ce54c3b92c72e55704189f8` tại [run #64](https://github.com/seokillseo-byte/hoiquanweb/actions/runs/40718009878); toàn bộ validator, API/auth tests, typecheck và build đều xanh.
 - [x] Đã thêm checklist staging và kiểm thử trình duyệt tại [BETTER_AUTH_STAGING_ACCEPTANCE.md](security/BETTER_AUTH_STAGING_ACCEPTANCE.md).
 - [ ] Chưa đạt staging gate: `backend/wrangler.toml` vẫn dùng D1 database ID placeholder; chưa có URL Worker/D1 staging được xác minh.
 - [ ] Chưa có browser E2E chạy trên frontend + Worker đã deploy; các test hiện tại chạy local qua Wrangler test harness.

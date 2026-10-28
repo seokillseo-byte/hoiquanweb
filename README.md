@@ -8,6 +8,7 @@ Hội Quán Web được định hướng thành nền tảng vận hành công 
 
 - [Kiến trúc đích](docs/ARCHITECTURE.md)
 - [Mô hình dữ liệu logic](docs/DATA_MODEL.md)
+- [API contract ban đầu](docs/API_CONTRACT.md)
 - [ADR — lựa chọn stack ban đầu](docs/adr/0001-initial-platform-stack.md)
 - [Roadmap và tiêu chí nghiệm thu](docs/IMPLEMENTATION_ROADMAP.md)
 - [Hướng dẫn cấu hình backend lead hiện có](docs/PHASE_2_BACKEND_SETUP.md)

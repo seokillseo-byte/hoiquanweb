@@ -112,3 +112,32 @@ test("hostile Origin is rejected before auth routes are reached", async () => {
   });
   assert.equal(response.status, 403);
 });
+
+
+test("credentialed CORS preflight allows only the configured frontend origin", async () => {
+  const response = await server.fetch(origin + "/api/v1/auth/sign-in/email", {
+    method: "OPTIONS",
+    headers: {
+      origin,
+      "access-control-request-method": "POST",
+      "access-control-request-headers": "content-type"
+    }
+  });
+  assert.equal(response.status, 204);
+  assert.equal(response.headers.get("access-control-allow-origin"), origin);
+  assert.equal(response.headers.get("access-control-allow-credentials"), "true");
+  assert.match(response.headers.get("access-control-allow-methods") || "", /POST/);
+  assert.match(response.headers.get("access-control-allow-headers") || "", /Content-Type/i);
+
+  const hostile = await server.fetch(origin + "/api/v1/auth/sign-in/email", {
+    method: "OPTIONS",
+    headers: {
+      origin: "https://attacker.invalid",
+      "access-control-request-method": "POST",
+      "access-control-request-headers": "content-type"
+    }
+  });
+  assert.equal(hostile.status, 403);
+  assert.equal(hostile.headers.get("access-control-allow-origin"), null);
+  assert.equal(hostile.headers.get("access-control-allow-credentials"), null);
+});

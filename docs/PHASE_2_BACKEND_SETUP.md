@@ -5,7 +5,7 @@
 - API chạy riêng trên Cloudflare Workers; lead lưu trong Cloudflare D1.
 - Email thông báo tùy chọn qua Resend. Lỗi gửi email không làm mất lead đã lưu.
 - Lịch tư vấn trả về từ GET /api/booking; chưa có nhà cung cấp lịch mặc định nên trả 503 cho đến khi cấu hình.
-- API có allowlist CORS, validation, honeypot, rate limit cơ bản theo IP hash, security headers, consent timestamp và endpoint CRM bảo vệ bằng bearer token.
+- API có allowlist CORS, validation, honeypot, rate limit cơ bản theo IP hash, security headers và consent timestamp. Endpoint quản trị lead dùng Better Auth session và vai trò admin/staff được cấp từ phía máy chủ.
 
 ## Endpoints
 
@@ -15,8 +15,8 @@
 | POST | /api/leads | Validate và lưu brief/lead; email thông báo nếu cấu hình |
 | POST | /api/estimate | Ước tính khoảng chi phí theo quy tắc công khai |
 | GET | /api/booking | Trả URL đặt lịch nếu đã cấu hình |
-| GET | /api/admin/leads?status=new&limit=50 | Danh sách lead, yêu cầu Authorization: Bearer ADMIN_TOKEN |
-| PATCH | /api/admin/leads | Đổi trạng thái lead, yêu cầu token |
+| GET | /api/admin/leads?status=new&limit=50 | Danh sách lead, yêu cầu Better Auth session + vai trò admin/staff |
+| PATCH | /api/admin/leads | Đổi trạng thái lead, yêu cầu Better Auth session + vai trò admin/staff; ghi actor ID vào lead event |
 
 Trạng thái CRM: new, contacted, qualified, proposal_sent, won, lost, spam.
 
@@ -29,7 +29,7 @@ Workflow .github/workflows/validate.yml chạy kiểm tra cú pháp JavaScript, 
 3. Thay database_id trong wrangler.toml bằng ID thực Cloudflare trả về.
 4. Chạy migration: npx wrangler d1 migrations apply hoiquanweb-production --remote.
 5. Chạy local: npx wrangler dev; kiểm tra /api/health trên URL local của Wrangler.
-6. Cấu hình secrets: npx wrangler secret put ADMIN_TOKEN. Nếu cần email, thêm RESEND_API_KEY và NOTIFICATION_EMAIL.
+6. Nếu cần email, cấu hình RESEND_API_KEY và NOTIFICATION_EMAIL. Không cần ADMIN_TOKEN cho endpoint quản trị lead trong phiên bản này.
 7. Đặt ALLOWED_ORIGINS thành origin chính xác. Với GitHub Pages hiện tại là https://seokillseo-byte.github.io; khi có domain riêng hãy cập nhật origin production.
 8. Deploy API bằng npx wrangler deploy và lưu URL Worker thực tế.
 9. Cập nhật meta[name="hq-api-base"] trong index.html thành URL Worker (không có dấu / cuối), rồi commit để GitHub Pages triển khai website.
@@ -65,7 +65,7 @@ Tạo sender đã xác minh ở Resend và đặt EMAIL_FROM thành sender đó.
 POST /api/estimate nhận JSON gồm pages, complexity (simple/standard/advanced), integrations và trả khoảng min/max VND kèm disclaimer. Quy tắc hiện tại là mức tham khảo kỹ thuật; chủ doanh nghiệp cần xác nhận hoặc điều chỉnh trước khi dùng công khai.
 
 ## Quản trị CRM
-Trang admin.html cung cấp giao diện tối giản để xem tối đa 100 lead gần nhất và đổi trạng thái. Trang được đánh dấu noindex; URL không phải cơ chế bảo mật, API vẫn yêu cầu ADMIN_TOKEN. Người quản trị nhập token thủ công; trang không lưu token vào localStorage/cookie. Chỉ sử dụng trên thiết bị đáng tin cậy, tải lại trang để xóa token khỏi bộ nhớ và không chia sẻ token. Không bao giờ nhúng ADMIN_TOKEN cố định vào HTML/JavaScript.
+Trang admin.html cung cấp giao diện tối giản để xem tối đa 100 lead gần nhất và đổi trạng thái. Trang được đánh dấu noindex; URL không phải cơ chế bảo mật. Người quản trị đăng nhập bằng Better Auth và phải có vai trò admin/staff được cấp từ phía máy chủ. Phiên dùng cookie và yêu cầu CORS/credentials được cấu hình đúng cho origin quản trị. Vai trò được gán ngoài luồng; không cho phép tự đăng ký thành admin.
 
 ## Quyền riêng tư và production gate
 - Chỉ thu thập trường cần cho tư vấn; consent phải rõ ràng và có timestamp.
@@ -83,7 +83,7 @@ Trang admin.html cung cấp giao diện tối giản để xem tối đa 100 lea
 - [ ] Lỗi email không làm mất lead.
 - [ ] Origin ngoài allowlist bị từ chối.
 - [ ] Rate limit trả 429 sau ngưỡng.
-- [ ] Endpoint admin trả 401 khi thiếu/sai token.
+- [ ] Endpoint quản trị lead trả 401 khi chưa đăng nhập, 403 nếu user không có vai trò admin/staff, và không chấp nhận ADMIN_TOKEN cũ.
 - [ ] Chỉ trạng thái hợp lệ được cập nhật và có audit event.
 - [ ] Không có secrets trong repository hoặc frontend.
 - [ ] Website fallback hoạt động khi API chưa cấu hình.

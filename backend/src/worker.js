@@ -56,6 +56,53 @@ function contentRecord(row, kind) {
   if (kind === "page") delete result.id;
   return result;
 }
+async function authenticatedPrincipal(request, env) {
+  if (!env.DB) return { error: json({ error: { code: "SERVICE_UNAVAILABLE", message: "Dịch vụ hiện chưa khả dụng." } }, 503) };
+  const auth = getAuth(env, request);
+  const session = await auth.api.getSession({ headers: request.headers });
+  if (!session?.user?.id) return { error: json({ error: { code: "UNAUTHENTICATED", message: "Vui lòng đăng nhập để tiếp tục." } }, 401) };
+  const result = await env.DB.prepare("SELECT role FROM app_user_roles WHERE user_id = ? ORDER BY role").bind(session.user.id).all();
+  return { user: session.user, roles: (result.results || []).map(row => row.role) };
+}
+function hasAnyRole(principal, allowed) {
+  return principal.roles.some(role => allowed.includes(role));
+}
+async function identityRoutes(request, env, url) {
+  if (url.pathname === "/api/v1/me" && request.method === "GET") {
+    const principal = await authenticatedPrincipal(request, env);
+    if (principal.error) return principal.error;
+    return json({ data: { id: principal.user.id, email: principal.user.email, name: principal.user.name, roles: principal.roles } });
+  }
+  if (url.pathname === "/api/v1/me/customers" && request.method === "GET") {
+    const principal = await authenticatedPrincipal(request, env);
+    if (principal.error) return principal.error;
+    const result = await env.DB.prepare(
+      "SELECT c.id, c.display_name, c.organization_name, c.status, m.membership_role FROM crm_customers c INNER JOIN crm_customer_members m ON m.customer_id = c.id WHERE m.user_id = ? AND c.status = 'active' ORDER BY c.display_name ASC LIMIT 100"
+    ).bind(principal.user.id).all();
+    return json({ data: result.results || [] });
+  }
+  if (url.pathname === "/api/v1/me/quotes" && request.method === "GET") {
+    const principal = await authenticatedPrincipal(request, env);
+    if (principal.error) return principal.error;
+    const result = await env.DB.prepare(
+      "SELECT q.id, q.quote_number, q.status, q.currency, q.subtotal_minor, q.discount_minor, q.total_minor, q.valid_until, q.created_at, q.updated_at FROM crm_quotes q INNER JOIN crm_customer_members m ON m.customer_id = q.customer_id WHERE m.user_id = ? AND q.status != 'draft' ORDER BY q.created_at DESC LIMIT 100"
+    ).bind(principal.user.id).all();
+    return json({ data: result.results || [] });
+  }
+  if (url.pathname === "/api/v1/admin/customers" && request.method === "GET") {
+    const principal = await authenticatedPrincipal(request, env);
+    if (principal.error) return principal.error;
+    if (!hasAnyRole(principal, ["admin", "staff"])) {
+      return json({ error: { code: "FORBIDDEN", message: "Bạn không có quyền truy cập chức năng này." } }, 403);
+    }
+    const result = await env.DB.prepare(
+      "SELECT id, display_name, organization_name, contact_email, phone, status, created_at, updated_at FROM crm_customers ORDER BY created_at DESC LIMIT 100"
+    ).all();
+    return json({ data: result.results || [] });
+  }
+  return null;
+}
+
 async function publicContent(request, env, url) {
   if (!env.DB) return json({ error: { code: "SERVICE_UNAVAILABLE", message: "Nội dung hiện chưa khả dụng." } }, 503);
   const path = url.pathname;
@@ -114,6 +161,7 @@ export default { async fetch(request, env) {
       response = await auth.handler(request);
     }
     else if (url.pathname === "/api/health" && request.method === "GET") response = json({ ok: true, service: "hoiquanweb-api", version: "phase-2" });
+    else if (url.pathname === "/api/v1/me" || url.pathname.startsWith("/api/v1/me/") || url.pathname === "/api/v1/admin/customers") response = await identityRoutes(request, env, url) || json({ error: { code: "NOT_FOUND", message: "Không tìm thấy tài nguyên." } }, 404);
     else if (url.pathname.startsWith("/api/v1/public/")) response = await publicContent(request, env, url) || json({ error: { code: "NOT_FOUND", message: "Không tìm thấy tài nguyên." } }, 404);
     else if (url.pathname === "/api/leads" && request.method === "POST") response = await createLead(request, env);
     else if (url.pathname === "/api/estimate" && request.method === "POST") response = await estimate(request);

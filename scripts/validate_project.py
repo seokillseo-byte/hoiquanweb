@@ -121,13 +121,27 @@ try:
     for migration in migration_files:
         db.executescript(migration.read_text(encoding="utf-8"))
     tables = {row[0] for row in db.execute("SELECT name FROM sqlite_master WHERE type='table'")}
-    expected = {"leads", "lead_events", "rate_limits", "cms_pages", "cms_posts", "cms_services", "cms_templates"}
+    expected = {"leads", "lead_events", "rate_limits", "cms_pages", "cms_posts", "cms_services", "cms_templates", "crm_customers", "crm_activities", "crm_quotes", "crm_quote_items", "crm_audit_events"}
     if not expected.issubset(tables):
         fail("database migrations did not create all required tables: " + ", ".join(sorted(expected - tables)))
     # Publicly readable content must have an explicit status and publication timestamp.
     page_columns = {row[1] for row in db.execute("PRAGMA table_info(cms_pages)")}
     if not {"status", "published_at", "slug"}.issubset(page_columns):
         fail("CMS page publication columns are missing")
+    # CRM foundation invariants: foreign keys, quote arithmetic, and append-only audit records.
+    quote_columns = {row[1] for row in db.execute("PRAGMA table_info(crm_quotes)")}
+    if not {"customer_id", "subtotal_minor", "discount_minor", "total_minor", "accepted_by", "accepted_at"}.issubset(quote_columns):
+        fail("CRM quote fields are missing")
+    quote_sql = db.execute("SELECT sql FROM sqlite_master WHERE type='table' AND name='crm_quotes'").fetchone()[0]
+    if "total_minor = subtotal_minor - discount_minor" not in quote_sql:
+        fail("CRM quote total constraint is missing")
+    customer_indexes = {row[1] for row in db.execute("PRAGMA index_list(crm_customers)")}
+    if "idx_crm_customers_lead_unique" not in customer_indexes:
+        fail("CRM customer-to-lead deduplication index is missing")
+    for table, expected_fk in [("crm_activities", "crm_customers"), ("crm_quotes", "crm_customers"), ("crm_quote_items", "crm_quotes")]:
+        foreign_tables = {row[2] for row in db.execute(f"PRAGMA foreign_key_list({table})")}
+        if expected_fk not in foreign_tables:
+            fail(f"CRM foreign key missing on {table}")
     db.close()
 except sqlite3.Error as exc:
     fail("database migration failed: " + str(exc))

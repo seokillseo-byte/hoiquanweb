@@ -3,7 +3,7 @@ main = "src/worker.js"
 compatibility_date = "2026-10-01"
 workers_dev = true
 
-# STAGING ONLY. Create a NEW D1 database and replace both placeholders.
+# STAGING ONLY. Create a NEW D1 database and replace all placeholders.
 # Never copy the production database ID here.
 [[d1_databases]]
 binding = "DB"
@@ -12,7 +12,10 @@ database_id = "REPLACE_WITH_STAGING_D1_DATABASE_ID"
 migrations_dir = "migrations"
 
 [vars]
-# Replace with the exact HTTPS origin of the separate staging frontend.
-AUTH_BASE_URL = "https://REPLACE_WITH_STAGING_FRONTEND_HOST"
+# API origin must be the actual HTTPS origin that serves this Worker.
+# Frontend origin must be the exact HTTPS origin of the separate staging frontend.
+# For browser cookie reliability, configure both on the same site using a verified
+# custom domain; do not rely on unrelated pages.dev and workers.dev hostnames.
+AUTH_BASE_URL = "https://REPLACE_WITH_STAGING_API_HOST"
 ALLOWED_ORIGINS = "https://REPLACE_WITH_STAGING_FRONTEND_HOST"
 EMAIL_FROM = "Hoi Quan Web <onboarding@resend.dev>"

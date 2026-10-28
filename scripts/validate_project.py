@@ -115,13 +115,21 @@ print("PASS: Worker and inline JavaScript syntax; JSON-LD and JSON script blocks
 
 try:
     db = sqlite3.connect(":memory:")
-    db.executescript((ROOT / "backend/migrations/0001_initial.sql").read_text(encoding="utf-8"))
+    migration_files = sorted((ROOT / "backend/migrations").glob("*.sql"))
+    if not migration_files:
+        fail("no database migrations found")
+    for migration in migration_files:
+        db.executescript(migration.read_text(encoding="utf-8"))
     tables = {row[0] for row in db.execute("SELECT name FROM sqlite_master WHERE type='table'")}
-    expected = {"leads", "lead_events", "rate_limits"}
+    expected = {"leads", "lead_events", "rate_limits", "cms_pages", "cms_posts", "cms_services", "cms_templates"}
     if not expected.issubset(tables):
-        fail("database migration did not create all required tables")
+        fail("database migrations did not create all required tables: " + ", ".join(sorted(expected - tables)))
+    # Publicly readable content must have an explicit status and publication timestamp.
+    page_columns = {row[1] for row in db.execute("PRAGMA table_info(cms_pages)")}
+    if not {"status", "published_at", "slug"}.issubset(page_columns):
+        fail("CMS page publication columns are missing")
     db.close()
 except sqlite3.Error as exc:
     fail("database migration failed: " + str(exc))
-print("PASS: D1 migration SQL parses and creates expected tables")
+print("PASS: all D1 migrations parse and create lead/CMS tables")
 print("All repository validation checks passed.")

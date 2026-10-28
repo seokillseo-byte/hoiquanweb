@@ -56,7 +56,7 @@ INSERT INTO crm_customer_members (customer_id, user_id, membership_role, created
 VALUES ('<verified-crm-customer-id>', '<verified-better-auth-user-id>', 'owner', '<UTC-ISO-8601-timestamp>');
 ```
 
-Do not run these statements against production until the account/database has been explicitly verified and a backup/rollback plan exists. The prototype still needs automated integration tests with two distinct customer identities proving cross-customer denial, tests for role assignment/audit, verified account recovery/email verification, and staging validation. Existing legacy `/api/admin/leads` still uses the shared `ADMIN_TOKEN` and must be migrated to identity-based authorization before treating CRM as production-ready. Do not treat the new endpoints as production accepted.
+Do not run these statements against production until the account/database has been explicitly verified and a backup/rollback plan exists. Automated local Worker/D1 integration tests now exercise two distinct customer identities, customer and quote isolation, no-membership behavior, and server-assigned admin-role enforcement. Remaining acceptance work includes role-assignment auditability, verified account recovery/email verification, and staging validation. Existing legacy `/api/admin/leads` still uses the shared `ADMIN_TOKEN` and must be migrated to identity-based authorization before treating CRM as production-ready. Do not treat the new endpoints as production accepted.
 
 ## Email và lịch tư vấn
 Tạo sender đã xác minh ở Resend và đặt EMAIL_FROM thành sender đó. Giá trị mặc định onboarding@resend.dev chỉ phù hợp thử nghiệm theo giới hạn của nhà cung cấp. Booking chưa được xem là hoạt động cho đến khi có URL nhà cung cấp lịch đã xác minh.

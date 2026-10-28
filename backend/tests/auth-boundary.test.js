@@ -14,34 +14,28 @@ async function request(path, authorization) {
   return worker.fetch(new Request("https://api.example.test" + path, { headers }), env);
 }
 
-test("CRM and customer routes remain unavailable until identity-based authorization is implemented", async () => {
-  const paths = [
-    "/api/v1/me",
-    "/api/v1/admin/customers",
-    "/api/v1/admin/quotes",
-    "/api/v1/me/quotes",
-    "/api/v1/me/projects",
-  ];
-
-  for (const path of paths) {
+test("identity-protected routes fail closed when the identity database is unavailable", async () => {
+  for (const path of ["/api/v1/me", "/api/v1/me/customers", "/api/v1/me/quotes", "/api/v1/admin/customers"]) {
     const response = await request(path);
-    assert.equal(response.status, 404, `${path} must not imply a working authorized CRM API`);
+    assert.equal(response.status, 503, `${path} must fail closed if identity storage is unavailable`);
+    const body = await response.json();
+    assert.equal(body.error.code, "SERVICE_UNAVAILABLE");
   }
 });
 
-test("legacy ADMIN_TOKEN does not unlock unimplemented CRM or customer routes", async () => {
-  const paths = [
-    "/api/v1/admin/customers",
-    "/api/v1/admin/quotes",
-    "/api/v1/me/quotes",
-    "/api/v1/me/projects",
-  ];
-
-  for (const path of paths) {
+test("legacy ADMIN_TOKEN does not bypass identity-protected routes", async () => {
+  for (const path of ["/api/v1/me", "/api/v1/me/customers", "/api/v1/me/quotes", "/api/v1/admin/customers"]) {
     const response = await request(path, "Bearer test-only-legacy-token");
-    assert.equal(response.status, 404, `${path} must remain unavailable without identity-based authorization`);
+    assert.equal(response.status, 503, `${path} must not use the legacy token as identity`);
     const body = await response.json();
-    assert.equal(body.error, "NOT_FOUND");
+    assert.equal(body.error.code, "SERVICE_UNAVAILABLE");
+  }
+});
+
+test("unimplemented customer portal routes remain unavailable", async () => {
+  for (const path of ["/api/v1/admin/quotes", "/api/v1/me/projects"]) {
+    const response = await request(path);
+    assert.equal(response.status, 404, `${path} must not imply a working protected API`);
   }
 });
 

@@ -86,6 +86,24 @@ test("invalid credentials fail and sign-out invalidates the session", async () =
   assert.equal(await session.json(), null);
 });
 
+test("trusted Origin receives credentialed CORS headers without wildcard origins", async () => {
+  const response = await server.fetch(origin + "/api/v1/auth/session", {
+    headers: { origin }
+  });
+  assert.equal(response.headers.get("access-control-allow-origin"), origin);
+  assert.equal(response.headers.get("access-control-allow-credentials"), "true");
+  assert.doesNotMatch(response.headers.get("access-control-allow-origin") || "", /\\*/);
+  assert.match(response.headers.get("vary") || "", /Origin/i);
+});
+
+test("untrusted Origin receives no credentialed CORS permission", async () => {
+  const response = await server.fetch(origin + "/api/v1/auth/session", {
+    headers: { origin: "https://attacker.invalid" }
+  });
+  assert.equal(response.status, 403);
+  assert.equal(response.headers.get("access-control-allow-credentials"), null);
+});
+
 test("hostile Origin is rejected before auth routes are reached", async () => {
   const response = await server.fetch(origin + "/api/v1/auth/sign-up/email", {
     method: "POST",

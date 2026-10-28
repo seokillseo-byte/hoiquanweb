@@ -65,7 +65,7 @@ admin_parser = MarkupCheck()
 admin_parser.feed(admin_html)
 if 'name="robots" content="noindex,nofollow"' not in admin_html:
     fail("admin page must be marked noindex")
-for required_admin_id in ["connectForm", "apiBase", "adminToken", "refreshButton", "leadRows"]:
+for required_admin_id in ["connectForm", "apiBase", "adminEmail", "adminPassword", "refreshButton", "leadRows"]:
     if required_admin_id not in admin_parser.ids:
         fail("required admin UI ID missing: " + required_admin_id)
 for fragment in admin_parser.fragments:

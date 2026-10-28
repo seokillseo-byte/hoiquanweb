@@ -246,6 +246,17 @@ test("customer portal isolates customers and quotes; admin access requires a ser
   assert.equal(adminAccess.status, 200, await adminAccess.clone().text());
   assert.deepEqual(new Set((await adminAccess.json()).data.map(item => item.id)), new Set(["test-customer-a", "test-customer-b"]));
 
+  const adminLeadAccess = await getFor("/api/admin/leads?limit=1", admin.cookie);
+  assert.equal(adminLeadAccess.status, 200, await adminLeadAccess.clone().text());
+
+  const ordinaryLeadAccess = await getFor("/api/admin/leads?limit=1", ordinaryUser.cookie);
+  assert.equal(ordinaryLeadAccess.status, 403, await ordinaryLeadAccess.clone().text());
+
+  const legacyTokenAccess = await server.fetch(origin + "/api/admin/leads?limit=1", {
+    headers: { origin, authorization: "Bearer test-only-legacy-token" }
+  });
+  assert.equal(legacyTokenAccess.status, 401, await legacyTokenAccess.clone().text());
+
   const noMembership = await getFor("/api/v1/me/customers", ordinaryUser.cookie);
   assert.equal(noMembership.status, 200, await noMembership.clone().text());
   assert.deepEqual((await noMembership.json()).data, []);

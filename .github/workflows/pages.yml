@@ -35,8 +35,6 @@ jobs:
         run: python scripts/validate_project.py
       - name: Configure Pages
         uses: actions/configure-pages@v5
-        with:
-          enablement: true
       - name: Assemble public website files
         run: |
           mkdir -p _site

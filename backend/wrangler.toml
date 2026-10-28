@@ -1,0 +1,20 @@
+name = "hoiquanweb-api"
+main = "src/worker.js"
+compatibility_date = "2026-10-01"
+workers_dev = true
+
+[[d1_databases]]
+binding = "DB"
+database_name = "hoiquanweb-production"
+database_id = "REPLACE_WITH_CLOUDFLARE_D1_DATABASE_ID"
+migrations_dir = "migrations"
+
+[vars]
+ALLOWED_ORIGINS = "https://seokillseo-byte.github.io"
+EMAIL_FROM = "Hội Quán Web <onboarding@resend.dev>"
+
+# Configure encrypted Worker secrets; never commit real values.
+# wrangler secret put ADMIN_TOKEN
+# wrangler secret put RESEND_API_KEY
+# wrangler secret put NOTIFICATION_EMAIL
+# Optional variable: BOOKING_URL

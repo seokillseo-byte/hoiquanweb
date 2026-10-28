@@ -28,6 +28,71 @@ async function adminLeads(request, env, url) {
   if (request.method === "PATCH") { const body = await readJson(request), id = clean(body.id, 80), status = clean(body.status, 30); if (!id || !LEAD_STATUSES.has(status)) return json({ error: "VALIDATION_ERROR", message: "Mã lead hoặc trạng thái không hợp lệ." }, 400); const updatedAt = new Date().toISOString(); const result = await env.DB.prepare("UPDATE leads SET status = ?, updated_at = ? WHERE id = ?").bind(status, updatedAt, id).run(); if (!result.meta?.changes) return json({ error: "NOT_FOUND" }, 404); await env.DB.prepare("INSERT INTO lead_events (id,lead_id,event_type,details,created_at) VALUES (?, ?, 'status_changed', ?, ?)").bind(crypto.randomUUID(), id, status, updatedAt).run(); return json({ ok: true, id, status, updatedAt }); }
   return json({ error: "METHOD_NOT_ALLOWED" }, 405, { allow: "GET, PATCH" });
 }
+function parseJsonField(value) {
+  if (typeof value !== "string" || !value) return {};
+  try { return JSON.parse(value); } catch { return {}; }
+}
+function decodeSlug(path, prefix) {
+  const encoded = path.slice(prefix.length);
+  try {
+    const slug = decodeURIComponent(encoded);
+    if (!slug || slug.length > 180 || slug.includes("/")) return null;
+    return slug;
+  } catch {
+    return null;
+  }
+}
+function contentRecord(row, kind) {
+  if (!row) return null;
+  const result = { ...row };
+  for (const key of ["content_json", "body_json", "seo_json", "compatibility_json", "description_json"]) {
+    if (Object.prototype.hasOwnProperty.call(result, key)) {
+      const outputKey = key.replace(/_json$/, "").replace("body", "body");
+      result[outputKey] = parseJsonField(result[key]);
+      delete result[key];
+    }
+  }
+  if (kind === "page") delete result.id;
+  return result;
+}
+async function publicContent(request, env, url) {
+  if (!env.DB) return json({ error: { code: "SERVICE_UNAVAILABLE", message: "Nội dung hiện chưa khả dụng." } }, 503);
+  const path = url.pathname;
+  if (path.startsWith("/api/v1/public/pages/") && request.method === "GET") {
+    const slug = decodeSlug(path, "/api/v1/public/pages/");
+    if (!slug) return json({ error: { code: "NOT_FOUND", message: "Không tìm thấy trang." } }, 404);
+    const row = await env.DB.prepare("SELECT slug, title, excerpt, content_json, seo_json, published_at FROM cms_pages WHERE slug = ? AND status = 'published' AND published_at IS NOT NULL LIMIT 1").bind(slug).first();
+    if (!row) return json({ error: { code: "NOT_FOUND", message: "Không tìm thấy trang." } }, 404);
+    return json({ data: contentRecord(row, "page") });
+  }
+  if (path === "/api/v1/public/posts" && request.method === "GET") {
+    const limit = Math.max(1, Math.min(50, Number.parseInt(url.searchParams.get("limit") || "20", 10) || 20));
+    const offset = Math.max(0, Math.min(10000, Number.parseInt(url.searchParams.get("offset") || "0", 10) || 0));
+    const result = await env.DB.prepare("SELECT slug, title, excerpt, author_name, published_at, seo_json FROM cms_posts WHERE status = 'published' AND published_at IS NOT NULL ORDER BY published_at DESC, slug ASC LIMIT ? OFFSET ?").bind(limit, offset).all();
+    return json({ data: (result.results || []).map(row => contentRecord(row, "post")), meta: { limit, offset } });
+  }
+  if (path.startsWith("/api/v1/public/posts/") && request.method === "GET") {
+    const slug = decodeSlug(path, "/api/v1/public/posts/");
+    if (!slug) return json({ error: { code: "NOT_FOUND", message: "Không tìm thấy bài viết." } }, 404);
+    const row = await env.DB.prepare("SELECT slug, title, excerpt, body_json, seo_json, author_name, published_at FROM cms_posts WHERE slug = ? AND status = 'published' AND published_at IS NOT NULL LIMIT 1").bind(slug).first();
+    if (!row) return json({ error: { code: "NOT_FOUND", message: "Không tìm thấy bài viết." } }, 404);
+    return json({ data: contentRecord(row, "post") });
+  }
+  if (path === "/api/v1/public/services" && request.method === "GET") {
+    const result = await env.DB.prepare("SELECT slug, name, summary, description_json, sort_order FROM cms_services WHERE status = 'published' AND published_at IS NOT NULL ORDER BY sort_order ASC, slug ASC LIMIT 100").all();
+    return json({ data: (result.results || []).map(row => contentRecord(row, "service")) });
+  }
+  if (path === "/api/v1/public/templates" && request.method === "GET") {
+    const type = url.searchParams.get("type");
+    if (type && !["wordpress", "html_css"].includes(type)) return json({ error: { code: "VALIDATION_ERROR", message: "Loại template không hợp lệ." } }, 400);
+    const query = "SELECT slug, name, template_type, summary, preview_url, price_minor, currency, license_key, compatibility_json, published_at FROM cms_templates WHERE status = 'published' AND published_at IS NOT NULL" + (type ? " AND template_type = ?" : "") + " ORDER BY published_at DESC, slug ASC LIMIT 100";
+    const statement = env.DB.prepare(query);
+    const result = type ? await statement.bind(type).all() : await statement.all();
+    return json({ data: (result.results || []).map(row => contentRecord(row, "template")) });
+  }
+  return null;
+}
+
 export default { async fetch(request, env) {
   const url = new URL(request.url), cors = corsHeaders(request, env), origin = request.headers.get("Origin"), allowed = (env.ALLOWED_ORIGINS || "").split(",").map(v => v.trim()).filter(Boolean);
   if (request.method === "OPTIONS") return withSecurity(cors["access-control-allow-origin"] ? new Response(null, { status: 204, headers: cors }) : json({ error: "ORIGIN_NOT_ALLOWED" }, 403));
@@ -35,6 +100,7 @@ export default { async fetch(request, env) {
   if (origin && !allowed.includes(origin)) return withSecurity(json({ error: "ORIGIN_NOT_ALLOWED" }, 403));
   try { let response;
     if (url.pathname === "/api/health" && request.method === "GET") response = json({ ok: true, service: "hoiquanweb-api", version: "phase-2" });
+    else if (url.pathname.startsWith("/api/v1/public/")) response = await publicContent(request, env, url) || json({ error: { code: "NOT_FOUND", message: "Không tìm thấy tài nguyên." } }, 404);
     else if (url.pathname === "/api/leads" && request.method === "POST") response = await createLead(request, env);
     else if (url.pathname === "/api/estimate" && request.method === "POST") response = await estimate(request);
     else if (url.pathname === "/api/admin/leads") response = await adminLeads(request, env, url);

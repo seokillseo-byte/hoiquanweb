@@ -115,13 +115,75 @@ print("PASS: Worker and inline JavaScript syntax; JSON-LD and JSON script blocks
 
 try:
     db = sqlite3.connect(":memory:")
-    db.executescript((ROOT / "backend/migrations/0001_initial.sql").read_text(encoding="utf-8"))
+    migration_files = sorted((ROOT / "backend/migrations").glob("*.sql"))
+    if not migration_files:
+        fail("no database migrations found")
+    for migration in migration_files:
+        db.executescript(migration.read_text(encoding="utf-8"))
     tables = {row[0] for row in db.execute("SELECT name FROM sqlite_master WHERE type='table'")}
-    expected = {"leads", "lead_events", "rate_limits"}
+    expected = {"leads", "lead_events", "rate_limits", "cms_pages", "cms_posts", "cms_services", "cms_templates", "crm_customers", "crm_activities", "crm_quotes", "crm_quote_items", "crm_audit_events"}
     if not expected.issubset(tables):
-        fail("database migration did not create all required tables")
+        fail("database migrations did not create all required tables: " + ", ".join(sorted(expected - tables)))
+    # Publicly readable content must have an explicit status and publication timestamp.
+    page_columns = {row[1] for row in db.execute("PRAGMA table_info(cms_pages)")}
+    if not {"status", "published_at", "slug"}.issubset(page_columns):
+        fail("CMS page publication columns are missing")
+    # CRM foundation invariants: foreign keys, quote arithmetic, and append-only audit records.
+    quote_columns = {row[1] for row in db.execute("PRAGMA table_info(crm_quotes)")}
+    if not {"customer_id", "subtotal_minor", "discount_minor", "total_minor", "accepted_by", "accepted_at"}.issubset(quote_columns):
+        fail("CRM quote fields are missing")
+    quote_sql = db.execute("SELECT sql FROM sqlite_master WHERE type='table' AND name='crm_quotes'").fetchone()[0]
+    if "total_minor = subtotal_minor - discount_minor" not in quote_sql:
+        fail("CRM quote total constraint is missing")
+    customer_indexes = {row[1] for row in db.execute("PRAGMA index_list(crm_customers)")}
+    if "idx_crm_customers_lead_unique" not in customer_indexes:
+        fail("CRM customer-to-lead deduplication index is missing")
+    for table, expected_fk in [("crm_activities", "crm_customers"), ("crm_quotes", "crm_customers"), ("crm_quote_items", "crm_quotes")]:
+        foreign_tables = {row[2] for row in db.execute(f"PRAGMA foreign_key_list({table})")}
+        if expected_fk not in foreign_tables:
+            fail(f"CRM foreign key missing on {table}")
+
+    # Exercise constraints with representative data, not just schema inspection.
+    now = "2026-10-28T00:00:00Z"
+    db.execute(
+        "INSERT INTO leads (id,name,email,service,budget,goals,status,consent_at,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?,?,?)",
+        ("lead-test-1","Test Lead","lead@example.test","Website doanh nghiệp","","","new",now,now,now),
+    )
+    db.execute(
+        "INSERT INTO crm_customers (id,lead_id,display_name,contact_email,created_at,updated_at) VALUES (?,?,?,?,?,?)",
+        ("customer-test-1","lead-test-1","Test Customer","customer@example.test",now,now),
+    )
+    def expect_integrity_error(label, statement, values):
+        try:
+            db.execute(statement, values)
+        except sqlite3.IntegrityError:
+            return
+        fail(label + " constraint did not reject invalid data")
+    expect_integrity_error(
+        "CRM duplicate lead conversion",
+        "INSERT INTO crm_customers (id,lead_id,display_name,contact_email,created_at,updated_at) VALUES (?,?,?,?,?,?)",
+        ("customer-test-2","lead-test-1","Duplicate Customer","other@example.test",now,now),
+    )
+    db.execute(
+        "INSERT INTO crm_quotes (id,customer_id,quote_number,status,currency,subtotal_minor,discount_minor,total_minor,created_by,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?,?,?,?)",
+        ("quote-test-1","customer-test-1","HQ-TEST-1","draft","VND",10000000,1000000,9000000,"test-user",now,now),
+    )
+    expect_integrity_error(
+        "CRM quote arithmetic",
+        "INSERT INTO crm_quotes (id,customer_id,quote_number,status,currency,subtotal_minor,discount_minor,total_minor,created_by,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?,?,?,?)",
+        ("quote-test-2","customer-test-1","HQ-TEST-2","draft","VND",10000000,1000000,7000000,"test-user",now,now),
+    )
+    db.execute(
+        "INSERT INTO crm_quote_items (id,quote_id,description,quantity,unit_price_minor,line_total_minor) VALUES (?,?,?,?,?,?)",
+        ("item-test-1","quote-test-1","Website package",2,1000000,2000000),
+    )
+    expect_integrity_error(
+        "CRM quote item arithmetic",
+        "INSERT INTO crm_quote_items (id,quote_id,description,quantity,unit_price_minor,line_total_minor) VALUES (?,?,?,?,?,?)",
+        ("item-test-2","quote-test-1","Invalid line",2,1000000,1500000),
+    )
     db.close()
 except sqlite3.Error as exc:
     fail("database migration failed: " + str(exc))
-print("PASS: D1 migration SQL parses and creates expected tables")
+print("PASS: all D1 migrations parse and create lead/CMS tables")
 print("All repository validation checks passed.")

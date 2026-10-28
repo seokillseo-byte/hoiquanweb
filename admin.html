@@ -13,14 +13,14 @@
 </head>
 <body>
 <main class="wrap">
-  <div class="topline"><div><p><a class="back" href="./">← Hội Quán Web</a></p><h1>Quản lý yêu cầu tư vấn</h1><p class="muted">Công cụ nội bộ tối giản. API phải được triển khai và bảo vệ bằng ADMIN_TOKEN trước khi sử dụng.</p></div><span class="muted">Không lưu token vào localStorage/cookie.</span></div>
+  <div class="topline"><div><p><a class="back" href="./">← Hội Quán Web</a></p><h1>Quản lý yêu cầu tư vấn</h1><p class="muted">Công cụ nội bộ tối giản. API cần Better Auth và quyền quản trị được cấp từ phía máy chủ.</p></div><span class="muted">Phiên đăng nhập dùng cookie; không lưu mật khẩu.</span></div>
   <section class="panel">
     <form id="connectForm" class="controls">
       <div class="field"><label for="apiBase">API base URL</label><input id="apiBase" type="url" placeholder="https://your-worker.workers.dev" autocomplete="url" required></div>
-      <div class="field"><label for="adminToken">Admin token</label><input id="adminToken" type="password" autocomplete="current-password" required></div>
+      <div class="field"><label for="adminEmail">Email quản trị</label><input id="adminEmail" type="email" autocomplete="username" required></div><div class="field"><label for="adminPassword">Mật khẩu</label><input id="adminPassword" type="password" autocomplete="current-password" required></div>
       <button class="btn" type="submit" id="loadButton">Kết nối / tải lead</button>
     </form>
-    <p id="statusMessage" class="message" role="status" aria-live="polite">Nhập URL Worker và token quản trị. Token chỉ được giữ trong bộ nhớ của trang đến khi tải lại.</p>
+    <p id="statusMessage" class="message" role="status" aria-live="polite">Nhập URL Worker và đăng nhập bằng tài khoản đã được cấp vai trò admin/staff.</p>
   </section>
   <section class="panel">
     <div class="topline"><div><h2>Lead gần đây</h2><p class="muted">Tối đa 100 yêu cầu mới nhất. Nội dung do khách hàng nhập được hiển thị dưới dạng văn bản thuần.</p></div><button class="btn" type="button" id="refreshButton">Làm mới</button></div>
@@ -33,10 +33,10 @@
   const statuses = ["new","contacted","qualified","proposal_sent","won","lost","spam"];
   const labels = {new:"Mới",contacted:"Đã liên hệ",qualified:"Đủ điều kiện",proposal_sent:"Đã gửi đề xuất",won:"Thành công",lost:"Không tiếp tục",spam:"Spam"};
   let apiBase = ($("#apiBase").value || document.querySelector('meta[name="hq-api-base"]')?.content || "").trim().replace(/\/$/, "");
-  let token = "";
+  let signedIn = false;
   const message = (text, error=false) => { $("#statusMessage").textContent=text; $("#statusMessage").classList.toggle("danger",error); };
   async function request(path, options={}) {
-    const response = await fetch(apiBase + path, { ...options, headers: { ...(options.headers || {}), authorization: "Bearer " + token, ...(options.body ? {"content-type":"application/json"} : {}) } });
+    const response = await fetch(apiBase + path, { ...options, credentials: "include", headers: { ...(options.headers || {}), ...(options.body ? {"content-type":"application/json"} : {}) } });
     const body = await response.json().catch(() => ({}));
     if (!response.ok) throw new Error(body.message || body.error || ("HTTP " + response.status));
     return body;
@@ -57,8 +57,8 @@
       statusCell.appendChild(select); body.appendChild(tr);
     }
   }
-  async function load() { if(!apiBase || !token){message("Nhập URL API và admin token trước khi tải lead.",true);return;} $("#loadButton").disabled=true;$("#refreshButton").disabled=true;message("Đang tải dữ liệu…");try{const data=await request("/api/admin/leads?limit=100");renderLeads(data.leads||[]);message("Đã tải "+(data.leads||[]).length+" lead.");}catch(error){message("Không thể tải lead: "+error.message,true);}finally{$("#loadButton").disabled=false;$("#refreshButton").disabled=false;} }
-  $("#connectForm").addEventListener("submit",event=>{event.preventDefault();apiBase=$("#apiBase").value.trim().replace(/\/$/,"");token=$("#adminToken").value;load();});
+  async function load() { if(!apiBase || !signedIn){message("Đăng nhập trước khi tải lead.",true);return;} $("#loadButton").disabled=true;$("#refreshButton").disabled=true;message("Đang tải dữ liệu…");try{const data=await request("/api/admin/leads?limit=100");renderLeads(data.leads||[]);message("Đã tải "+(data.leads||[]).length+" lead.");}catch(error){message("Không thể tải lead: "+error.message,true);}finally{$("#loadButton").disabled=false;$("#refreshButton").disabled=false;} }
+  $("#connectForm").addEventListener("submit",async event=>{event.preventDefault();apiBase=$("#apiBase").value.trim().replace(/\/$/,"");const email=$("#adminEmail").value.trim();const password=$("#adminPassword").value;$("#loadButton").disabled=true;message("Đang xác thực…");try{const response=await fetch(apiBase+"/api/v1/auth/sign-in/email",{method:"POST",credentials:"include",headers:{"content-type":"application/json"},body:JSON.stringify({email,password})});const body=await response.json().catch(()=>({}));if(!response.ok)throw new Error(body.message||body.error||("HTTP "+response.status));signedIn=true;$("#adminPassword").value="";message("Đăng nhập thành công. Đang kiểm tra quyền quản trị…");const me=await request("/api/v1/me");if(!Array.isArray(me.data?.roles)||!me.data.roles.some(role=>["admin","staff"].includes(role))){signedIn=false;throw new Error("Tài khoản chưa được cấp quyền admin/staff.");}await load();}catch(error){signedIn=false;message("Không thể đăng nhập/quản trị: "+error.message,true);}finally{$("#loadButton").disabled=false;}});
   $("#refreshButton").addEventListener("click",load);
   const configured=document.querySelector('meta[name="hq-api-base"]')?.content?.trim(); if(configured){$("#apiBase").value=configured;apiBase=configured.replace(/\/$/,"");}
 })();

@@ -1,0 +1,57 @@
+name: Build isolated PR preview
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened, ready_for_review]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pr-preview-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-preview:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout PR source
+        uses: actions/checkout@v4
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Validate project
+        run: python scripts/validate_project.py
+      - name: Validate staging config guardrails
+        run: python scripts/validate_staging_config.py
+      - name: Install locked dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Typecheck and build frontend
+        run: npm run build
+      - name: Assemble isolated static preview
+        run: |
+          mkdir -p _preview
+          cp index.html privacy.html admin.html 404.html robots.txt sitemap.xml _preview/
+          if [ -d dist ]; then cp -R dist/. _preview/; fi
+          cat > _preview/PREVIEW-README.txt <<'EOF'
+          Hội Quán Web isolated PR preview bundle.
+          This is a static frontend preview only. It does not deploy or start the Cloudflare Worker,
+          create a D1 database, or prove Better Auth cookies/CORS work against a real staging origin.
+          Do not submit real customer data or credentials.
+          Download and extract this artifact, then run: python -m http.server 4173
+          Open http://localhost:4173
+          EOF
+      - name: Upload preview bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: hoiquanweb-pr-${{ github.event.pull_request.number || 'manual' }}-preview
+          path: _preview/
+          if-no-files-found: error
+          retention-days: 7

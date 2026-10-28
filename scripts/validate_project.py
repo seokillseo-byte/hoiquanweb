@@ -53,6 +53,20 @@ if 'name="hq-api-base"' not in html:
     fail("API base configuration meta tag is missing")
 if not (ROOT / "privacy.html").exists():
     fail("privacy.html is missing")
+admin_path = ROOT / "admin.html"
+if not admin_path.exists():
+    fail("admin.html is missing")
+admin_html = admin_path.read_text(encoding="utf-8")
+admin_parser = MarkupCheck()
+admin_parser.feed(admin_html)
+if 'name="robots" content="noindex,nofollow"' not in admin_html:
+    fail("admin page must be marked noindex")
+for required_admin_id in ["connectForm", "apiBase", "adminToken", "refreshButton", "leadRows"]:
+    if required_admin_id not in admin_parser.ids:
+        fail("required admin UI ID missing: " + required_admin_id)
+for fragment in admin_parser.fragments:
+    if fragment and fragment not in admin_parser.ids:
+        fail("broken admin in-page anchor: #" + fragment)
 if not parser.scripts or not any("briefForm" in chunk for chunk in parser.scripts):
     fail("inline form handler not found")
 for fragment in parser.fragments:
@@ -64,6 +78,8 @@ try:
     subprocess.run(["node", "--input-type=module", "--check"], input=(ROOT / "backend/src/worker.js").read_text(encoding="utf-8"), text=True, check=True, capture_output=True)
     inline_js = "\n".join(parser.scripts)
     subprocess.run(["node", "--input-type=module", "--check"], input=inline_js, text=True, check=True, capture_output=True)
+    admin_js = "\n".join(admin_parser.scripts)
+    subprocess.run(["node", "--input-type=module", "--check"], input=admin_js, text=True, check=True, capture_output=True)
 except FileNotFoundError:
     fail("Node.js is required to validate JavaScript syntax")
 except subprocess.CalledProcessError as exc:

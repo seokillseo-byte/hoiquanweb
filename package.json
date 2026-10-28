@@ -7,7 +7,7 @@
     "dev": "vite --config frontend/vite.config.ts",
     "build": "npm run typecheck && vite build --config frontend/vite.config.ts",
     "typecheck": "tsc --noEmit -p frontend/tsconfig.json",
-    "test:api": "node --test backend/tests/*.test.js",
+    "test:api": "node --test backend/tests/auth-boundary.test.js backend/tests/public-content.test.js",
     "test:auth": "node --test backend/tests/auth.integration.test.js"
   },
   "dependencies": {

@@ -61,8 +61,12 @@ async function authenticatedPrincipal(request, env) {
   const auth = getAuth(env, request);
   const session = await auth.api.getSession({ headers: request.headers });
   if (!session?.user?.id) return { error: json({ error: { code: "UNAUTHENTICATED", message: "Vui lòng đăng nhập để tiếp tục." } }, 401) };
-  const result = await env.DB.prepare("SELECT role FROM app_user_roles WHERE user_id = ? ORDER BY role").bind(session.user.id).all();
-  return { user: session.user, roles: (result.results || []).map(row => row.role) };
+  try {
+    const result = await env.DB.prepare("SELECT role FROM app_user_roles WHERE user_id = ? ORDER BY role").bind(session.user.id).all();
+    return { user: session.user, roles: (result.results || []).map(row => row.role) };
+  } catch {
+    return { error: json({ error: { code: "IDENTITY_SCHEMA_UNAVAILABLE", message: "Hệ thống phân quyền chưa được cấu hình đầy đủ." } }, 503) };
+  }
 }
 function hasAnyRole(principal, allowed) {
   return principal.roles.some(role => allowed.includes(role));
@@ -151,6 +155,26 @@ export default { async fetch(request, env) {
       const auth = getAuth(env, request);
       await migrateAuthDatabase(auth);
       response = new Response(null, { status: 204, headers: { "cache-control": "no-store" } });
+    }
+    else if (url.pathname === "/_test/seed-identity" && request.method === "POST" && env.TEST_MODE === "true") {
+      const body = await readJson(request);
+      const ids = [body?.userA, body?.userB, body?.adminUser].map(value => clean(value, 128));
+      if (ids.some(value => !value) || new Set(ids).size !== 3) {
+        response = json({ error: "VALIDATION_ERROR" }, 400);
+      } else {
+        const now = new Date().toISOString();
+        const customers = [
+          { id: "test-customer-a", name: "Test Customer A", email: "a@example.test", userId: ids[0], quoteId: "test-quote-a", quoteNumber: "TEST-A" },
+          { id: "test-customer-b", name: "Test Customer B", email: "b@example.test", userId: ids[1], quoteId: "test-quote-b", quoteNumber: "TEST-B" }
+        ];
+        for (const customer of customers) {
+          await env.DB.prepare("INSERT OR REPLACE INTO crm_customers (id, display_name, organization_name, contact_email, phone, status, notes, created_at, updated_at) VALUES (?, ?, '', ?, '', 'active', '', ?, ?)").bind(customer.id, customer.name, customer.email, now, now).run();
+          await env.DB.prepare("INSERT OR REPLACE INTO crm_customer_members (customer_id, user_id, membership_role, created_at) VALUES (?, ?, 'owner', ?)").bind(customer.id, customer.userId, now).run();
+          await env.DB.prepare("INSERT OR REPLACE INTO crm_quotes (id, customer_id, quote_number, status, currency, subtotal_minor, discount_minor, total_minor, created_by, created_at, updated_at) VALUES (?, ?, ?, 'sent', 'VND', 1000000, 0, 1000000, ?, ?, ?)").bind(customer.quoteId, customer.id, customer.quoteNumber, customer.userId, now, now).run();
+        }
+        await env.DB.prepare("INSERT OR REPLACE INTO app_user_roles (user_id, role, assigned_by, assigned_at) VALUES (?, 'admin', 'test-fixture', ?)").bind(ids[2], now).run();
+        response = json({ ok: true });
+      }
     }
     else if (url.pathname === "/api/v1/auth/session" && request.method === "GET") {
       const auth = getAuth(env, request);

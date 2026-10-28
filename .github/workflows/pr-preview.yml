@@ -29,6 +29,8 @@ jobs:
           node-version: "22"
       - name: Validate project
         run: python scripts/validate_project.py
+      - name: Validate staging config guardrails
+        run: python scripts/validate_staging_config.py
       - name: Install locked dependencies
         run: npm ci --no-audit --no-fund
       - name: Typecheck and build frontend

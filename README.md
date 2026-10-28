@@ -38,7 +38,7 @@ Sau đó mở `http://localhost:4173`.
 
 Có Cloudflare Worker scaffold và D1 migration cho lead, lịch sử lead và rate limiting. Cấu hình hiện tại vẫn chứa placeholder D1 database ID, còn API base frontend chưa cấu hình. Không gửi dữ liệu khách hàng thật cho đến khi backend được cấu hình, deploy và kiểm thử.
 
-Xem [docs/PHASE_2_BACKEND_SETUP.md](docs/PHASE_2_BACKEND_SETUP.md). Không commit secrets và không gửi token/password vào chat hoặc mã nguồn.
+Trên nhánh CRM đang phát triển có thêm migration `0003_crm_foundation.sql` cho khách hàng, hoạt động, báo giá và audit log; đây chỉ là schema chưa được áp dụng lên database thật và chưa có CRM API bảo vệ. Xem [docs/PHASE_2_BACKEND_SETUP.md](docs/PHASE_2_BACKEND_SETUP.md). Không commit secrets và không gửi token/password vào chat hoặc mã nguồn.
 
 ## Mục tiêu sản phẩm
 

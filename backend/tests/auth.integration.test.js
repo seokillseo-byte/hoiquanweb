@@ -141,3 +141,30 @@ test("credentialed CORS preflight allows only the configured frontend origin", a
   assert.equal(hostile.headers.get("access-control-allow-origin"), null);
   assert.equal(hostile.headers.get("access-control-allow-credentials"), null);
 });
+
+
+test("public sign-up cannot self-assign a privileged role", async () => {
+  const email = crypto.randomUUID() + "@example.test";
+  const response = await authRequest("/api/v1/auth/sign-up/email", {
+    name: "Untrusted Role Request",
+    email,
+    password: "Valid-Test-Password-123!",
+    role: "admin"
+  });
+  assert.equal(response.status, 200, await response.clone().text());
+  const body = await response.json();
+  assert.equal(body.user.email, email);
+  assert.notEqual(body.user.role, "admin", "public sign-up must not accept a client-supplied admin role");
+
+  const signIn = await authRequest("/api/v1/auth/sign-in/email", {
+    email,
+    password: "Valid-Test-Password-123!"
+  });
+  assert.equal(signIn.status, 200, await signIn.clone().text());
+  const cookie = (signIn.headers.get("set-cookie") || "").split(";")[0];
+  await signIn.text();
+  const session = await server.fetch(origin + "/api/v1/auth/session", { headers: { origin, cookie } });
+  assert.equal(session.status, 200, await session.clone().text());
+  const sessionBody = await session.json();
+  assert.notEqual(sessionBody.user.role, "admin", "session must not expose a self-assigned admin role");
+});

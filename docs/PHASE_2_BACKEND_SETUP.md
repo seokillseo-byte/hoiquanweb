@@ -1,7 +1,7 @@
 # Phase 2 — Lead API, ước tính chi phí và CRM tối thiểu
 
 ## Kiến trúc
-- Website tĩnh tiếp tục preview/deploy bằng GitHub Pages.
+- Website tĩnh production tiếp tục deploy bằng GitHub Pages từ `main`; PR preview được đóng gói thành GitHub Actions artifact riêng, không ghi đè website production.
 - API chạy riêng trên Cloudflare Workers; lead lưu trong Cloudflare D1.
 - Email thông báo tùy chọn qua Resend. Lỗi gửi email không làm mất lead đã lưu.
 - Lịch tư vấn trả về từ GET /api/booking; chưa có nhà cung cấp lịch mặc định nên trả 503 cho đến khi cấu hình.
@@ -88,3 +88,18 @@ Trang admin.html cung cấp giao diện tối giản để xem tối đa 100 lea
 - [ ] Không có secrets trong repository hoặc frontend.
 - [ ] Website fallback hoạt động khi API chưa cấu hình.
 - [ ] Kiểm tra mobile, keyboard, labels, live region, SEO và GitHub Pages preview.
+
+
+## PR preview và staging an toàn
+
+Workflow `.github/workflows/pr-preview.yml` tạo artifact tĩnh riêng cho mỗi pull request, giữ trong 7 ngày. Mở tab **Actions → Build isolated PR preview → run tương ứng → Artifacts** để tải gói preview; giải nén và chạy `python -m http.server 4173`, sau đó mở `http://localhost:4173`. Đây là bản xem giao diện tĩnh, không phải URL web preview công khai và không chứng minh session Better Auth hoạt động trên môi trường thật.
+
+Không dùng workflow GitHub Pages production để preview PR vì workflow Pages hiện tại xuất bản từ `main` lên cùng một site. Để có URL preview trực tuyến, cần tạo Cloudflare Pages project riêng (không phải production), cấu hình secrets/variables cho tài khoản Cloudflare và triển khai branch preview riêng. Để kiểm thử đăng nhập end-to-end, cần thêm Worker staging + D1 staging riêng, migrations áp dụng vào D1 staging, `AUTH_BASE_URL` và `ALLOWED_ORIGINS` khớp origin thực tế, rồi xác minh cookie/CORS. Không dùng database production hoặc bí mật production cho preview.
+
+### Gate staging trước khi dùng dữ liệu thật
+- [ ] Tạo Cloudflare Pages project preview riêng và xác minh URL preview.
+- [ ] Tạo Worker/D1 staging riêng; thay placeholder database ID bằng ID staging thực tế.
+- [ ] Đặt secrets staging trong Cloudflare/GitHub, không commit vào repository.
+- [ ] Chạy migrations trên D1 staging và cấu hình `AUTH_BASE_URL`, `ALLOWED_ORIGINS` theo origin đã xác minh.
+- [ ] Kiểm tra login/logout, session cookie, CORS, role admin/staff, từ chối user thường và từ chối token legacy.
+- [ ] Không merge hoặc deploy production chỉ dựa trên CI xanh hay static preview artifact.

@@ -44,3 +44,13 @@ test("legacy ADMIN_TOKEN does not unlock unimplemented CRM or customer routes", 
     assert.equal(body.error, "NOT_FOUND");
   }
 });
+
+test("test-only D1 migration endpoint is unavailable when TEST_MODE is not enabled", async () => {
+  const response = await worker.fetch(new Request("https://api.example.test/_test/migrate", {
+    method: "POST",
+    headers: { Origin: "https://example.test" },
+  }), env);
+
+  assert.equal(response.status, 404);
+  assert.equal((await response.json()).error, "NOT_FOUND");
+});

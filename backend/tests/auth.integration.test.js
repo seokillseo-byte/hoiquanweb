@@ -193,10 +193,13 @@ test("public sign-up cannot self-assign a privileged role", async () => {
 async function createSignedInUser(label) {
   const email = crypto.randomUUID() + "@example.test";
   const password = "Valid-Test-Password-123!";
-  const signUp = await authRequest("/api/v1/auth/sign-up/email", { name: label, email, password });
+  // Isolate this fixture's IP so the shared rate-limit counter from earlier
+  // auth tests does not make the authorization test order-dependent.
+  const clientIp = "192.0.2." + (1 + Math.floor(Math.random() * 200));
+  const signUp = await authRequest("/api/v1/auth/sign-up/email", { name: label, email, password }, { "cf-connecting-ip": clientIp });
   assert.equal(signUp.status, 200, await signUp.clone().text());
   const user = (await signUp.json()).user;
-  const signIn = await authRequest("/api/v1/auth/sign-in/email", { email, password });
+  const signIn = await authRequest("/api/v1/auth/sign-in/email", { email, password }, { "cf-connecting-ip": clientIp });
   assert.equal(signIn.status, 200, await signIn.clone().text());
   const cookie = (signIn.headers.get("set-cookie") || "").split(";")[0];
   assert.ok(cookie, "successful sign-in must issue a session cookie");

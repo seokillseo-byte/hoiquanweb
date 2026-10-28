@@ -56,6 +56,8 @@ test("public posts list is bounded and published-only", async () => {
   assert.equal(response.status, 200);
   const body = await response.json();
   assert.equal(body.data.length, 1);
+  assert.deepEqual(body.data[0].seo, {});
+  assert.equal("seo_json" in body.data[0], false);
   assert.equal(body.meta.limit, 50);
   assert.match(calls[0], /status = 'published'/);
   assert.match(calls[0], /LIMIT \?/);
@@ -86,4 +88,24 @@ test("unknown API path remains not found", async () => {
   const { env } = makeEnv();
   const response = await request("/api/v1/public/not-a-route", env);
   assert.equal(response.status, 404);
+});
+
+test("malformed percent-encoded page slug returns 404 instead of 500", async () => {
+  const { env } = makeEnv();
+  const response = await request("/api/v1/public/pages/%E0%A4%A", env);
+  assert.equal(response.status, 404);
+});
+
+test("public content endpoint reports unavailable when D1 binding is missing", async () => {
+  const response = await request("/api/v1/public/pages/about", { ALLOWED_ORIGINS: "https://example.test" });
+  assert.equal(response.status, 503);
+  assert.equal((await response.json()).error.code, "SERVICE_UNAVAILABLE");
+});
+
+test("public post list does not expose raw JSON storage columns", async () => {
+  const { env } = makeEnv({ posts: [{ slug: "hello", title: "Hello", excerpt: "", author_name: "Team", published_at: "2026-10-01T00:00:00.000Z", seo_json: "{\"title\":\"Hello SEO\"}" }] });
+  const response = await request("/api/v1/public/posts", env);
+  const body = await response.json();
+  assert.deepEqual(body.data[0].seo, { title: "Hello SEO" });
+  assert.equal("seo_json" in body.data[0], false);
 });

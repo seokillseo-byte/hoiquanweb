@@ -1,0 +1,6 @@
+# Copy to .dev.vars locally; never commit real secrets.
+ADMIN_TOKEN="replace-with-a-long-random-secret"
+RESEND_API_KEY=""
+NOTIFICATION_EMAIL=""
+# Optional booking provider URL
+BOOKING_URL=""

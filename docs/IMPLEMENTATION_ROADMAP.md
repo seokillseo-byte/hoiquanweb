@@ -21,11 +21,13 @@
 - [x] Xác định cổng khách hàng là yêu cầu của bản đầu tiên.
 - [x] Tạo tài liệu kiến trúc đích, vùng chức năng, dữ liệu logic, bảo mật và tiêu chí chất lượng.
 - [ ] Chốt host frontend production, auth/session, object storage và chiến lược triển khai template WordPress.
-- [ ] Định nghĩa API contracts, mô hình dữ liệu và ADR cho các quyết định kỹ thuật trước khi phụ thuộc vào chúng.
+- [x] Viết API contract ban đầu, mô hình dữ liệu logic và ADR stack; các quyết định auth/session, storage và production host vẫn chờ review.
 
-## Phase 1 — Nền tảng ứng dụng và bảo mật
+## Phase 1 — Nền tảng ứng dụng và bảo mật (đang thực hiện)
 
 Mục tiêu: dựng nền tảng có thể mở rộng, không chỉ thêm HTML tĩnh.
+
+**Đã thực hiện trên nhánh feature (chưa merge):** thêm khung Vite + React + TypeScript riêng trong `frontend/`, scripts `npm run typecheck`/`npm run build`, CI chạy validator + typecheck + build, và tài liệu API contract. Đây chỉ là application shell; chưa có đăng nhập, persistence CMS hay customer portal hoạt động. CI đã xanh tại [run #25](https://github.com/seokillseo-byte/hoiquanweb/actions/runs/40677460814).
 
 - Thiết lập cấu trúc frontend có routing, layout chung, design system và môi trường local/test/staging.
 - Chọn và cấu hình xác thực/session an toàn; phân quyền admin, staff và customer ở backend.
@@ -35,7 +37,8 @@ Mục tiêu: dựng nền tảng có thể mở rộng, không chỉ thêm HTML 
 - Giữ GitHub Pages làm preview tĩnh nếu phù hợp; không tuyên bố portal bảo mật hoạt động trên Pages nếu chưa có auth/API thực.
 
 **Acceptance gates**
-- [ ] Build/lint/typecheck và unit tests chạy trong CI.
+- [x] Validator hiện có, typecheck và production build của frontend chạy thành công trong CI.
+- [ ] Bổ sung unit/integration tests cho API và các domain services.
 - [ ] Migration được chạy trên môi trường test sạch và có hướng rollback.
 - [ ] Backend kiểm tra quyền trên từng API; test xác nhận user không thể đọc dữ liệu của user khác.
 - [ ] Không có secret trong source/frontend/logs.

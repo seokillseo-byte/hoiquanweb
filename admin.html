@@ -53,7 +53,7 @@
       cell(tr,lead.budget);
       const statusCell=cell(tr,""); const select=document.createElement("select"); select.setAttribute("aria-label","Trạng thái lead của "+lead.name);
       for (const status of statuses) { const option=document.createElement("option"); option.value=status; option.textContent=labels[status]; option.selected=status===lead.status; select.appendChild(option); }
-      select.addEventListener("change",async()=>{select.disabled=true;try{await request("/api/admin/leads",{method:"PATCH",body:JSON.stringify({id:lead.id,status:select.value})});message("Đã cập nhật trạng thái lead.");}catch(error){select.value=lead.status;message("Không cập nhật được: "+error.message,true);}finally{select.disabled=false;}});
+      select.addEventListener("change",async()=>{select.disabled=true;try{await request("/api/admin/leads",{method:"PATCH",body:JSON.stringify({id:lead.id,status:select.value})});lead.status=select.value;message("Đã cập nhật trạng thái lead.");}catch(error){select.value=lead.status;message("Không cập nhật được: "+error.message,true);}finally{select.disabled=false;}});
       statusCell.appendChild(select); body.appendChild(tr);
     }
   }

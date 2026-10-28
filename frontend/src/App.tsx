@@ -1,5 +1,6 @@
 import { useState } from "react";
 
+// Navigation is a product-scope preview; live operations must be implemented behind authenticated APIs.
 type Area =
   | "overview" | "content" | "templates" | "crm" | "chatbot" | "customers"
   | "projects" | "seo" | "automation" | "commerce" | "hosting" | "settings";

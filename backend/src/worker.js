@@ -22,11 +22,30 @@ async function createLead(request, env) {
   return json({ ok: true, id, message: "Yêu cầu đã được lưu.", notification }, 201);
 }
 async function estimate(request) { const body = await readJson(request); if (!body || typeof body !== "object" || Array.isArray(body)) return json({ error: "VALIDATION_ERROR", message: "Dữ liệu ước tính không hợp lệ." }, 400); const pages = Math.max(1, Math.min(100, Number.parseInt(body.pages, 10) || 1)); const complexity = ["simple", "standard", "advanced"].includes(body.complexity) ? body.complexity : "standard"; const integrations = Math.max(0, Math.min(10, Number.parseInt(body.integrations, 10) || 0)); const base = { simple: 8000000, standard: 20000000, advanced: 50000000 }[complexity]; const total = base + Math.max(0, pages - 5) * 800000 + integrations * 2500000; return json({ currency: "VND", min: total, max: Math.round(total * 1.45), disclaimer: "Ước tính sơ bộ, không phải báo giá ràng buộc. Giá cuối cùng cần xác nhận sau khi làm rõ phạm vi." }); }
-function authorized(request, env) { return Boolean(env.ADMIN_TOKEN && request.headers.get("Authorization") === "Bearer " + env.ADMIN_TOKEN); }
 async function adminLeads(request, env, url) {
-  if (!authorized(request, env)) return json({ error: "UNAUTHORIZED" }, 401);
-  if (request.method === "GET") { const status = clean(url.searchParams.get("status"), 30), limit = Math.max(1, Math.min(100, Number.parseInt(url.searchParams.get("limit"), 10) || 50)); const result = status && LEAD_STATUSES.has(status) ? await env.DB.prepare("SELECT id,name,email,service,budget,goals,status,consent_at,created_at,updated_at FROM leads WHERE status = ? ORDER BY created_at DESC LIMIT ?").bind(status, limit).all() : await env.DB.prepare("SELECT id,name,email,service,budget,goals,status,consent_at,created_at,updated_at FROM leads ORDER BY created_at DESC LIMIT ?").bind(limit).all(); return json({ leads: result.results || [] }); }
-  if (request.method === "PATCH") { const body = await readJson(request), id = clean(body.id, 80), status = clean(body.status, 30); if (!id || !LEAD_STATUSES.has(status)) return json({ error: "VALIDATION_ERROR", message: "Mã lead hoặc trạng thái không hợp lệ." }, 400); const updatedAt = new Date().toISOString(); const result = await env.DB.prepare("UPDATE leads SET status = ?, updated_at = ? WHERE id = ?").bind(status, updatedAt, id).run(); if (!result.meta?.changes) return json({ error: "NOT_FOUND" }, 404); await env.DB.prepare("INSERT INTO lead_events (id,lead_id,event_type,details,created_at) VALUES (?, ?, 'status_changed', ?, ?)").bind(crypto.randomUUID(), id, status, updatedAt).run(); return json({ ok: true, id, status, updatedAt }); }
+  const principal = await authenticatedPrincipal(request, env);
+  if (principal.error) return principal.error;
+  if (!hasAnyRole(principal, ["admin", "staff"])) {
+    return json({ error: { code: "FORBIDDEN", message: "Bạn không có quyền quản trị lead." } }, 403);
+  }
+  if (request.method === "GET") {
+    const status = clean(url.searchParams.get("status"), 30);
+    const limit = Math.max(1, Math.min(100, Number.parseInt(url.searchParams.get("limit"), 10) || 50));
+    const result = status && LEAD_STATUSES.has(status)
+      ? await env.DB.prepare("SELECT id,name,email,service,budget,goals,status,consent_at,created_at,updated_at FROM leads WHERE status = ? ORDER BY created_at DESC LIMIT ?").bind(status, limit).all()
+      : await env.DB.prepare("SELECT id,name,email,service,budget,goals,status,consent_at,created_at,updated_at FROM leads ORDER BY created_at DESC LIMIT ?").bind(limit).all();
+    return json({ leads: result.results || [] });
+  }
+  if (request.method === "PATCH") {
+    const body = await readJson(request), id = clean(body.id, 80), status = clean(body.status, 30);
+    if (!id || !LEAD_STATUSES.has(status)) return json({ error: "VALIDATION_ERROR", message: "Mã lead hoặc trạng thái không hợp lệ." }, 400);
+    const updatedAt = new Date().toISOString();
+    const result = await env.DB.prepare("UPDATE leads SET status = ?, updated_at = ? WHERE id = ?").bind(status, updatedAt, id).run();
+    if (!result.meta?.changes) return json({ error: "NOT_FOUND" }, 404);
+    const auditDetails = JSON.stringify({ status, actorId: principal.user.id });
+    await env.DB.prepare("INSERT INTO lead_events (id,lead_id,event_type,details,created_at) VALUES (?, ?, 'status_changed', ?, ?)").bind(crypto.randomUUID(), id, auditDetails, updatedAt).run();
+    return json({ ok: true, id, status, updatedAt });
+  }
   return json({ error: "METHOD_NOT_ALLOWED" }, 405, { allow: "GET, PATCH" });
 }
 function parseJsonField(value) {

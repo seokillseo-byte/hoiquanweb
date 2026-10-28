@@ -7,6 +7,8 @@ Hội Quán Web được định hướng thành nền tảng vận hành công 
 ## Tài liệu dự án
 
 - [Kiến trúc đích](docs/ARCHITECTURE.md)
+- [Mô hình dữ liệu logic](docs/DATA_MODEL.md)
+- [ADR — lựa chọn stack ban đầu](docs/adr/0001-initial-platform-stack.md)
 - [Roadmap và tiêu chí nghiệm thu](docs/IMPLEMENTATION_ROADMAP.md)
 - [Hướng dẫn cấu hình backend lead hiện có](docs/PHASE_2_BACKEND_SETUP.md)
 - [SEO foundation và design system hiện tại](docs/SEO_AND_DESIGN_SYSTEM.md)

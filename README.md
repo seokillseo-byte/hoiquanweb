@@ -21,6 +21,18 @@ python -m http.server 4173
 
 Sau đó mở `http://localhost:4173`.
 
+## Phase 2 — Backend scaffold và chuyển đổi lead
+
+- Cloudflare Worker API: tiếp nhận lead, validation, CORS allowlist, honeypot, rate limit cơ bản và security headers.
+- Cloudflare D1 schema/migration cho lead, lịch sử thay đổi và rate limit.
+- API ước tính khoảng chi phí; trạng thái CRM; endpoint quản trị bảo vệ bằng bearer token.
+- Tích hợp email qua Resend theo cấu hình; lỗi email không làm mất lead.
+- Biểu mẫu có consent, fallback tải/copy brief khi API chưa cấu hình và bộ ước tính giá ở frontend.
+- Trang thông tin quyền riêng tư nêu rõ các hạng mục phải xác nhận trước khi nhận dữ liệu thật.
+- Hướng dẫn triển khai: [docs/PHASE_2_BACKEND_SETUP.md](docs/PHASE_2_BACKEND_SETUP.md).
+
+**Chưa deploy backend:** cần tài khoản Cloudflare, D1 database ID, URL Worker và secrets do chủ dự án cấu hình. GitHub Pages chỉ phục vụ frontend tĩnh; backend không thể chạy trực tiếp trên GitHub Pages.
+
 ## Đã có trong bản giao diện đầu tiên
 
 - Trang giới thiệu dịch vụ, quy trình, portfolio concept, lợi ích, gói giá tham khảo, FAQ và CTA.
@@ -38,6 +50,6 @@ Các case study trên trang hiện là **concept minh họa**, không phải d�
 ## Roadmap đề xuất
 
 - Phase 1 — Public website, design system, SEO foundations, preview.
-- Phase 2 — Brief/lead API, email notifications, booking and CRM integration.
+- Phase 2 — Lead API/ước tính/CRM scaffold đã có trong repo; cần cấu hình và deploy Cloudflare để vận hành. Booking/email cần provider và secrets.
 - Phase 3 — Authenticated customer portal, milestones, design review and approval.
 - Phase 4 — CMS, analytics, support workflows, monitoring, backups and production QA.

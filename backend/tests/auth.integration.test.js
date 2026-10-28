@@ -188,3 +188,62 @@ test("public sign-up cannot self-assign a privileged role", async () => {
   const sessionBody = await session.json();
   assert.notEqual(sessionBody.user.role, "admin", "session must not expose a self-assigned admin role");
 });
+
+
+async function createSignedInUser(label) {
+  const email = crypto.randomUUID() + "@example.test";
+  const password = "Valid-Test-Password-123!";
+  const signUp = await authRequest("/api/v1/auth/sign-up/email", { name: label, email, password });
+  assert.equal(signUp.status, 200, await signUp.clone().text());
+  const user = (await signUp.json()).user;
+  const signIn = await authRequest("/api/v1/auth/sign-in/email", { email, password });
+  assert.equal(signIn.status, 200, await signIn.clone().text());
+  const cookie = (signIn.headers.get("set-cookie") || "").split(";")[0];
+  assert.ok(cookie, "successful sign-in must issue a session cookie");
+  return { id: user.id, cookie, email };
+}
+
+test("customer portal isolates customers and quotes; admin access requires a server-assigned role", async () => {
+  const userA = await createSignedInUser("Customer A");
+  const userB = await createSignedInUser("Customer B");
+  const admin = await createSignedInUser("Test Admin");
+  const ordinaryUser = await createSignedInUser("Ordinary User");
+
+  const seed = await authRequest("/_test/seed-identity", {
+    userA: userA.id,
+    userB: userB.id,
+    adminUser: admin.id
+  });
+  assert.equal(seed.status, 200, await seed.clone().text());
+
+  async function getFor(path, cookie) {
+    return server.fetch(origin + path, { headers: { origin, cookie } });
+  }
+
+  const customersA = await getFor("/api/v1/me/customers", userA.cookie);
+  assert.equal(customersA.status, 200, await customersA.clone().text());
+  assert.deepEqual((await customersA.json()).data.map(item => item.id), ["test-customer-a"]);
+
+  const customersB = await getFor("/api/v1/me/customers", userB.cookie);
+  assert.equal(customersB.status, 200, await customersB.clone().text());
+  assert.deepEqual((await customersB.json()).data.map(item => item.id), ["test-customer-b"]);
+
+  const quotesA = await getFor("/api/v1/me/quotes", userA.cookie);
+  assert.equal(quotesA.status, 200, await quotesA.clone().text());
+  assert.deepEqual((await quotesA.json()).data.map(item => item.quote_number), ["TEST-A"]);
+
+  const quotesB = await getFor("/api/v1/me/quotes", userB.cookie);
+  assert.equal(quotesB.status, 200, await quotesB.clone().text());
+  assert.deepEqual((await quotesB.json()).data.map(item => item.quote_number), ["TEST-B"]);
+
+  const ordinaryAdminAccess = await getFor("/api/v1/admin/customers", ordinaryUser.cookie);
+  assert.equal(ordinaryAdminAccess.status, 403, await ordinaryAdminAccess.clone().text());
+
+  const adminAccess = await getFor("/api/v1/admin/customers", admin.cookie);
+  assert.equal(adminAccess.status, 200, await adminAccess.clone().text());
+  assert.deepEqual(new Set((await adminAccess.json()).data.map(item => item.id)), new Set(["test-customer-a", "test-customer-b"]));
+
+  const noMembership = await getFor("/api/v1/me/customers", ordinaryUser.cookie);
+  assert.equal(noMembership.status, 200, await noMembership.clone().text());
+  assert.deepEqual((await noMembership.json()).data, []);
+});

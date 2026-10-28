@@ -21,7 +21,7 @@ Tiêu chí nghiệm thu:
 ## Phase 2 — Lead, báo giá và CRM tối thiểu (mã nguồn đã bổ sung; chưa deploy)
 Đã thêm Cloudflare Worker API, D1 schema/migration, validation, CORS allowlist, honeypot, rate limit cơ bản, consent timestamp, endpoint ước tính chi phí, endpoint CRM nội bộ có bearer token, email notification tùy chọn qua Resend và endpoint trả URL booking khi đã cấu hình. Frontend có checkbox consent, bộ ước tính sơ bộ và gửi lead khi API URL được cấu hình; nếu chưa cấu hình, form vẫn chỉ tạo/copy/tải brief.
 
-Còn cần chủ dự án cấu hình Cloudflare/D1, URL Worker, secrets, email sender, nhà cung cấp booking, chính sách quyền riêng tư cuối cùng và kiểm thử trên môi trường thật. Chưa có UI quản trị CRM và chưa có email/booking hoạt động mặc định. Xem docs/PHASE_2_BACKEND_SETUP.md.
+Còn cần chủ dự án cấu hình Cloudflare/D1, URL Worker, secrets, email sender, nhà cung cấp booking, chính sách quyền riêng tư cuối cùng và kiểm thử trên môi trường thật. Đã có UI quản trị CRM tối giản tại admin.html; email/booking chưa hoạt động mặc định. Xem docs/PHASE_2_BACKEND_SETUP.md.
 
 Tiêu chí nghiệm thu:
 - [ ] Không mất lead khi API lỗi; có trạng thái lỗi và khả năng gửi lại.

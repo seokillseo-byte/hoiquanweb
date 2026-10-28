@@ -1,6 +1,6 @@
 # Hội Quán Web — Logical Data Model
 
-**Status:** Planning contract. This document is not a database migration and does not imply these tables exist.
+**Status:** Logical contract with a partial CRM foundation migration. CRM customer/activity/quote/audit tables are added in `backend/migrations/0003_crm_foundation.sql`; this does not imply protected CRM APIs, authentication, or production deployment exist.
 
 ## Modeling rules
 
@@ -97,6 +97,7 @@ Template license and compatibility information must be reviewed before publicati
 ## Migration strategy
 
 - Keep the current `0001_initial.sql` migration intact; it creates the initial lead-related schema.
+- `0003_crm_foundation.sql` adds CRM customers, activity timeline, quotes, quote items and audit events. It intentionally adds no write API until authentication/authorization and domain-level integration tests are in place.
 - Add numbered migrations for new domains instead of editing already-applied production migrations.
 - Test migrations against an empty D1 database and a copy of the previous schema.
 - Back up before production migrations and document rollback or forward-fix procedures.

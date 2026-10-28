@@ -79,7 +79,7 @@ test("invalid credentials fail and sign-out invalidates the session", async () =
   await signIn.text();
 
   const signOut = await server.fetch(origin + "/api/v1/auth/sign-out", {
-    method: "POST", headers: { origin, cookie }
+    method: "POST", headers: { origin, cookie, "content-type": "application/json" }, body: JSON.stringify({})
   });
   assert.equal(signOut.status, 200, await signOut.clone().text());
 

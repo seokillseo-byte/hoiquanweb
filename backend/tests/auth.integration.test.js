@@ -86,18 +86,24 @@ test("invalid credentials fail and sign-out invalidates the session", async () =
   assert.equal(await session.json(), null);
 });
 
-test("sign-in attempts are rate limited per client IP", async () => {
+test("sign-in rate limit trusts Cloudflare client IP, not spoofed X-Forwarded-For", async () => {
   const ip = "198.51.100." + (20 + Math.floor(Math.random() * 100));
   const attempts = [];
   for (let i = 0; i < 6; i++) {
     attempts.push(await authRequest("/api/v1/auth/sign-in/email", {
       email: "missing-" + crypto.randomUUID() + "@example.test",
       password: "Invalid-Test-Password-123!"
-    }, { "x-forwarded-for": ip }));
+    }, {
+      "cf-connecting-ip": ip,
+      // A client can supply arbitrary X-Forwarded-For values; they must not
+      // reset or evade the counter when running behind Cloudflare.
+      "x-forwarded-for": "203.0.113." + (10 + i)
+    }));
   }
   assert.ok(attempts.slice(0, 5).every(response => response.status >= 400 && response.status !== 429),
     "the first five invalid credentials should be rejected as credentials, not rate limited");
-  assert.equal(attempts[5].status, 429, "the sixth sign-in attempt from the same IP should be rate limited");
+  assert.equal(attempts[5].status, 429,
+    "the sixth attempt from the same Cloudflare client IP must be rate limited despite changing X-Forwarded-For");
 });
 
 test("trusted Origin receives credentialed CORS headers without wildcard origins", async () => {

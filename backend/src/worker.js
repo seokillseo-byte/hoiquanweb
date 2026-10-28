@@ -32,6 +32,16 @@ function parseJsonField(value) {
   if (typeof value !== "string" || !value) return {};
   try { return JSON.parse(value); } catch { return {}; }
 }
+function decodeSlug(path, prefix) {
+  const encoded = path.slice(prefix.length);
+  try {
+    const slug = decodeURIComponent(encoded);
+    if (!slug || slug.length > 180 || slug.includes("/")) return null;
+    return slug;
+  } catch {
+    return null;
+  }
+}
 function contentRecord(row, kind) {
   if (!row) return null;
   const result = { ...row };
@@ -49,8 +59,8 @@ async function publicContent(request, env, url) {
   if (!env.DB) return json({ error: { code: "SERVICE_UNAVAILABLE", message: "Nội dung hiện chưa khả dụng." } }, 503);
   const path = url.pathname;
   if (path.startsWith("/api/v1/public/pages/") && request.method === "GET") {
-    const slug = decodeURIComponent(path.slice("/api/v1/public/pages/".length));
-    if (!slug || slug.length > 180 || slug.includes("/")) return json({ error: { code: "NOT_FOUND", message: "Không tìm thấy trang." } }, 404);
+    const slug = decodeSlug(path, "/api/v1/public/pages/");
+    if (!slug) return json({ error: { code: "NOT_FOUND", message: "Không tìm thấy trang." } }, 404);
     const row = await env.DB.prepare("SELECT slug, title, excerpt, content_json, seo_json, published_at FROM cms_pages WHERE slug = ? AND status = 'published' AND published_at IS NOT NULL LIMIT 1").bind(slug).first();
     if (!row) return json({ error: { code: "NOT_FOUND", message: "Không tìm thấy trang." } }, 404);
     return json({ data: contentRecord(row, "page") });
@@ -59,11 +69,11 @@ async function publicContent(request, env, url) {
     const limit = Math.max(1, Math.min(50, Number.parseInt(url.searchParams.get("limit") || "20", 10) || 20));
     const offset = Math.max(0, Math.min(10000, Number.parseInt(url.searchParams.get("offset") || "0", 10) || 0));
     const result = await env.DB.prepare("SELECT slug, title, excerpt, author_name, published_at, seo_json FROM cms_posts WHERE status = 'published' AND published_at IS NOT NULL ORDER BY published_at DESC, slug ASC LIMIT ? OFFSET ?").bind(limit, offset).all();
-    return json({ data: result.results || [], meta: { limit, offset } });
+    return json({ data: (result.results || []).map(row => contentRecord(row, "post")), meta: { limit, offset } });
   }
   if (path.startsWith("/api/v1/public/posts/") && request.method === "GET") {
-    const slug = decodeURIComponent(path.slice("/api/v1/public/posts/".length));
-    if (!slug || slug.length > 180 || slug.includes("/")) return json({ error: { code: "NOT_FOUND", message: "Không tìm thấy bài viết." } }, 404);
+    const slug = decodeSlug(path, "/api/v1/public/posts/");
+    if (!slug) return json({ error: { code: "NOT_FOUND", message: "Không tìm thấy bài viết." } }, 404);
     const row = await env.DB.prepare("SELECT slug, title, excerpt, body_json, seo_json, author_name, published_at FROM cms_posts WHERE slug = ? AND status = 'published' AND published_at IS NOT NULL LIMIT 1").bind(slug).first();
     if (!row) return json({ error: { code: "NOT_FOUND", message: "Không tìm thấy bài viết." } }, 404);
     return json({ data: contentRecord(row, "post") });

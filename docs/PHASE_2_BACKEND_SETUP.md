@@ -35,6 +35,29 @@ Workflow .github/workflows/validate.yml chạy kiểm tra cú pháp JavaScript, 
 9. Cập nhật meta[name="hq-api-base"] trong index.html thành URL Worker (không có dấu / cuối), rồi commit để GitHub Pages triển khai website.
 10. Kiểm tra health, gửi brief thử, dữ liệu D1, email, rate limit và CORS.
 
+## Identity authorization foundation (PR #9 — prototype only)
+
+Migration `0004_identity_authorization.sql` adds `app_user_roles` and `crm_customer_members`. The Worker exposes:
+- `GET /api/v1/me`: authenticated identity and server-assigned roles.
+- `GET /api/v1/me/customers`: active customers linked to the authenticated user only.
+- `GET /api/v1/me/quotes`: non-draft quotes scoped through that user's customer memberships.
+- `GET /api/v1/admin/customers`: customer list for users with the server-assigned `admin` or `staff` role.
+
+Public sign-up does not write to `app_user_roles`. Role assignments are intentionally not self-service; an authorized operator must assign them through a controlled database operation after verifying the user's Better Auth ID. Example for a separately reviewed operator session (replace placeholders; do not put personal data or credentials in source control):
+
+```sql
+INSERT INTO app_user_roles (user_id, role, assigned_by, assigned_at)
+VALUES ('<verified-better-auth-user-id>', 'admin', '<operator-id>', '<UTC-ISO-8601-timestamp>');
+```
+
+To link a customer account, verify both identities and create a membership:
+```sql
+INSERT INTO crm_customer_members (customer_id, user_id, membership_role, created_at)
+VALUES ('<verified-crm-customer-id>', '<verified-better-auth-user-id>', 'owner', '<UTC-ISO-8601-timestamp>');
+```
+
+Do not run these statements against production until the account/database has been explicitly verified and a backup/rollback plan exists. The prototype still needs automated integration tests with two distinct customer identities proving cross-customer denial, tests for role assignment/audit, verified account recovery/email verification, and staging validation. Existing legacy `/api/admin/leads` still uses the shared `ADMIN_TOKEN` and must be migrated to identity-based authorization before treating CRM as production-ready. Do not treat the new endpoints as production accepted.
+
 ## Email và lịch tư vấn
 Tạo sender đã xác minh ở Resend và đặt EMAIL_FROM thành sender đó. Giá trị mặc định onboarding@resend.dev chỉ phù hợp thử nghiệm theo giới hạn của nhà cung cấp. Booking chưa được xem là hoạt động cho đến khi có URL nhà cung cấp lịch đã xác minh.
 

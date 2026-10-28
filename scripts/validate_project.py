@@ -2,6 +2,7 @@
 """Lightweight repository checks; uses only Python's standard library and Node.js."""
 from html.parser import HTMLParser
 from pathlib import Path
+import json
 import re
 import sqlite3
 import subprocess
@@ -16,6 +17,7 @@ class MarkupCheck(HTMLParser):
         self.fragments = []
         self.scripts = []
         self.in_script = False
+        self.script_type = ""
         self.script_chunks = []
     def handle_starttag(self, tag, attrs):
         attrs = dict(attrs)
@@ -25,14 +27,16 @@ class MarkupCheck(HTMLParser):
             self.fragments.append(attrs["href"][1:])
         if tag == "script":
             self.in_script = True
+            self.script_type = (attrs.get("type") or "").strip().lower()
             self.script_chunks = []
     def handle_data(self, data):
         if self.in_script:
             self.script_chunks.append(data)
     def handle_endtag(self, tag):
         if tag == "script" and self.in_script:
-            self.scripts.append("".join(self.script_chunks))
+            self.scripts.append((self.script_type, "".join(self.script_chunks)))
             self.in_script = False
+            self.script_type = ""
             self.script_chunks = []
 
 def fail(message):
@@ -67,24 +71,47 @@ for required_admin_id in ["connectForm", "apiBase", "adminToken", "refreshButton
 for fragment in admin_parser.fragments:
     if fragment and fragment not in admin_parser.ids:
         fail("broken admin in-page anchor: #" + fragment)
-if not parser.scripts or not any("briefForm" in chunk for chunk in parser.scripts):
+if not parser.scripts or not any("briefForm" in chunk for script_type, chunk in parser.scripts if script_type in ("", "text/javascript", "application/javascript", "module")):
     fail("inline form handler not found")
 for fragment in parser.fragments:
     if fragment and fragment not in parser.ids:
         fail("broken in-page anchor: #" + fragment)
 print("PASS: HTML structure, form fields, privacy page and in-page anchors")
 
+def validate_script_blocks(markup_parser, label):
+    javascript_types = {"", "text/javascript", "application/javascript", "module"}
+    json_types = {"application/ld+json", "application/json"}
+    for index, (script_type, source) in enumerate(markup_parser.scripts, start=1):
+        if not source.strip():
+            continue
+        if script_type in json_types:
+            try:
+                json.loads(source)
+            except json.JSONDecodeError as exc:
+                fail(f"{label} JSON script #{index} is invalid: {exc}")
+        elif script_type in javascript_types:
+            try:
+                subprocess.run(
+                    ["node", "--input-type=module", "--check"],
+                    input=source, text=True, check=True, capture_output=True,
+                )
+            except subprocess.CalledProcessError as exc:
+                fail(f"{label} JavaScript syntax check failed in script #{index}: " + (exc.stderr or exc.stdout or "unknown error"))
+        # Data scripts such as JSON-LD are validated as data, not JavaScript.
+
 try:
-    subprocess.run(["node", "--input-type=module", "--check"], input=(ROOT / "backend/src/worker.js").read_text(encoding="utf-8"), text=True, check=True, capture_output=True)
-    inline_js = "\n".join(parser.scripts)
-    subprocess.run(["node", "--input-type=module", "--check"], input=inline_js, text=True, check=True, capture_output=True)
-    admin_js = "\n".join(admin_parser.scripts)
-    subprocess.run(["node", "--input-type=module", "--check"], input=admin_js, text=True, check=True, capture_output=True)
+    subprocess.run(
+        ["node", "--input-type=module", "--check"],
+        input=(ROOT / "backend/src/worker.js").read_text(encoding="utf-8"),
+        text=True, check=True, capture_output=True,
+    )
+    validate_script_blocks(parser, "index.html")
+    validate_script_blocks(admin_parser, "admin.html")
 except FileNotFoundError:
     fail("Node.js is required to validate JavaScript syntax")
 except subprocess.CalledProcessError as exc:
-    fail("JavaScript syntax check failed: " + (exc.stderr or exc.stdout or "unknown error"))
-print("PASS: Worker and inline JavaScript syntax")
+    fail("Worker JavaScript syntax check failed: " + (exc.stderr or exc.stdout or "unknown error"))
+print("PASS: Worker and inline JavaScript syntax; JSON-LD and JSON script blocks")
 
 try:
     db = sqlite3.connect(":memory:")

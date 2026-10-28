@@ -39,6 +39,20 @@ export function getAuth(env, request) {
       },
       // Explicit limits for credential endpoints; Better Auth persists counters
       // through its configured database adapter instead of per-isolate memory.
+      // Cloudflare supplies CF-Connecting-IP at the edge. Do not trust
+      // client-controlled X-Forwarded-For values for auth rate-limit identity.
+      advanced: {
+        ipAddress: {
+          ipAddressHeaders: ["cf-connecting-ip"]
+        },
+        // Insecure cookies are permitted only in the isolated local test harness.
+        useSecureCookies: isTest && env.AUTH_USE_SECURE_COOKIES === "false" ? false : true,
+        defaultCookieAttributes: {
+          httpOnly: true,
+          sameSite: "lax",
+          secure: !(isTest && env.AUTH_USE_SECURE_COOKIES === "false")
+        }
+      },
       rateLimit: {
         enabled: true,
         window: 60,
@@ -51,15 +65,7 @@ export function getAuth(env, request) {
           "/reset-password": { window: 60, max: 5 }
         }
       },
-      advanced: {
-        // Insecure cookies are permitted only in the isolated local test harness.
-        useSecureCookies: isTest && env.AUTH_USE_SECURE_COOKIES === "false" ? false : true,
-        defaultCookieAttributes: {
-          httpOnly: true,
-          sameSite: "lax",
-          secure: !(isTest && env.AUTH_USE_SECURE_COOKIES === "false")
-        }
-      }
+
     });
     authInstances.set(env.DB, auth);
   }

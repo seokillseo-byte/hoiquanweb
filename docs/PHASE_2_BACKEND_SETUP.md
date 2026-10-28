@@ -42,7 +42,7 @@ Tạo sender đã xác minh ở Resend và đặt EMAIL_FROM thành sender đó.
 POST /api/estimate nhận JSON gồm pages, complexity (simple/standard/advanced), integrations và trả khoảng min/max VND kèm disclaimer. Quy tắc hiện tại là mức tham khảo kỹ thuật; chủ doanh nghiệp cần xác nhận hoặc điều chỉnh trước khi dùng công khai.
 
 ## Quản trị CRM
-Endpoint admin dùng cho công cụ nội bộ hoặc giao diện quản trị riêng. Không nhúng ADMIN_TOKEN vào HTML/JavaScript công khai. Bảo vệ token trong secret store và chỉ dùng từ máy chủ/công cụ quản trị tin cậy. Hiện chưa có UI admin công khai.
+Trang admin.html cung cấp giao diện tối giản để xem tối đa 100 lead gần nhất và đổi trạng thái. Trang được đánh dấu noindex; URL không phải cơ chế bảo mật, API vẫn yêu cầu ADMIN_TOKEN. Người quản trị nhập token thủ công; trang không lưu token vào localStorage/cookie. Chỉ sử dụng trên thiết bị đáng tin cậy, tải lại trang để xóa token khỏi bộ nhớ và không chia sẻ token. Không bao giờ nhúng ADMIN_TOKEN cố định vào HTML/JavaScript.
 
 ## Quyền riêng tư và production gate
 - Chỉ thu thập trường cần cho tư vấn; consent phải rõ ràng và có timestamp.

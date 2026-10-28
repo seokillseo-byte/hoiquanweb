@@ -142,6 +142,46 @@ try:
         foreign_tables = {row[2] for row in db.execute(f"PRAGMA foreign_key_list({table})")}
         if expected_fk not in foreign_tables:
             fail(f"CRM foreign key missing on {table}")
+
+    # Exercise constraints with representative data, not just schema inspection.
+    now = "2026-10-28T00:00:00Z"
+    db.execute(
+        "INSERT INTO leads (id,name,email,service,budget,goals,status,consent_at,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?,?,?)",
+        ("lead-test-1","Test Lead","lead@example.test","Website doanh nghiệp","","","new",now,now,now),
+    )
+    db.execute(
+        "INSERT INTO crm_customers (id,lead_id,display_name,contact_email,created_at,updated_at) VALUES (?,?,?,?,?,?)",
+        ("customer-test-1","lead-test-1","Test Customer","customer@example.test",now,now),
+    )
+    def expect_integrity_error(label, statement, values):
+        try:
+            db.execute(statement, values)
+        except sqlite3.IntegrityError:
+            return
+        fail(label + " constraint did not reject invalid data")
+    expect_integrity_error(
+        "CRM duplicate lead conversion",
+        "INSERT INTO crm_customers (id,lead_id,display_name,contact_email,created_at,updated_at) VALUES (?,?,?,?,?,?)",
+        ("customer-test-2","lead-test-1","Duplicate Customer","other@example.test",now,now),
+    )
+    db.execute(
+        "INSERT INTO crm_quotes (id,customer_id,quote_number,status,currency,subtotal_minor,discount_minor,total_minor,created_by,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?,?,?,?)",
+        ("quote-test-1","customer-test-1","HQ-TEST-1","draft","VND",10000000,1000000,9000000,"test-user",now,now),
+    )
+    expect_integrity_error(
+        "CRM quote arithmetic",
+        "INSERT INTO crm_quotes (id,customer_id,quote_number,status,currency,subtotal_minor,discount_minor,total_minor,created_by,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?,?,?,?)",
+        ("quote-test-2","customer-test-1","HQ-TEST-2","draft","VND",10000000,1000000,7000000,"test-user",now,now),
+    )
+    db.execute(
+        "INSERT INTO crm_quote_items (id,quote_id,description,quantity,unit_price_minor,line_total_minor) VALUES (?,?,?,?,?,?)",
+        ("item-test-1","quote-test-1","Website package",2,1000000,2000000),
+    )
+    expect_integrity_error(
+        "CRM quote item arithmetic",
+        "INSERT INTO crm_quote_items (id,quote_id,description,quantity,unit_price_minor,line_total_minor) VALUES (?,?,?,?,?,?)",
+        ("item-test-2","quote-test-1","Invalid line",2,1000000,1500000),
+    )
     db.close()
 except sqlite3.Error as exc:
     fail("database migration failed: " + str(exc))

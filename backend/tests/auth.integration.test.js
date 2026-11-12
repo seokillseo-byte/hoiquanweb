@@ -1081,6 +1081,16 @@ test("customer portal scopes orders, projects, milestones, comments and support 
   });
   assert.equal(customerRevocation.status, 403, "customers cannot revoke customer memberships through admin APIs");
 
+  const lastOwnerDemotion = await server.fetch(origin + "/api/v1/admin/customers/test-customer-a/members", {
+    method: "POST",
+    headers: { origin, cookie: admin.cookie, "content-type": "application/json" },
+    body: JSON.stringify({ email: userA.email, membership_role: "member" })
+  });
+  assert.equal(lastOwnerDemotion.status, 409, "the final customer owner must not be demoted to a non-owner role");
+  const ownersAfterDemotionAttempt = await getFor("/api/v1/admin/customers/test-customer-a/members", admin.cookie);
+  assert.ok((await ownersAfterDemotionAttempt.json()).data.some(item => item.user_id === userA.id && item.membership_role === "owner"),
+    "a rejected demotion must leave the final owner unchanged");
+
   const lastOwnerRevocation = await server.fetch(origin + "/api/v1/admin/customers/test-customer-a/members/" + encodeURIComponent(userA.id), {
     method: "DELETE", headers: { origin, cookie: admin.cookie }
   });

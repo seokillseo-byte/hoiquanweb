@@ -191,3 +191,8 @@ Project files are stored in the private R2 bucket under server-generated `projec
 ### In-app notifications
 
 Notifications are created for customer-visible project status/milestone changes and staff ticket replies, and for staff/admin when customers create tickets or post project/ticket messages. Payloads contain generic summaries and resource identifiers only; private comment/message bodies and other customer details are not copied into notifications. Every inbox query and read mutation is scoped by the authenticated `user_id`; cross-user read attempts return 404. This implementation is in-app only; Resend email delivery remains separately configurable and is not implied by an in-app notification.
+
+
+## Authorization matrix
+
+Role-level permissions and customer membership boundaries are recorded in [docs/AUTHORIZATION_MATRIX.md](AUTHORIZATION_MATRIX.md). Treat this matrix as the current source/test contract; the remaining endpoint-by-endpoint, session lifecycle and staging acceptance checks remain open.

@@ -28,7 +28,7 @@ async function adminLeads(request, env, url) {
   if (!hasAnyRole(principal, ["admin", "staff"])) {
     return json({ error: { code: "FORBIDDEN", message: "Bạn không có quyền quản trị lead." } }, 403);
   }
-  const leadRoute = url.pathname.match(/^\/api\/admin\/leads\/([^/]+)(?:\/(events|convert))?$/);
+  const leadRoute = url.pathname.match(/^\/api(?:\/v1)?\/admin\/leads\/([^/]+)(?:\/(events|convert))?$/);
   if (leadRoute) {
     let leadId;
     try { leadId = decodeURIComponent(leadRoute[1]); }
@@ -799,7 +799,7 @@ export default { async fetch(request, env) {
     else if (url.pathname.startsWith("/api/v1/public/")) response = await publicContent(request, env, url) || json({ error: { code: "NOT_FOUND", message: "Không tìm thấy tài nguyên." } }, 404);
     else if (url.pathname === "/api/leads" && request.method === "POST") response = await createLead(request, env);
     else if (url.pathname === "/api/estimate" && request.method === "POST") response = await estimate(request);
-    else if (url.pathname === "/api/admin/leads" || url.pathname.startsWith("/api/admin/leads/")) response = await adminLeads(request, env, url);
+    else if (url.pathname === "/api/admin/leads" || url.pathname.startsWith("/api/admin/leads/") || url.pathname === "/api/v1/admin/leads" || url.pathname.startsWith("/api/v1/admin/leads/")) response = await adminLeads(request, env, url);
     else if (url.pathname === "/api/booking" && request.method === "GET") response = env.BOOKING_URL ? json({ url: env.BOOKING_URL }) : json({ error: "BOOKING_NOT_CONFIGURED", message: "Chưa cấu hình nhà cung cấp lịch hẹn." }, 503);
     else response = json({ error: "NOT_FOUND" }, 404);
     const headers = new Headers(response.headers); for (const [key, value] of Object.entries(cors)) headers.set(key, value); return withSecurity(new Response(response.body, { status: response.status, headers }));

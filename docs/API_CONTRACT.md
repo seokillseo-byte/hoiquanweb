@@ -62,10 +62,14 @@ Never accept a client-provided customer ID as proof of ownership. Resolve member
 
 | Method | Route | Purpose | Access |
 |---|---|---|---|
-| GET/POST | `/api/v1/admin/pages` | List/create pages | CMS permission |
-| GET/PATCH/DELETE | `/api/v1/admin/pages/:id` | Read/update/archive page | CMS permission |
-| POST | `/api/v1/admin/pages/:id/publish` | Publish an approved revision | Publish permission |
-| GET/POST | `/api/v1/admin/posts` | List/create posts | CMS permission |
+| GET/POST | `/api/v1/admin/pages` | List/create pages | Admin or staff; creates are drafts |
+| GET/PATCH/DELETE | `/api/v1/admin/pages/:id` | Read/update/archive page | Admin or staff for read/update; admin for archive |
+| POST | `/api/v1/admin/pages/:id/publish` | Publish a page and record a revision | Admin |
+| GET/POST | `/api/v1/admin/posts` | List/create posts | Admin or staff; creates are drafts |
+| POST | `/api/v1/admin/posts/:id/publish` | Publish a post and record a revision | Admin |
+| GET/POST | `/api/v1/admin/services` | List/create service content | Admin or staff; creates are drafts |
+| GET/PATCH/DELETE | `/api/v1/admin/services/:id` | Read/update/archive service content | Admin or staff for read/update; admin for archive |
+| POST | `/api/v1/admin/services/:id/publish` | Publish a service and record a revision | Admin |
 | GET/POST/PATCH | `/api/v1/admin/templates` | Manage template metadata | Template permission |
 | GET/PATCH | `/api/v1/admin/leads` | Review/assign/update leads | CRM permission |
 | GET/POST | `/api/v1/admin/customers` | Manage customer records | CRM permission |

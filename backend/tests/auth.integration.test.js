@@ -261,3 +261,69 @@ test("customer portal isolates customers and quotes; admin access requires a ser
   assert.equal(noMembership.status, 200, await noMembership.clone().text());
   assert.deepEqual((await noMembership.json()).data, []);
 });
+
+
+test("CMS content API requires an authenticated admin; drafts stay private and edits require republishing", async () => {
+  const admin = await createSignedInUser("CMS Admin");
+  const customer = await createSignedInUser("CMS Customer");
+  const seed = await authRequest("/_test/seed-identity", {
+    userA: customer.id,
+    userB: "cms-no-membership-user",
+    adminUser: admin.id
+  });
+  assert.equal(seed.status, 200, await seed.clone().text());
+
+  const anonymous = await server.fetch(origin + "/api/v1/admin/pages", { headers: { origin } });
+  assert.equal(anonymous.status, 401, await anonymous.clone().text());
+
+  const customerCreate = await server.fetch(origin + "/api/v1/admin/pages", {
+    method: "POST",
+    headers: { origin, cookie: customer.cookie, "content-type": "application/json" },
+    body: JSON.stringify({ slug: "customer-page", title: "Customer Page", content: {} })
+  });
+  assert.equal(customerCreate.status, 403, await customerCreate.clone().text());
+
+  const create = await server.fetch(origin + "/api/v1/admin/pages", {
+    method: "POST",
+    headers: { origin, cookie: admin.cookie, "content-type": "application/json" },
+    body: JSON.stringify({
+      slug: "cms-security-test",
+      title: "CMS Security Test",
+      excerpt: "A private draft used by integration tests.",
+      content: { blocks: [{ type: "paragraph", text: "Draft content" }] },
+      seo: { title: "CMS Security Test", robots: "noindex" }
+    })
+  });
+  assert.equal(create.status, 201, await create.clone().text());
+  const created = (await create.json()).data;
+  assert.equal(created.status, "draft");
+  assert.ok(created.id);
+
+  const publicDraft = await server.fetch(origin + "/api/v1/public/pages/cms-security-test", { headers: { origin } });
+  assert.equal(publicDraft.status, 404, await publicDraft.clone().text());
+
+  const customerPublish = await server.fetch(origin + "/api/v1/admin/pages/" + created.id + "/publish", {
+    method: "POST",
+    headers: { origin, cookie: customer.cookie }
+  });
+  assert.equal(customerPublish.status, 403, await customerPublish.clone().text());
+
+  const publish = await server.fetch(origin + "/api/v1/admin/pages/" + created.id + "/publish", {
+    method: "POST",
+    headers: { origin, cookie: admin.cookie }
+  });
+  assert.equal(publish.status, 200, await publish.clone().text());
+  const publicPage = await server.fetch(origin + "/api/v1/public/pages/cms-security-test", { headers: { origin } });
+  assert.equal(publicPage.status, 200, await publicPage.clone().text());
+  assert.equal((await publicPage.json()).data.title, "CMS Security Test");
+
+  const update = await server.fetch(origin + "/api/v1/admin/pages/" + created.id, {
+    method: "PATCH",
+    headers: { origin, cookie: admin.cookie, "content-type": "application/json" },
+    body: JSON.stringify({ title: "Updated CMS Draft", content: { blocks: [] } })
+  });
+  assert.equal(update.status, 200, await update.clone().text());
+  assert.equal((await update.json()).data.status, "draft");
+  const hiddenAfterEdit = await server.fetch(origin + "/api/v1/public/pages/cms-security-test", { headers: { origin } });
+  assert.equal(hiddenAfterEdit.status, 404, "editing published content must return it to draft until republished");
+});

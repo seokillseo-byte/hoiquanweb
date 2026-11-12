@@ -5,7 +5,7 @@ const SERVICES = new Set(["Website doanh nghiệp", "Website thương mại đi�
 function json(data, status = 200, extra = {}) { return new Response(JSON.stringify(data), { status, headers: { ...JSON_HEADERS, ...extra } }); }
 function clean(value, max = 2000) { return typeof value === "string" ? value.trim().replace(/\u0000/g, "").slice(0, max) : ""; }
 function validEmail(value) { return /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(value) && value.length <= 254; }
-function corsHeaders(request, env) { const origin = request.headers.get("Origin"); const allowed = (env.ALLOWED_ORIGINS || "").split(",").map(v => v.trim()).filter(Boolean); if (!origin || !allowed.includes(origin)) return {}; return { "access-control-allow-origin": origin, "access-control-allow-credentials": "true", "access-control-allow-methods": "GET, POST, PATCH, OPTIONS", "access-control-allow-headers": "Content-Type, Authorization", "access-control-max-age": "86400", "vary": "Origin" }; }
+function corsHeaders(request, env) { const origin = request.headers.get("Origin"); const allowed = (env.ALLOWED_ORIGINS || "").split(",").map(v => v.trim()).filter(Boolean); if (!origin || !allowed.includes(origin)) return {}; return { "access-control-allow-origin": origin, "access-control-allow-credentials": "true", "access-control-allow-methods": "GET, POST, PATCH, DELETE, OPTIONS", "access-control-allow-headers": "Content-Type, Authorization", "access-control-max-age": "86400", "vary": "Origin" }; }
 function withSecurity(response) { const headers = new Headers(response.headers); headers.set("x-content-type-options", "nosniff"); headers.set("referrer-policy", "no-referrer"); headers.set("x-frame-options", "DENY"); headers.set("permissions-policy", "camera=(), microphone=(), geolocation=()"); return new Response(response.body, { status: response.status, statusText: response.statusText, headers }); }
 async function readJson(request) { const type = request.headers.get("content-type") || ""; if (!type.toLowerCase().includes("application/json")) throw new Error("CONTENT_TYPE"); const length = Number(request.headers.get("content-length") || 0); if (length > 12000) throw new Error("TOO_LARGE"); try { return await request.json(); } catch { throw new Error("INVALID_JSON"); } }
 async function rateLimit(request, env) { if (!env.DB) throw new Error("DB_NOT_CONFIGURED"); const ip = request.headers.get("CF-Connecting-IP") || "unknown"; const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(ip)); const hash = [...new Uint8Array(digest)].map(v => v.toString(16).padStart(2, "0")).join(""); const now = Math.floor(Date.now() / 60000); await env.DB.prepare("DELETE FROM rate_limits WHERE window_minute < ?").bind(now - 2).run(); const row = await env.DB.prepare("SELECT hits FROM rate_limits WHERE ip_hash = ? AND window_minute = ?").bind(hash, now).first(); if ((row?.hits || 0) >= 5) return false; await env.DB.prepare("INSERT INTO rate_limits (ip_hash, window_minute, hits) VALUES (?, ?, 1) ON CONFLICT(ip_hash, window_minute) DO UPDATE SET hits = hits + 1").bind(hash, now).run(); return true; }
@@ -126,6 +126,209 @@ async function identityRoutes(request, env, url) {
   return null;
 }
 
+const CMS_RESOURCES = {
+  pages: {
+    table: "cms_pages", kind: "page",
+    select: "id, slug, title, excerpt, content_json, seo_json, status, published_at, created_at, updated_at",
+    required: ["slug", "title"]
+  },
+  posts: {
+    table: "cms_posts", kind: "post",
+    select: "id, slug, title, excerpt, body_json, seo_json, author_name, status, published_at, created_at, updated_at",
+    required: ["slug", "title"]
+  },
+  services: {
+    table: "cms_services", kind: "service",
+    select: "id, slug, name, summary, description_json, sort_order, status, published_at, created_at, updated_at",
+    required: ["slug", "name"]
+  }
+};
+
+function cmsObject(value, maxLength = 100000) {
+  if (value === undefined) return {};
+  if (!value || typeof value !== "object" || Array.isArray(value)) return null;
+  const serialized = JSON.stringify(value);
+  return serialized.length <= maxLength ? value : null;
+}
+
+function validCmsSlug(value) {
+  return /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(value) && value.length <= 180;
+}
+
+function cmsSnapshot(resource, row) {
+  const snapshot = { ...row };
+  for (const key of ["content_json", "body_json", "seo_json", "description_json"]) {
+    if (Object.prototype.hasOwnProperty.call(snapshot, key)) {
+      snapshot[key.replace(/_json$/, "")] = parseJsonField(snapshot[key]);
+      delete snapshot[key];
+    }
+  }
+  return snapshot;
+}
+
+function recordCmsRevision(env, resourceName, resourceId, action, actorId, snapshot, createdAt) {
+  return env.DB.prepare(
+    "INSERT INTO cms_revisions (id, resource_type, resource_id, action, actor_id, snapshot_json, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)"
+  ).bind(crypto.randomUUID(), resourceName, resourceId, action, actorId, JSON.stringify(snapshot), createdAt);
+}
+
+async function adminContent(request, env, url) {
+  const principal = await authenticatedPrincipal(request, env);
+  if (principal.error) return principal.error;
+  if (!hasAnyRole(principal, ["admin", "staff"])) {
+    return json({ error: { code: "FORBIDDEN", message: "Bạn không có quyền quản lý nội dung." } }, 403);
+  }
+
+  const parts = url.pathname.split("/").filter(Boolean);
+  const resourceName = parts[3];
+  const config = CMS_RESOURCES[resourceName];
+  if (!config || parts.length > 6) return json({ error: { code: "NOT_FOUND", message: "Không tìm thấy tài nguyên." } }, 404);
+
+  let resourceId = "";
+  try { resourceId = parts[4] ? decodeURIComponent(parts[4]) : ""; }
+  catch { return json({ error: { code: "NOT_FOUND", message: "Không tìm thấy nội dung." } }, 404); }
+  const action = parts[5] || "";
+  if (resourceId && (!resourceId || resourceId.length > 80 || resourceId.includes("/"))) {
+    return json({ error: { code: "NOT_FOUND", message: "Không tìm thấy nội dung." } }, 404);
+  }
+  if (action && !["publish", "archive"].includes(action)) {
+    return json({ error: { code: "NOT_FOUND", message: "Không tìm thấy thao tác." } }, 404);
+  }
+
+  if (action === "publish" || action === "archive" || request.method === "DELETE") {
+    if (!hasAnyRole(principal, ["admin"])) {
+      return json({ error: { code: "FORBIDDEN", message: "Chỉ quản trị viên được xuất bản hoặc lưu trữ nội dung." } }, 403);
+    }
+  }
+
+  const now = new Date().toISOString();
+  if (!resourceId && request.method === "GET") {
+    const status = clean(url.searchParams.get("status"), 20);
+    if (status && !["draft", "published", "archived"].includes(status)) {
+      return json({ error: { code: "VALIDATION_ERROR", message: "Trạng thái nội dung không hợp lệ." } }, 400);
+    }
+    const limit = Math.max(1, Math.min(100, Number.parseInt(url.searchParams.get("limit") || "50", 10) || 50));
+    const offset = Math.max(0, Math.min(10000, Number.parseInt(url.searchParams.get("offset") || "0", 10) || 0));
+    const where = status ? " WHERE status = ?" : "";
+    const statement = env.DB.prepare(
+      "SELECT " + config.select + " FROM " + config.table + where + " ORDER BY updated_at DESC, slug ASC LIMIT ? OFFSET ?"
+    );
+    const result = status ? await statement.bind(status, limit, offset).all() : await statement.bind(limit, offset).all();
+    return json({ data: (result.results || []).map(row => cmsSnapshot(config, row)), meta: { limit, offset, status: status || "all" } });
+  }
+
+  if (!resourceId && request.method === "POST") {
+    const body = await readJson(request);
+    if (!body || typeof body !== "object" || Array.isArray(body)) {
+      return json({ error: { code: "VALIDATION_ERROR", message: "Dữ liệu nội dung không hợp lệ." } }, 400);
+    }
+    const slug = clean(body.slug, 180);
+    const titleKey = resourceName === "services" ? "name" : "title";
+    const title = clean(body[titleKey], 240);
+    const excerpt = clean(body.excerpt, 500);
+    if (!validCmsSlug(slug) || title.length < 2) {
+      return json({ error: { code: "VALIDATION_ERROR", message: "Slug và tiêu đề là bắt buộc; slug chỉ gồm chữ thường, số và dấu gạch nối." } }, 400);
+    }
+    const seo = cmsObject(body.seo, 10000);
+    if (seo === null) return json({ error: { code: "VALIDATION_ERROR", message: "Dữ liệu SEO phải là đối tượng JSON hợp lệ và không vượt quá giới hạn." } }, 400);
+    const id = crypto.randomUUID();
+    let row, statement;
+    if (resourceName === "pages") {
+      const content = cmsObject(body.content, 100000);
+      if (content === null) return json({ error: { code: "VALIDATION_ERROR", message: "Nội dung trang không hợp lệ hoặc quá lớn." } }, 400);
+      row = { id, slug, title, excerpt, content, seo, status: "draft", published_at: null, created_at: now, updated_at: now };
+      statement = env.DB.prepare("INSERT INTO cms_pages (id, slug, title, excerpt, content_json, seo_json, status, published_at, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, 'draft', NULL, ?, ?)")
+        .bind(id, slug, title, excerpt, JSON.stringify(content), JSON.stringify(seo), now, now);
+    } else if (resourceName === "posts") {
+      const bodyContent = cmsObject(body.body, 150000);
+      if (bodyContent === null) return json({ error: { code: "VALIDATION_ERROR", message: "Nội dung bài viết không hợp lệ hoặc quá lớn." } }, 400);
+      const author = clean(body.author_name || principal.user.name || "", 120);
+      row = { id, slug, title, excerpt, body: bodyContent, seo, author_name: author, status: "draft", published_at: null, created_at: now, updated_at: now };
+      statement = env.DB.prepare("INSERT INTO cms_posts (id, slug, title, excerpt, body_json, seo_json, author_name, status, published_at, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, 'draft', NULL, ?, ?)")
+        .bind(id, slug, title, excerpt, JSON.stringify(bodyContent), JSON.stringify(seo), author, now, now);
+    } else {
+      const summary = clean(body.summary, 500);
+      const description = cmsObject(body.description, 100000);
+      const sortOrder = Number.isInteger(body.sort_order) ? Math.max(0, Math.min(100000, body.sort_order)) : 0;
+      if (description === null) return json({ error: { code: "VALIDATION_ERROR", message: "Mô tả dịch vụ không hợp lệ hoặc quá lớn." } }, 400);
+      row = { id, slug, name: title, summary, description, sort_order: sortOrder, status: "draft", published_at: null, created_at: now, updated_at: now };
+      statement = env.DB.prepare("INSERT INTO cms_services (id, slug, name, summary, description_json, sort_order, status, published_at, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, 'draft', NULL, ?, ?)")
+        .bind(id, slug, title, summary, JSON.stringify(description), sortOrder, now, now);
+    }
+    const revision = recordCmsRevision(env, resourceName, id, "created", principal.user.id, row, now);
+    await env.DB.batch([statement, revision]);
+    return json({ data: row }, 201);
+  }
+
+  if (!resourceId) return json({ error: { code: "METHOD_NOT_ALLOWED", message: "Phương thức không được hỗ trợ." } }, 405);
+  const existing = await env.DB.prepare("SELECT " + config.select + " FROM " + config.table + " WHERE id = ? LIMIT 1").bind(resourceId).first();
+  if (!existing) return json({ error: { code: "NOT_FOUND", message: "Không tìm thấy nội dung." } }, 404);
+
+  if (!action && request.method === "GET") {
+    return json({ data: cmsSnapshot(config, existing) });
+  }
+
+  if (action === "publish" && request.method === "POST") {
+    if (existing.status === "archived") return json({ error: { code: "INVALID_STATE", message: "Không thể xuất bản nội dung đã lưu trữ." } }, 409);
+    const publishedAt = existing.published_at || now;
+    const snapshot = { ...cmsSnapshot(config, existing), status: "published", published_at: publishedAt, updated_at: now };
+    const update = env.DB.prepare("UPDATE " + config.table + " SET status = 'published', published_at = ?, updated_at = ? WHERE id = ?").bind(publishedAt, now, resourceId);
+    await env.DB.batch([update, recordCmsRevision(env, resourceName, resourceId, "published", principal.user.id, snapshot, now)]);
+    return json({ data: snapshot });
+  }
+
+  if (action === "archive" && request.method === "POST" || !action && request.method === "DELETE") {
+    const snapshot = { ...cmsSnapshot(config, existing), status: "archived", published_at: null, updated_at: now };
+    const update = env.DB.prepare("UPDATE " + config.table + " SET status = 'archived', published_at = NULL, updated_at = ? WHERE id = ?").bind(now, resourceId);
+    await env.DB.batch([update, recordCmsRevision(env, resourceName, resourceId, "archived", principal.user.id, snapshot, now)]);
+    return json({ data: snapshot });
+  }
+
+  if (!action && request.method === "PATCH") {
+    const body = await readJson(request);
+    if (!body || typeof body !== "object" || Array.isArray(body)) {
+      return json({ error: { code: "VALIDATION_ERROR", message: "Dữ liệu cập nhật không hợp lệ." } }, 400);
+    }
+    const old = cmsSnapshot(config, existing);
+    const slug = body.slug === undefined ? old.slug : clean(body.slug, 180);
+    const titleKey = resourceName === "services" ? "name" : "title";
+    const title = body[titleKey] === undefined ? old[titleKey] : clean(body[titleKey], 240);
+    const excerpt = body.excerpt === undefined ? (old.excerpt || "") : clean(body.excerpt, 500);
+    if (!validCmsSlug(slug) || title.length < 2) {
+      return json({ error: { code: "VALIDATION_ERROR", message: "Slug hoặc tiêu đề không hợp lệ." } }, 400);
+    }
+    const seo = body.seo === undefined ? (old.seo || {}) : cmsObject(body.seo, 10000);
+    if (seo === null) return json({ error: { code: "VALIDATION_ERROR", message: "Dữ liệu SEO không hợp lệ." } }, 400);
+    let snapshot, update;
+    if (resourceName === "pages") {
+      const content = body.content === undefined ? (old.content || {}) : cmsObject(body.content, 100000);
+      if (content === null) return json({ error: { code: "VALIDATION_ERROR", message: "Nội dung trang không hợp lệ." } }, 400);
+      snapshot = { ...old, slug, title, excerpt, content, seo, status: "draft", published_at: null, updated_at: now };
+      update = env.DB.prepare("UPDATE cms_pages SET slug = ?, title = ?, excerpt = ?, content_json = ?, seo_json = ?, status = 'draft', published_at = NULL, updated_at = ? WHERE id = ?")
+        .bind(slug, title, excerpt, JSON.stringify(content), JSON.stringify(seo), now, resourceId);
+    } else if (resourceName === "posts") {
+      const bodyContent = body.body === undefined ? (old.body || {}) : cmsObject(body.body, 150000);
+      const author = body.author_name === undefined ? (old.author_name || "") : clean(body.author_name, 120);
+      if (bodyContent === null) return json({ error: { code: "VALIDATION_ERROR", message: "Nội dung bài viết không hợp lệ." } }, 400);
+      snapshot = { ...old, slug, title, excerpt, body: bodyContent, seo, author_name: author, status: "draft", published_at: null, updated_at: now };
+      update = env.DB.prepare("UPDATE cms_posts SET slug = ?, title = ?, excerpt = ?, body_json = ?, seo_json = ?, author_name = ?, status = 'draft', published_at = NULL, updated_at = ? WHERE id = ?")
+        .bind(slug, title, excerpt, JSON.stringify(bodyContent), JSON.stringify(seo), author, now, resourceId);
+    } else {
+      const summary = body.summary === undefined ? (old.summary || "") : clean(body.summary, 500);
+      const description = body.description === undefined ? (old.description || {}) : cmsObject(body.description, 100000);
+      const sortOrder = body.sort_order === undefined ? (old.sort_order || 0) : (Number.isInteger(body.sort_order) ? Math.max(0, Math.min(100000, body.sort_order)) : -1);
+      if (description === null || sortOrder < 0) return json({ error: { code: "VALIDATION_ERROR", message: "Mô tả hoặc thứ tự dịch vụ không hợp lệ." } }, 400);
+      snapshot = { ...old, slug, name: title, summary, description, sort_order: sortOrder, status: "draft", published_at: null, updated_at: now };
+      update = env.DB.prepare("UPDATE cms_services SET slug = ?, name = ?, summary = ?, description_json = ?, sort_order = ?, status = 'draft', published_at = NULL, updated_at = ? WHERE id = ?")
+        .bind(slug, title, summary, JSON.stringify(description), sortOrder, now, resourceId);
+    }
+    await env.DB.batch([update, recordCmsRevision(env, resourceName, resourceId, "updated", principal.user.id, snapshot, now)]);
+    return json({ data: snapshot });
+  }
+
+  return json({ error: { code: "METHOD_NOT_ALLOWED", message: "Phương thức không được hỗ trợ." } }, 405);
+}
+
 async function publicContent(request, env, url) {
   if (!env.DB) return json({ error: { code: "SERVICE_UNAVAILABLE", message: "Nội dung hiện chưa khả dụng." } }, 503);
   const path = url.pathname;
@@ -167,7 +370,7 @@ async function publicContent(request, env, url) {
 export default { async fetch(request, env) {
   const url = new URL(request.url), cors = corsHeaders(request, env), origin = request.headers.get("Origin"), allowed = (env.ALLOWED_ORIGINS || "").split(",").map(v => v.trim()).filter(Boolean);
   if (request.method === "OPTIONS") return withSecurity(cors["access-control-allow-origin"] ? new Response(null, { status: 204, headers: cors }) : json({ error: "ORIGIN_NOT_ALLOWED" }, 403));
-  if (!["GET", "POST", "PATCH"].includes(request.method)) return withSecurity(json({ error: "METHOD_NOT_ALLOWED" }, 405, { allow: "GET, POST, PATCH, OPTIONS" }));
+  if (!["GET", "POST", "PATCH", "DELETE"].includes(request.method)) return withSecurity(json({ error: "METHOD_NOT_ALLOWED" }, 405, { allow: "GET, POST, PATCH, OPTIONS" }));
   if (origin && !allowed.includes(origin)) return withSecurity(json({ error: "ORIGIN_NOT_ALLOWED" }, 403));
   try { let response;
     if (url.pathname === "/_test/migrate" && request.method === "POST" && env.TEST_MODE === "true") {
@@ -181,6 +384,10 @@ export default { async fetch(request, env) {
       await env.DB.prepare("CREATE TABLE IF NOT EXISTS crm_quotes (id TEXT PRIMARY KEY, customer_id TEXT NOT NULL REFERENCES crm_customers(id) ON DELETE RESTRICT, quote_number TEXT NOT NULL UNIQUE, status TEXT NOT NULL DEFAULT 'draft', currency TEXT NOT NULL DEFAULT 'VND', subtotal_minor INTEGER NOT NULL DEFAULT 0, discount_minor INTEGER NOT NULL DEFAULT 0, total_minor INTEGER NOT NULL DEFAULT 0, valid_until TEXT, notes TEXT NOT NULL DEFAULT '', created_by TEXT NOT NULL, created_at TEXT NOT NULL, updated_at TEXT NOT NULL, accepted_by TEXT, accepted_at TEXT)").run();
       await env.DB.prepare("CREATE TABLE IF NOT EXISTS leads (id TEXT PRIMARY KEY, name TEXT NOT NULL, email TEXT NOT NULL, service TEXT NOT NULL, budget TEXT NOT NULL DEFAULT '', goals TEXT NOT NULL DEFAULT '', status TEXT NOT NULL DEFAULT 'new', consent_at TEXT, created_at TEXT NOT NULL, updated_at TEXT NOT NULL)").run();
       await env.DB.prepare("CREATE TABLE IF NOT EXISTS lead_events (id TEXT PRIMARY KEY, lead_id TEXT NOT NULL REFERENCES leads(id) ON DELETE CASCADE, event_type TEXT NOT NULL, details TEXT NOT NULL DEFAULT '', created_at TEXT NOT NULL)").run();
+      await env.DB.prepare("CREATE TABLE IF NOT EXISTS cms_pages (id TEXT PRIMARY KEY, slug TEXT NOT NULL UNIQUE, title TEXT NOT NULL, excerpt TEXT NOT NULL DEFAULT '', content_json TEXT NOT NULL DEFAULT '{}', seo_json TEXT NOT NULL DEFAULT '{}', status TEXT NOT NULL DEFAULT 'draft', published_at TEXT, created_at TEXT NOT NULL, updated_at TEXT NOT NULL)").run();
+      await env.DB.prepare("CREATE TABLE IF NOT EXISTS cms_posts (id TEXT PRIMARY KEY, slug TEXT NOT NULL UNIQUE, title TEXT NOT NULL, excerpt TEXT NOT NULL DEFAULT '', body_json TEXT NOT NULL DEFAULT '{}', seo_json TEXT NOT NULL DEFAULT '{}', author_name TEXT NOT NULL DEFAULT '', status TEXT NOT NULL DEFAULT 'draft', published_at TEXT, created_at TEXT NOT NULL, updated_at TEXT NOT NULL)").run();
+      await env.DB.prepare("CREATE TABLE IF NOT EXISTS cms_services (id TEXT PRIMARY KEY, slug TEXT NOT NULL UNIQUE, name TEXT NOT NULL, summary TEXT NOT NULL DEFAULT '', description_json TEXT NOT NULL DEFAULT '{}', sort_order INTEGER NOT NULL DEFAULT 0, status TEXT NOT NULL DEFAULT 'draft', published_at TEXT, created_at TEXT NOT NULL, updated_at TEXT NOT NULL)").run();
+      await env.DB.prepare("CREATE TABLE IF NOT EXISTS cms_revisions (id TEXT PRIMARY KEY, resource_type TEXT NOT NULL, resource_id TEXT NOT NULL, action TEXT NOT NULL, actor_id TEXT NOT NULL, snapshot_json TEXT NOT NULL, created_at TEXT NOT NULL)").run();
       response = new Response(null, { status: 204, headers: { "cache-control": "no-store" } });
     }
     else if (url.pathname === "/_test/seed-identity" && request.method === "POST" && env.TEST_MODE === "true") {
@@ -195,7 +402,7 @@ export default { async fetch(request, env) {
           { id: "test-customer-b", name: "Test Customer B", email: "b@example.test", userId: ids[1], quoteId: "test-quote-b", quoteNumber: "TEST-B" }
         ];
         for (const customer of customers) {
-          await env.DB.prepare("INSERT OR REPLACE INTO crm_customers (id, display_name, organization_name, contact_email, phone, status, notes, created_at, updated_at) VALUES (?, ?, '', ?, '', 'active', '', ?, ?)").bind(customer.id, customer.name, customer.email, now, now).run();
+          await env.DB.prepare("INSERT INTO crm_customers (id, display_name, organization_name, contact_email, phone, status, notes, created_at, updated_at) VALUES (?, ?, '', ?, '', 'active', '', ?, ?) ON CONFLICT(id) DO UPDATE SET display_name = excluded.display_name, contact_email = excluded.contact_email, status = 'active', updated_at = excluded.updated_at").bind(customer.id, customer.name, customer.email, now, now).run();
           await env.DB.prepare("INSERT OR REPLACE INTO crm_customer_members (customer_id, user_id, membership_role, created_at) VALUES (?, ?, 'owner', ?)").bind(customer.id, customer.userId, now).run();
           await env.DB.prepare("INSERT OR REPLACE INTO crm_quotes (id, customer_id, quote_number, status, currency, subtotal_minor, discount_minor, total_minor, created_by, created_at, updated_at) VALUES (?, ?, ?, 'sent', 'VND', 1000000, 0, 1000000, ?, ?, ?)").bind(customer.quoteId, customer.id, customer.quoteNumber, customer.userId, now, now).run();
         }
@@ -212,6 +419,7 @@ export default { async fetch(request, env) {
       response = await auth.handler(request);
     }
     else if (url.pathname === "/api/health" && request.method === "GET") response = json({ ok: true, service: "hoiquanweb-api", version: "phase-2" });
+    else if (url.pathname.startsWith("/api/v1/admin/pages") || url.pathname.startsWith("/api/v1/admin/posts") || url.pathname.startsWith("/api/v1/admin/services")) response = await adminContent(request, env, url);
     else if (url.pathname === "/api/v1/me" || url.pathname.startsWith("/api/v1/me/") || url.pathname === "/api/v1/admin/customers") response = await identityRoutes(request, env, url) || json({ error: { code: "NOT_FOUND", message: "Không tìm thấy tài nguyên." } }, 404);
     else if (url.pathname.startsWith("/api/v1/public/")) response = await publicContent(request, env, url) || json({ error: { code: "NOT_FOUND", message: "Không tìm thấy tài nguyên." } }, 404);
     else if (url.pathname === "/api/leads" && request.method === "POST") response = await createLead(request, env);

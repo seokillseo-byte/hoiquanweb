@@ -770,7 +770,7 @@ const CMS_RESOURCES = {
   },
   posts: {
     table: "cms_posts", kind: "post",
-    select: "id, slug, title, excerpt, body_json, seo_json, author_name, status, published_at, created_at, updated_at",
+    select: "id, slug, title, excerpt, body_json, seo_json, author_name, category, tags_json, status, published_at, created_at, updated_at",
     required: ["slug", "title"]
   },
   services: {
@@ -791,9 +791,15 @@ function validCmsSlug(value) {
   return /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(value) && value.length <= 180;
 }
 
+function cmsTags(value, fallback = []) {
+  if (value === undefined) return fallback;
+  if (!Array.isArray(value) || value.length > 20) return null;
+  return [...new Set(value.map(item => clean(item, 40).toLowerCase()).filter(Boolean))];
+}
+
 function cmsSnapshot(resource, row) {
   const snapshot = { ...row };
-  for (const key of ["content_json", "body_json", "seo_json", "description_json"]) {
+  for (const key of ["content_json", "body_json", "seo_json", "description_json", "tags_json"]) {
     if (Object.prototype.hasOwnProperty.call(snapshot, key)) {
       snapshot[key.replace(/_json$/, "")] = parseJsonField(snapshot[key]);
       delete snapshot[key];
@@ -879,9 +885,12 @@ async function adminContent(request, env, url) {
       const bodyContent = cmsObject(body.body, 150000);
       if (bodyContent === null) return json({ error: { code: "VALIDATION_ERROR", message: "Nội dung bài viết không hợp lệ hoặc quá lớn." } }, 400);
       const author = clean(body.author_name || principal.user.name || "", 120);
-      row = { id, slug, title, excerpt, body: bodyContent, seo, author_name: author, status: "draft", published_at: null, created_at: now, updated_at: now };
-      statement = env.DB.prepare("INSERT INTO cms_posts (id, slug, title, excerpt, body_json, seo_json, author_name, status, published_at, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, 'draft', NULL, ?, ?)")
-        .bind(id, slug, title, excerpt, JSON.stringify(bodyContent), JSON.stringify(seo), author, now, now);
+      const category = clean(body.category || "", 80);
+      const tags = cmsTags(body.tags, []);
+      if (tags === null) return json({ error: { code: "VALIDATION_ERROR", message: "Tags phải là danh sách tối đa 20 nhãn." } }, 400);
+      row = { id, slug, title, excerpt, body: bodyContent, seo, author_name: author, category, tags, status: "draft", published_at: null, created_at: now, updated_at: now };
+      statement = env.DB.prepare("INSERT INTO cms_posts (id, slug, title, excerpt, body_json, seo_json, author_name, category, tags_json, status, published_at, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'draft', NULL, ?, ?)")
+        .bind(id, slug, title, excerpt, JSON.stringify(bodyContent), JSON.stringify(seo), author, category, JSON.stringify(tags), now, now);
     } else {
       const summary = clean(body.summary, 500);
       const description = cmsObject(body.description, 100000);
@@ -936,10 +945,12 @@ async function adminContent(request, env, url) {
     } else if (resourceName === "posts") {
       const bodyContent = cmsObject(previous.body || {}, 150000);
       const author = clean(previous.author_name || "", 120);
-      if (bodyContent === null) return json({ error: { code: "INVALID_REVISION", message: "Nội dung bài viết trong phiên bản không hợp lệ." } }, 409);
-      snapshot = { ...previous, id: resourceId, slug, title, excerpt, body: bodyContent, seo, author_name: author, status: "draft", published_at: null, updated_at: now };
-      update = env.DB.prepare("UPDATE cms_posts SET slug = ?, title = ?, excerpt = ?, body_json = ?, seo_json = ?, author_name = ?, status = 'draft', published_at = NULL, updated_at = ? WHERE id = ?")
-        .bind(slug, title, excerpt, JSON.stringify(bodyContent), JSON.stringify(seo), author, now, resourceId);
+      const category = clean(previous.category || "", 80);
+      const tags = cmsTags(previous.tags || [], []);
+      if (bodyContent === null || tags === null) return json({ error: { code: "INVALID_REVISION", message: "Nội dung hoặc taxonomy bài viết trong phiên bản không hợp lệ." } }, 409);
+      snapshot = { ...previous, id: resourceId, slug, title, excerpt, body: bodyContent, seo, author_name: author, category, tags, status: "draft", published_at: null, updated_at: now };
+      update = env.DB.prepare("UPDATE cms_posts SET slug = ?, title = ?, excerpt = ?, body_json = ?, seo_json = ?, author_name = ?, category = ?, tags_json = ?, status = 'draft', published_at = NULL, updated_at = ? WHERE id = ?")
+        .bind(slug, title, excerpt, JSON.stringify(bodyContent), JSON.stringify(seo), author, category, JSON.stringify(tags), now, resourceId);
     } else {
       const summary = clean(previous.summary || "", 500);
       const description = cmsObject(previous.description || {}, 100000);
@@ -998,10 +1009,12 @@ async function adminContent(request, env, url) {
     } else if (resourceName === "posts") {
       const bodyContent = body.body === undefined ? (old.body || {}) : cmsObject(body.body, 150000);
       const author = body.author_name === undefined ? (old.author_name || "") : clean(body.author_name, 120);
-      if (bodyContent === null) return json({ error: { code: "VALIDATION_ERROR", message: "Nội dung bài viết không hợp lệ." } }, 400);
-      snapshot = { ...old, slug, title, excerpt, body: bodyContent, seo, author_name: author, status: "draft", published_at: null, updated_at: now };
-      update = env.DB.prepare("UPDATE cms_posts SET slug = ?, title = ?, excerpt = ?, body_json = ?, seo_json = ?, author_name = ?, status = 'draft', published_at = NULL, updated_at = ? WHERE id = ?")
-        .bind(slug, title, excerpt, JSON.stringify(bodyContent), JSON.stringify(seo), author, now, resourceId);
+      const category = body.category === undefined ? (old.category || "") : clean(body.category, 80);
+      const tags = cmsTags(body.tags, old.tags || []);
+      if (bodyContent === null || tags === null) return json({ error: { code: "VALIDATION_ERROR", message: "Nội dung hoặc tags bài viết không hợp lệ." } }, 400);
+      snapshot = { ...old, slug, title, excerpt, body: bodyContent, seo, author_name: author, category, tags, status: "draft", published_at: null, updated_at: now };
+      update = env.DB.prepare("UPDATE cms_posts SET slug = ?, title = ?, excerpt = ?, body_json = ?, seo_json = ?, author_name = ?, category = ?, tags_json = ?, status = 'draft', published_at = NULL, updated_at = ? WHERE id = ?")
+        .bind(slug, title, excerpt, JSON.stringify(bodyContent), JSON.stringify(seo), author, category, JSON.stringify(tags), now, resourceId);
     } else {
       const summary = body.summary === undefined ? (old.summary || "") : clean(body.summary, 500);
       const description = body.description === undefined ? (old.description || {}) : cmsObject(body.description, 100000);
@@ -1174,16 +1187,27 @@ async function publicContent(request, env, url) {
     if (!row) return json({ error: { code: "NOT_FOUND", message: "Không tìm thấy trang." } }, 404);
     return json({ data: contentRecord(row, "page") });
   }
+  if (path === "/api/v1/public/post-categories" && request.method === "GET") {
+    const result = await env.DB.prepare("SELECT category, COUNT(*) AS post_count FROM cms_posts WHERE status = 'published' AND published_at IS NOT NULL AND category <> '' GROUP BY category ORDER BY category COLLATE NOCASE ASC LIMIT 100").all();
+    return json({ data: result.results || [] });
+  }
   if (path === "/api/v1/public/posts" && request.method === "GET") {
     const limit = Math.max(1, Math.min(50, Number.parseInt(url.searchParams.get("limit") || "20", 10) || 20));
     const offset = Math.max(0, Math.min(10000, Number.parseInt(url.searchParams.get("offset") || "0", 10) || 0));
-    const result = await env.DB.prepare("SELECT slug, title, excerpt, author_name, published_at, seo_json FROM cms_posts WHERE status = 'published' AND published_at IS NOT NULL ORDER BY published_at DESC, slug ASC LIMIT ? OFFSET ?").bind(limit, offset).all();
-    return json({ data: (result.results || []).map(row => contentRecord(row, "post")), meta: { limit, offset } });
+    const category = clean(url.searchParams.get("category"), 80);
+    const tag = clean(url.searchParams.get("tag"), 40).toLowerCase();
+    const query = clean(url.searchParams.get("q"), 100);
+    const where = ["status = 'published'", "published_at IS NOT NULL"], values = [];
+    if (category) { where.push("category = ?"); values.push(category); }
+    if (tag) { where.push("EXISTS (SELECT 1 FROM json_each(cms_posts.tags_json) WHERE value = ?)"); values.push(tag); }
+    if (query) { where.push("(title LIKE ? OR excerpt LIKE ?)"); values.push("%" + query + "%", "%" + query + "%"); }
+    const result = await env.DB.prepare("SELECT slug, title, excerpt, author_name, category, tags_json, published_at, seo_json FROM cms_posts WHERE " + where.join(" AND ") + " ORDER BY published_at DESC, slug ASC LIMIT ? OFFSET ?").bind(...values, limit, offset).all();
+    return json({ data: (result.results || []).map(row => contentRecord(row, "post")), meta: { limit, offset, category: category || null, tag: tag || null, query: query || null } });
   }
   if (path.startsWith("/api/v1/public/posts/") && request.method === "GET") {
     const slug = decodeSlug(path, "/api/v1/public/posts/");
     if (!slug) return json({ error: { code: "NOT_FOUND", message: "Không tìm thấy bài viết." } }, 404);
-    const row = await env.DB.prepare("SELECT slug, title, excerpt, body_json, seo_json, author_name, published_at FROM cms_posts WHERE slug = ? AND status = 'published' AND published_at IS NOT NULL LIMIT 1").bind(slug).first();
+    const row = await env.DB.prepare("SELECT slug, title, excerpt, body_json, seo_json, author_name, category, tags_json, published_at FROM cms_posts WHERE slug = ? AND status = 'published' AND published_at IS NOT NULL LIMIT 1").bind(slug).first();
     if (!row) return json({ error: { code: "NOT_FOUND", message: "Không tìm thấy bài viết." } }, 404);
     return json({ data: contentRecord(row, "post") });
   }
@@ -1238,7 +1262,8 @@ export default { async fetch(request, env) {
       await env.DB.prepare("CREATE TABLE IF NOT EXISTS leads (id TEXT PRIMARY KEY, name TEXT NOT NULL, email TEXT NOT NULL, service TEXT NOT NULL, budget TEXT NOT NULL DEFAULT '', goals TEXT NOT NULL DEFAULT '', status TEXT NOT NULL DEFAULT 'new', assigned_to TEXT, consent_at TEXT, created_at TEXT NOT NULL, updated_at TEXT NOT NULL)").run();
       await env.DB.prepare("CREATE TABLE IF NOT EXISTS lead_events (id TEXT PRIMARY KEY, lead_id TEXT NOT NULL REFERENCES leads(id) ON DELETE CASCADE, event_type TEXT NOT NULL, details TEXT NOT NULL DEFAULT '', created_at TEXT NOT NULL)").run();
       await env.DB.prepare("CREATE TABLE IF NOT EXISTS cms_pages (id TEXT PRIMARY KEY, slug TEXT NOT NULL UNIQUE, title TEXT NOT NULL, excerpt TEXT NOT NULL DEFAULT '', content_json TEXT NOT NULL DEFAULT '{}', seo_json TEXT NOT NULL DEFAULT '{}', status TEXT NOT NULL DEFAULT 'draft', published_at TEXT, created_at TEXT NOT NULL, updated_at TEXT NOT NULL)").run();
-      await env.DB.prepare("CREATE TABLE IF NOT EXISTS cms_posts (id TEXT PRIMARY KEY, slug TEXT NOT NULL UNIQUE, title TEXT NOT NULL, excerpt TEXT NOT NULL DEFAULT '', body_json TEXT NOT NULL DEFAULT '{}', seo_json TEXT NOT NULL DEFAULT '{}', author_name TEXT NOT NULL DEFAULT '', status TEXT NOT NULL DEFAULT 'draft', published_at TEXT, created_at TEXT NOT NULL, updated_at TEXT NOT NULL)").run();
+      await env.DB.prepare("CREATE TABLE IF NOT EXISTS cms_posts (id TEXT PRIMARY KEY, slug TEXT NOT NULL UNIQUE, title TEXT NOT NULL, excerpt TEXT NOT NULL DEFAULT '', body_json TEXT NOT NULL DEFAULT '{}', seo_json TEXT NOT NULL DEFAULT '{}', author_name TEXT NOT NULL DEFAULT '', category TEXT NOT NULL DEFAULT '', tags_json TEXT NOT NULL DEFAULT '[]', status TEXT NOT NULL DEFAULT 'draft', published_at TEXT, created_at TEXT NOT NULL, updated_at TEXT NOT NULL)").run();
+      await env.DB.prepare("CREATE INDEX IF NOT EXISTS idx_cms_posts_category_public ON cms_posts(status, category, published_at DESC, slug)").run();
       await env.DB.prepare("CREATE TABLE IF NOT EXISTS cms_services (id TEXT PRIMARY KEY, slug TEXT NOT NULL UNIQUE, name TEXT NOT NULL, summary TEXT NOT NULL DEFAULT '', description_json TEXT NOT NULL DEFAULT '{}', sort_order INTEGER NOT NULL DEFAULT 0, status TEXT NOT NULL DEFAULT 'draft', published_at TEXT, created_at TEXT NOT NULL, updated_at TEXT NOT NULL)").run();
       await env.DB.prepare("CREATE TABLE IF NOT EXISTS cms_templates (id TEXT PRIMARY KEY, slug TEXT NOT NULL UNIQUE, name TEXT NOT NULL, template_type TEXT NOT NULL, summary TEXT NOT NULL DEFAULT '', thumbnail_key TEXT, preview_url TEXT, price_minor INTEGER NOT NULL DEFAULT 0, currency TEXT NOT NULL DEFAULT 'VND', license_key TEXT NOT NULL DEFAULT 'review_required', compatibility_json TEXT NOT NULL DEFAULT '{}', status TEXT NOT NULL DEFAULT 'draft', published_at TEXT, created_at TEXT NOT NULL, updated_at TEXT NOT NULL, category TEXT NOT NULL DEFAULT '', tags_json TEXT NOT NULL DEFAULT '[]', version TEXT NOT NULL DEFAULT '1.0.0', description TEXT NOT NULL DEFAULT '', thumbnail_url TEXT, license_verified INTEGER NOT NULL DEFAULT 0, preview_verified INTEGER NOT NULL DEFAULT 0)").run();
       await env.DB.prepare("CREATE TABLE IF NOT EXISTS cms_template_revisions (id TEXT PRIMARY KEY, template_id TEXT NOT NULL REFERENCES cms_templates(id) ON DELETE CASCADE, action TEXT NOT NULL, actor_id TEXT NOT NULL, snapshot_json TEXT NOT NULL, created_at TEXT NOT NULL)").run();

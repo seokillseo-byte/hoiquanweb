@@ -305,6 +305,42 @@ test("customer portal isolates customers and quotes; admin access requires a ser
   assert.equal(adminAccess.status, 200, await adminAccess.clone().text());
   assert.deepEqual(new Set((await adminAccess.json()).data.map(item => item.id)), new Set(["test-customer-a", "test-customer-b"]));
 
+  const anonymousCustomers = await server.fetch(origin + "/api/v1/admin/customers", { headers: { origin } });
+  assert.equal(anonymousCustomers.status, 401, "customer management must require authentication");
+  const ordinaryCustomerCreate = await server.fetch(origin + "/api/v1/admin/customers", {
+    method: "POST",
+    headers: { origin, cookie: ordinaryUser.cookie, "content-type": "application/json" },
+    body: JSON.stringify({ display_name: "Forbidden Customer", contact_email: "forbidden@example.test" })
+  });
+  assert.equal(ordinaryCustomerCreate.status, 403, "ordinary users must not create CRM customers");
+  const createCustomer = await server.fetch(origin + "/api/v1/admin/customers", {
+    method: "POST",
+    headers: { origin, cookie: admin.cookie, "content-type": "application/json" },
+    body: JSON.stringify({ display_name: "Activity Test Customer", organization_name: "HQ Test", contact_email: "activity@example.test", phone: "+84 900 000 000", notes: "Internal only" })
+  });
+  assert.equal(createCustomer.status, 201, await createCustomer.clone().text());
+  const activityCustomer = (await createCustomer.json()).data;
+  const forbiddenActivities = await getFor("/api/v1/admin/customers/" + activityCustomer.id + "/activities", ordinaryUser.cookie);
+  assert.equal(forbiddenActivities.status, 403, "ordinary users must not read CRM activity history");
+  const createActivity = await server.fetch(origin + "/api/v1/admin/customers/" + activityCustomer.id + "/activities", {
+    method: "POST",
+    headers: { origin, cookie: admin.cookie, "content-type": "application/json" },
+    body: JSON.stringify({ activity_type: "call", subject: "Discovery call", body: "Discussed website requirements." })
+  });
+  assert.equal(createActivity.status, 201, await createActivity.clone().text());
+  const activity = (await createActivity.json()).data;
+  assert.equal(activity.customer_id, activityCustomer.id);
+  assert.equal(activity.actor_id, admin.id);
+  const activityList = await getFor("/api/v1/admin/customers/" + activityCustomer.id + "/activities?limit=20", admin.cookie);
+  assert.equal(activityList.status, 200, await activityList.clone().text());
+  assert.equal((await activityList.json()).data[0].id, activity.id);
+  const invalidActivity = await server.fetch(origin + "/api/v1/admin/customers/" + activityCustomer.id + "/activities", {
+    method: "POST",
+    headers: { origin, cookie: admin.cookie, "content-type": "application/json" },
+    body: JSON.stringify({ activity_type: "unknown", subject: "" })
+  });
+  assert.equal(invalidActivity.status, 400, "invalid activity type and empty subject must be rejected");
+
   const forbiddenCustomerCreate = await server.fetch(origin + "/api/v1/admin/customers", {
     method: "POST",
     headers: { origin, cookie: ordinaryUser.cookie, "content-type": "application/json" },

@@ -91,6 +91,44 @@ function hasAnyRole(principal, allowed) {
   return principal.roles.some(role => allowed.includes(role));
 }
 async function identityRoutes(request, env, url) {
+  const leadConversionMatch = url.pathname.match(/^\\/api\\/v1\\/admin\\/leads\\/([^/]+)\\/convert$/);
+  if (leadConversionMatch && request.method === "POST") {
+    const principal = await authenticatedPrincipal(request, env);
+    if (principal.error) return principal.error;
+    if (!hasAnyRole(principal, ["admin", "staff"])) {
+      return json({ error: { code: "FORBIDDEN", message: "Bạn không có quyền chuyển đổi lead." } }, 403);
+    }
+    let leadId;
+    try { leadId = decodeURIComponent(leadConversionMatch[1]); }
+    catch { return json({ error: { code: "NOT_FOUND", message: "Không tìm thấy lead." } }, 404); }
+    if (!leadId || leadId.length > 80 || leadId.includes("/")) return json({ error: { code: "NOT_FOUND", message: "Không tìm thấy lead." } }, 404);
+    const lead = await env.DB.prepare("SELECT id, name, email, service, budget, goals, status FROM leads WHERE id = ? LIMIT 1").bind(leadId).first();
+    if (!lead) return json({ error: { code: "NOT_FOUND", message: "Không tìm thấy lead." } }, 404);
+    const existing = await env.DB.prepare("SELECT id FROM crm_customers WHERE lead_id = ? LIMIT 1").bind(leadId).first();
+    if (existing) return json({ data: { customer_id: existing.id, lead_id: leadId, already_converted: true } });
+    if (!validEmail(lead.email)) return json({ error: { code: "LEAD_EMAIL_INVALID", message: "Email của lead không hợp lệ; cần cập nhật lead trước khi chuyển đổi." } }, 409);
+    const now = new Date().toISOString(), customerId = crypto.randomUUID(), activityId = crypto.randomUUID();
+    const activityBody = ["Dịch vụ quan tâm: " + lead.service, "Ngân sách: " + (lead.budget || "Chưa xác định"), "Mục tiêu: " + (lead.goals || "Chưa cung cấp")].join("\\n");
+    const statements = [
+      env.DB.prepare("INSERT INTO crm_customers (id, lead_id, display_name, organization_name, contact_email, phone, status, notes, created_at, updated_at) VALUES (?, ?, ?, '', ?, '', 'active', '', ?, ?)").bind(customerId, leadId, lead.name, lead.email, now, now),
+      env.DB.prepare("INSERT INTO crm_activities (id, customer_id, lead_id, activity_type, subject, body, actor_id, occurred_at, created_at) VALUES (?, ?, ?, 'system', 'Lead được chuyển thành khách hàng', ?, ?, ?, ?)").bind(activityId, customerId, leadId, activityBody, principal.user.id, now, now),
+      env.DB.prepare("INSERT INTO crm_audit_events (id, actor_id, action, resource_type, resource_id, metadata_json, created_at) VALUES (?, ?, 'customer.created_from_lead', 'customer', ?, ?, ?)").bind(crypto.randomUUID(), principal.user.id, customerId, JSON.stringify({ lead_id: leadId }), now),
+      env.DB.prepare("INSERT INTO crm_audit_events (id, actor_id, action, resource_type, resource_id, metadata_json, created_at) VALUES (?, ?, 'lead.converted', 'lead', ?, ?, ?)").bind(crypto.randomUUID(), principal.user.id, leadId, JSON.stringify({ customer_id: customerId }), now)
+    ];
+    try {
+      const results = await env.DB.batch(statements);
+      if (!results?.[0]?.meta?.changes) {
+        const raced = await env.DB.prepare("SELECT id FROM crm_customers WHERE lead_id = ? LIMIT 1").bind(leadId).first();
+        if (raced) return json({ data: { customer_id: raced.id, lead_id: leadId, already_converted: true } });
+        return json({ error: { code: "CONVERSION_CONFLICT", message: "Lead đã thay đổi. Vui lòng tải lại." } }, 409);
+      }
+    } catch (error) {
+      const raced = await env.DB.prepare("SELECT id FROM crm_customers WHERE lead_id = ? LIMIT 1").bind(leadId).first();
+      if (raced) return json({ data: { customer_id: raced.id, lead_id: leadId, already_converted: true } });
+      throw error;
+    }
+    return json({ data: { customer_id: customerId, lead_id: leadId, already_converted: false } }, 201);
+  }
   if (url.pathname === "/api/v1/me" && request.method === "GET") {
     const principal = await authenticatedPrincipal(request, env);
     if (principal.error) return principal.error;
@@ -676,7 +714,8 @@ export default { async fetch(request, env) {
       await migrateAuthDatabase(auth);
       // Wrangler's test harness does not automatically apply application D1
       // migrations. Build the minimal CRM fixture schema only in TEST_MODE.
-      await env.DB.prepare("CREATE TABLE IF NOT EXISTS crm_customers (id TEXT PRIMARY KEY, display_name TEXT NOT NULL, organization_name TEXT NOT NULL DEFAULT '', contact_email TEXT NOT NULL, phone TEXT NOT NULL DEFAULT '', status TEXT NOT NULL DEFAULT 'active', notes TEXT NOT NULL DEFAULT '', created_at TEXT NOT NULL, updated_at TEXT NOT NULL)").run();
+      await env.DB.prepare("CREATE TABLE IF NOT EXISTS crm_customers (id TEXT PRIMARY KEY, lead_id TEXT, display_name TEXT NOT NULL, organization_name TEXT NOT NULL DEFAULT '', contact_email TEXT NOT NULL, phone TEXT NOT NULL DEFAULT '', status TEXT NOT NULL DEFAULT 'active', notes TEXT NOT NULL DEFAULT '', created_at TEXT NOT NULL, updated_at TEXT NOT NULL)").run();
+      await env.DB.prepare("CREATE UNIQUE INDEX IF NOT EXISTS idx_test_crm_customers_lead_unique ON crm_customers(lead_id) WHERE lead_id IS NOT NULL").run();
       await env.DB.prepare("CREATE TABLE IF NOT EXISTS app_user_roles (user_id TEXT NOT NULL, role TEXT NOT NULL CHECK(role IN ('admin','staff','customer')), assigned_by TEXT NOT NULL, assigned_at TEXT NOT NULL, PRIMARY KEY(user_id, role))").run();
       await env.DB.prepare("CREATE TABLE IF NOT EXISTS crm_customer_members (customer_id TEXT NOT NULL REFERENCES crm_customers(id) ON DELETE CASCADE, user_id TEXT NOT NULL, membership_role TEXT NOT NULL DEFAULT 'owner' CHECK(membership_role IN ('owner','member','billing')), created_at TEXT NOT NULL, PRIMARY KEY(customer_id, user_id))").run();
       await env.DB.prepare("CREATE TABLE IF NOT EXISTS crm_activities (id TEXT PRIMARY KEY, customer_id TEXT NOT NULL REFERENCES crm_customers(id) ON DELETE CASCADE, lead_id TEXT REFERENCES leads(id) ON DELETE SET NULL, activity_type TEXT NOT NULL, subject TEXT NOT NULL, body TEXT NOT NULL DEFAULT '', actor_id TEXT NOT NULL, occurred_at TEXT NOT NULL, created_at TEXT NOT NULL)").run();
@@ -698,6 +737,16 @@ export default { async fetch(request, env) {
     else if (url.pathname === "/_test/quote-audit-count" && request.method === "GET" && env.TEST_MODE === "true") {
       const result = await env.DB.prepare("SELECT action, COUNT(*) AS count FROM crm_audit_events WHERE resource_type = 'quote' GROUP BY action").all();
       response = json({ data: result.results || [] });
+    }
+    else if (url.pathname === "/_test/seed-lead" && request.method === "POST" && env.TEST_MODE === "true") {
+      const body = await readJson(request), id = clean(body?.id, 80) || crypto.randomUUID();
+      const name = clean(body?.name, 120), email = clean(body?.email, 254).toLowerCase(), service = clean(body?.service, 100);
+      if (name.length < 2 || !validEmail(email) || !SERVICES.has(service)) response = json({ error: "INVALID_TEST_LEAD" }, 400);
+      else {
+        const now = new Date().toISOString();
+        await env.DB.prepare("INSERT INTO leads (id, name, email, service, budget, goals, status, consent_at, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, 'qualified', ?, ?, ?)").bind(id, name, email, service, clean(body?.budget, 100), clean(body?.goals, 3000), now, now, now).run();
+        response = json({ id }, 201);
+      }
     }
     else if (url.pathname === "/_test/customer-audit-count" && request.method === "GET" && env.TEST_MODE === "true") {
       const result = await env.DB.prepare("SELECT action, COUNT(*) AS count FROM crm_audit_events WHERE resource_type = 'customer' GROUP BY action").all();

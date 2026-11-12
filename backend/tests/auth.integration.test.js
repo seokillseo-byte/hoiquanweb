@@ -923,6 +923,104 @@ test("template catalog requires admin/staff access and verified previews/license
 });
 
 
+test("private project files enforce customer membership and staff-only internal visibility", async () => {
+  const userA = await createSignedInUser("Private File Customer A");
+  const userB = await createSignedInUser("Private File Customer B");
+  const admin = await createSignedInUser("Private File Admin");
+  const ordinary = await createSignedInUser("Private File Ordinary");
+  const seed = await authRequest("/_test/seed-identity", { userA: userA.id, userB: userB.id, adminUser: admin.id });
+  assert.equal(seed.status, 200, await seed.clone().text());
+
+  const projectResponse = await server.fetch(origin + "/api/v1/admin/projects", {
+    method: "POST",
+    headers: { origin, cookie: admin.cookie, "content-type": "application/json" },
+    body: JSON.stringify({ customer_id: "test-customer-a", name: "Private file access test", description: "Project files" })
+  });
+  assert.equal(projectResponse.status, 201, await projectResponse.clone().text());
+  const project = (await projectResponse.json()).data;
+
+  const makeMultipart = (fileBytes, mime, filename, boundary, visibility) => {
+    const encoder = new TextEncoder();
+    const head = encoder.encode("--" + boundary + "\r\nContent-Disposition: form-data; name=\"file\"; filename=\"" + filename + "\"\r\nContent-Type: " + mime + "\r\n\r\n");
+    const middle = visibility ? encoder.encode("\r\n--" + boundary + "\r\nContent-Disposition: form-data; name=\"visibility\"\r\n\r\n" + visibility) : new Uint8Array();
+    const tail = encoder.encode("\r\n--" + boundary + "--\r\n");
+    const body = new Uint8Array(head.length + fileBytes.length + middle.length + tail.length);
+    body.set(head, 0); body.set(fileBytes, head.length); body.set(middle, head.length + fileBytes.length); body.set(tail, head.length + fileBytes.length + middle.length);
+    return body;
+  };
+
+  const pdfBytes = new TextEncoder().encode("%PDF-1.4\n%HQ test document\n");
+  const customerBoundary = "----hq-customer-file-" + crypto.randomUUID();
+  const upload = await server.fetch(origin + "/api/v1/me/projects/" + project.id + "/files", {
+    method: "POST",
+    headers: { origin, cookie: userA.cookie, "content-type": "multipart/form-data; boundary=" + customerBoundary },
+    body: makeMultipart(pdfBytes, "application/pdf", "brief.pdf", customerBoundary)
+  });
+  assert.equal(upload.status, 201, await upload.clone().text());
+  const customerFile = (await upload.json()).data;
+  assert.equal(customerFile.visibility, "customer");
+  assert.equal(customerFile.filename, "brief.pdf");
+  assert.equal(customerFile.sha256.length, 64);
+  assert.equal(Object.hasOwn(customerFile, "object_key"), false, "storage keys must never leave the API");
+
+  const customerList = await server.fetch(origin + "/api/v1/me/projects/" + project.id + "/files", { headers: { origin, cookie: userA.cookie } });
+  assert.equal(customerList.status, 200, await customerList.clone().text());
+  assert.deepEqual((await customerList.json()).data.map(item => item.id), [customerFile.id]);
+
+  const download = await server.fetch(origin + "/api/v1/me/projects/" + project.id + "/files/" + customerFile.id, { headers: { origin, cookie: userA.cookie } });
+  assert.equal(download.status, 200, await download.clone().text());
+  assert.equal(download.headers.get("content-disposition"), 'attachment; filename="brief.pdf"');
+  assert.equal(download.headers.get("cache-control"), "private, no-store");
+  assert.equal(download.headers.get("x-content-type-options"), "nosniff");
+  assert.deepEqual(new Uint8Array(await download.arrayBuffer()), pdfBytes);
+
+  const otherCustomerList = await server.fetch(origin + "/api/v1/me/projects/" + project.id + "/files", { headers: { origin, cookie: userB.cookie } });
+  assert.equal(otherCustomerList.status, 404, "a different customer must not discover project files");
+  const otherCustomerDownload = await server.fetch(origin + "/api/v1/me/projects/" + project.id + "/files/" + customerFile.id, { headers: { origin, cookie: userB.cookie } });
+  assert.equal(otherCustomerDownload.status, 404, "a different customer must not download a project file");
+  const ordinaryDownload = await server.fetch(origin + "/api/v1/me/projects/" + project.id + "/files/" + customerFile.id, { headers: { origin, cookie: ordinary.cookie } });
+  assert.equal(ordinaryDownload.status, 404, "an authenticated non-member must not download project files");
+
+  const internalBoundary = "----hq-internal-file-" + crypto.randomUUID();
+  const internalBytes = new TextEncoder().encode("internal-only");
+  const internalUpload = await server.fetch(origin + "/api/v1/admin/projects/" + project.id + "/files?visibility=internal", {
+    method: "POST",
+    headers: { origin, cookie: admin.cookie, "content-type": "multipart/form-data; boundary=" + internalBoundary },
+    body: makeMultipart(internalBytes, "text/plain", "internal.txt", internalBoundary)
+  });
+  assert.equal(internalUpload.status, 201, await internalUpload.clone().text());
+  const internalFile = (await internalUpload.json()).data;
+  assert.equal(internalFile.visibility, "internal");
+
+  const adminList = await server.fetch(origin + "/api/v1/admin/projects/" + project.id + "/files", { headers: { origin, cookie: admin.cookie } });
+  assert.equal(adminList.status, 200, await adminList.clone().text());
+  assert.equal((await adminList.json()).data.length, 2);
+
+  const customerListAfterInternal = await server.fetch(origin + "/api/v1/me/projects/" + project.id + "/files", { headers: { origin, cookie: userA.cookie } });
+  assert.equal((await customerListAfterInternal.json()).data.length, 1, "internal files must not appear in customer listings");
+  const internalCustomerDownload = await server.fetch(origin + "/api/v1/me/projects/" + project.id + "/files/" + internalFile.id, { headers: { origin, cookie: userA.cookie } });
+  assert.equal(internalCustomerDownload.status, 404, "internal files must not be downloadable by customers");
+
+  const ordinaryAdminList = await server.fetch(origin + "/api/v1/admin/projects/" + project.id + "/files", { headers: { origin, cookie: ordinary.cookie } });
+  assert.equal(ordinaryAdminList.status, 403, "ordinary users cannot access staff project files");
+
+  const invalidBoundary = "----hq-invalid-file-" + crypto.randomUUID();
+  const invalidUpload = await server.fetch(origin + "/api/v1/me/projects/" + project.id + "/files", {
+    method: "POST",
+    headers: { origin, cookie: userA.cookie, "content-type": "multipart/form-data; boundary=" + invalidBoundary },
+    body: makeMultipart(new TextEncoder().encode("not a PDF"), "application/pdf", "fake.pdf", invalidBoundary)
+  });
+  assert.equal(invalidUpload.status, 400, "declared MIME must match the actual file signature");
+
+  const unsupportedBoundary = "----hq-unsupported-file-" + crypto.randomUUID();
+  const unsupportedUpload = await server.fetch(origin + "/api/v1/me/projects/" + project.id + "/files", {
+    method: "POST",
+    headers: { origin, cookie: userA.cookie, "content-type": "multipart/form-data; boundary=" + unsupportedBoundary },
+    body: makeMultipart(new Uint8Array([0,1,2,3]), "application/x-msdownload", "payload.exe", unsupportedBoundary)
+  });
+  assert.equal(unsupportedUpload.status, 415, "executable uploads must be rejected");
+});
+
 test("customer portal scopes orders, projects, milestones, comments and support tickets by membership", async () => {
   const userA = await createSignedInUser("Project Customer A");
   const userB = await createSignedInUser("Project Customer B");

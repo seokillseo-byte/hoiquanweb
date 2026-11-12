@@ -174,6 +174,7 @@ The static `portal.html` customer workspace is marked `noindex,nofollow`; it inc
 | Method | Endpoint | Purpose | Access |
 |---|---|---|---|
 | GET/POST | `/api/v1/admin/customers/:id/members` | List linked identities; link a registered account by email with owner/member/billing role | Admin or staff |
+| DELETE | `/api/v1/admin/customers/:id/members/:userId` | Revoke one customer membership; the last owner cannot be removed | Admin or staff |
 
 The endpoint resolves an existing Better Auth user by normalized email and upserts the membership. It never creates an identity or grants membership during public sign-up. Unknown emails return 404; invalid membership roles return 400. The operation is recorded in the CRM audit log. Customer portal access continues to depend on membership, not on the supplied customer ID.
 
@@ -191,3 +192,6 @@ Project files are stored in the private R2 bucket under server-generated `projec
 ### In-app notifications
 
 Notifications are created for customer-visible project status/milestone changes and staff ticket replies, and for staff/admin when customers create tickets or post project/ticket messages. Payloads contain generic summaries and resource identifiers only; private comment/message bodies and other customer details are not copied into notifications. Every inbox query and read mutation is scoped by the authenticated `user_id`; cross-user read attempts return 404. This implementation is in-app only; Resend email delivery remains separately configurable and is not implied by an in-app notification.
+
+
+Membership revocation is audited as customer.member.unlinked. Project, milestone and ticket updates record safe before/after values for status, priority, title and dates; free-text descriptions and message bodies are not copied into audit metadata.

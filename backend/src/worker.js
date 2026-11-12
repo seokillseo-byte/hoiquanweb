@@ -166,7 +166,7 @@ async function identityRoutes(request, env, url) {
     ).bind(quoteId).all();
     return json({ data: { ...current, items: items.results || [] } });
   }
-  const adminQuotePath = url.pathname.match(/^\\/api\\/v1\\/admin\\/quotes(?:\\/([^/]+)(?:\\/([^/]+))?)?$/);
+  const adminQuotePath = url.pathname.match(/^\/api\/v1\/admin\/quotes(?:\/([^/]+)(?:\/([^/]+))?)?$/);
   if (adminQuotePath) {
     const principal = await authenticatedPrincipal(request, env);
     if (principal.error) return principal.error;
@@ -227,8 +227,11 @@ async function identityRoutes(request, env, url) {
       }
       if (discount > subtotal) return json({ error: { code: "VALIDATION_ERROR", message: "Giảm giá không được lớn hơn tạm tính." } }, 400);
       const validUntil = body.valid_until == null || body.valid_until === "" ? null : clean(body.valid_until, 40);
-      if (validUntil && (!/^\\d{4}-\\d{2}-\\d{2}$/.test(validUntil) && !Number.isFinite(Date.parse(validUntil)))) {
-        return json({ error: { code: "VALIDATION_ERROR", message: "Ngày hết hạn báo giá không hợp lệ." } }, 400);
+      if (validUntil) {
+        const dateOnly = /^\d{4}-\d{2}-\d{2}$/.test(validUntil);
+        const parsed = Date.parse(dateOnly ? validUntil + "T00:00:00Z" : validUntil);
+        const validDate = Number.isFinite(parsed) && (!dateOnly || new Date(parsed).toISOString().slice(0, 10) === validUntil);
+        if (!validDate) return json({ error: { code: "VALIDATION_ERROR", message: "Ngày hết hạn báo giá không hợp lệ." } }, 400);
       }
       const notes = clean(body.notes, 5000);
       const now = new Date().toISOString();
@@ -254,7 +257,7 @@ async function identityRoutes(request, env, url) {
       if (!quote) return json({ error: { code: "NOT_FOUND", message: "Không tìm thấy báo giá." } }, 404);
       if (quote.status !== "draft") return json({ error: { code: "INVALID_STATE", message: "Chỉ báo giá nháp mới có thể gửi." } }, 409);
       if (quote.valid_until) {
-        const dateOnly = /^\\d{4}-\\d{2}-\\d{2}$/.test(quote.valid_until);
+        const dateOnly = /^\d{4}-\d{2}-\d{2}$/.test(quote.valid_until);
         const expired = dateOnly ? quote.valid_until < new Date().toISOString().slice(0, 10) : !Number.isFinite(Date.parse(quote.valid_until)) || Date.parse(quote.valid_until) < Date.now();
         if (expired) return json({ error: { code: "QUOTE_EXPIRED", message: "Ngày hết hạn đã qua; không thể gửi báo giá." } }, 409);
       }

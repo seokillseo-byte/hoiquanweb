@@ -146,7 +146,7 @@ try:
     for migration in migration_files:
         db.executescript(migration.read_text(encoding="utf-8"))
     tables = {row[0] for row in db.execute("SELECT name FROM sqlite_master WHERE type='table'")}
-    expected = {"leads", "lead_events", "rate_limits", "cms_pages", "cms_posts", "cms_services", "cms_templates", "cms_revisions", "crm_customers", "crm_activities", "crm_quotes", "crm_quote_items", "crm_audit_events", "crm_orders", "crm_projects", "crm_project_milestones", "crm_project_comments", "crm_tickets", "crm_ticket_messages", "crm_project_files", "crm_notifications"}
+    expected = {"leads", "lead_events", "rate_limits", "cms_pages", "cms_posts", "cms_services", "cms_templates", "cms_revisions", "crm_customers", "crm_activities", "crm_quotes", "crm_quote_items", "crm_audit_events", "crm_orders", "crm_projects", "crm_project_milestones", "crm_project_comments", "crm_tickets", "crm_ticket_messages", "crm_project_files", "crm_notifications", "crm_email_outbox"}
     if not expected.issubset(tables):
         fail("database migrations did not create all required tables: " + ", ".join(sorted(expected - tables)))
     lead_columns = {row[1] for row in db.execute("PRAGMA table_info(leads)")}
@@ -167,6 +167,15 @@ try:
     media_indexes = {row[1] for row in db.execute("PRAGMA index_list(cms_media_assets)")}
     if "idx_cms_media_status_created" not in media_indexes:
         fail("CMS media library query index is missing")
+    email_outbox_columns = {row[1] for row in db.execute("PRAGMA table_info(crm_email_outbox)")}
+    if not {"event_key", "lead_id", "status", "attempts", "next_attempt_at", "lease_until", "provider_message_id", "last_error_code", "sent_at"}.issubset(email_outbox_columns):
+        fail("CRM email outbox delivery state columns are missing")
+    email_outbox_indexes = {row[1] for row in db.execute("PRAGMA index_list(crm_email_outbox)")}
+    if "idx_crm_email_outbox_due" not in email_outbox_indexes:
+        fail("CRM email outbox retry index is missing")
+    email_outbox_sql = db.execute("SELECT sql FROM sqlite_master WHERE type='table' AND name='crm_email_outbox'").fetchone()[0]
+    if "UNIQUE" not in email_outbox_sql or "REFERENCES leads(id)" not in email_outbox_sql:
+        fail("CRM email outbox event deduplication or lead foreign key is missing")
     project_file_columns = {row[1] for row in db.execute("PRAGMA table_info(crm_project_files)")}
     if not {"project_id", "customer_id", "object_key", "content_type", "size_bytes", "sha256", "visibility", "uploaded_by"}.issubset(project_file_columns):
         fail("private project file metadata columns are missing")
@@ -217,6 +226,15 @@ try:
         except sqlite3.IntegrityError:
             return
         fail(label + " constraint did not reject invalid data")
+    db.execute(
+        "INSERT INTO crm_email_outbox (id,event_key,lead_id,status,attempts,next_attempt_at,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?)",
+        ("email-outbox-test-1","lead.created/lead-test-1","lead-test-1","pending",0,now,now,now),
+    )
+    expect_integrity_error(
+        "CRM email outbox event deduplication",
+        "INSERT INTO crm_email_outbox (id,event_key,lead_id,status,attempts,next_attempt_at,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?)",
+        ("email-outbox-test-2","lead.created/lead-test-1","lead-test-1","pending",0,now,now,now),
+    )
     expect_integrity_error(
         "CRM duplicate lead conversion",
         "INSERT INTO crm_customers (id,lead_id,display_name,contact_email,created_at,updated_at) VALUES (?,?,?,?,?,?)",

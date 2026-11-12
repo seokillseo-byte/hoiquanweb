@@ -100,7 +100,7 @@ Mục tiêu: dựng nền tảng có thể mở rộng, không chỉ thêm HTML 
 - [ ] Automated authorization matrix đầy đủ cho admin/staff/customer.
 - [x] Cross-customer isolation test cho orders, projects, project comments, tickets và ticket messages; quote isolation đã có test riêng.
 - [ ] Hoàn thiện authorization matrix cho mọi endpoint riêng tư, gồm session expiry/recovery và file access.
-- [ ] Audit log cho milestone changes, permissions và các thao tác nhạy cảm khác.
+- [x] Audit log cho customer membership link/revoke và các chuyển trạng thái project/milestone/ticket; metadata ghi before/after các trường vận hành, không sao chép nội dung trao đổi riêng tư.
 - [ ] Test session expiry, recovery, brute-force/rate limit, upload/download và backup/restore.
 - [ ] Kiểm tra end-to-end trên môi trường staging; không chấp nhận chỉ vì UI render được.
 

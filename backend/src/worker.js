@@ -506,7 +506,8 @@ export default { async fetch(request, env) {
     else if (url.pathname === "/_test/seed-identity" && request.method === "POST" && env.TEST_MODE === "true") {
       const body = await readJson(request);
       const ids = [body?.userA, body?.userB, body?.adminUser].map(value => clean(value, 128));
-      if (ids.some(value => !value) || new Set(ids).size !== 3) {
+      const memberUser = clean(body?.memberUser, 128);
+      if (ids.some(value => !value) || new Set(ids).size !== 3 || (memberUser && ids.includes(memberUser))) {
         response = json({ error: "VALIDATION_ERROR" }, 400);
       } else {
         const now = new Date().toISOString();
@@ -524,6 +525,9 @@ export default { async fetch(request, env) {
           }
         }
         await env.DB.prepare("INSERT OR REPLACE INTO app_user_roles (user_id, role, assigned_by, assigned_at) VALUES (?, 'admin', 'test-fixture', ?)").bind(ids[2], now).run();
+        if (memberUser) {
+          await env.DB.prepare("INSERT OR REPLACE INTO crm_customer_members (customer_id, user_id, membership_role, created_at) VALUES ('test-customer-a', ?, 'member', ?)").bind(memberUser, now).run();
+        }
         response = json({ ok: true });
       }
     }

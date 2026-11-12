@@ -131,7 +131,7 @@ async function identityRoutes(request, env, url) {
     const result = await env.DB.prepare("SELECT u.id, u.name, u.email, GROUP_CONCAT(r.role, ',') AS roles FROM \"user\" u INNER JOIN app_user_roles r ON r.user_id = u.id WHERE r.role IN ('admin','staff') GROUP BY u.id, u.name, u.email ORDER BY u.name ASC LIMIT 100").all();
     return json({ data: result.results || [] });
   }
-  const leadEventsMatch = url.pathname.match(/^\\/api\\/v1\\/admin\\/leads\\/([^/]+)\\/events$/);
+  const leadEventsMatch = url.pathname.match(/^\/api\/v1\/admin\/leads\/([^/]+)\/events$/);
   if (leadEventsMatch && request.method === "GET") {
     const principal = await authenticatedPrincipal(request, env);
     if (principal.error) return principal.error;

@@ -57,6 +57,8 @@
     <div class="table-wrap"><table class="quote-table"><thead><tr><th>Khách hàng</th><th>Email</th><th>Điện thoại</th><th>Trạng thái</th><th>Ngày tạo</th><th>Thao tác</th></tr></thead><tbody id="customerRows"><tr><td colspan="6">Chưa tải khách hàng.</td></tr></tbody></table></div>
     <div class="quote-detail" id="customerWorkspace" hidden>
       <div class="topline"><div><h3 id="customerHeading">Khách hàng</h3><p class="muted" id="customerMeta"></p></div><button class="btn secondary" type="button" id="activityRefresh">Tải lịch sử</button></div>
+      <div class="quote-detail"><div class="topline"><div><h3>Tài khoản được liên kết</h3><p class="muted">Khách hàng cần đăng ký tài khoản bằng email trước. Việc liên kết cấp quyền xem dữ liệu của hồ sơ này.</p></div><button class="btn secondary" type="button" id="memberRefresh">Tải thành viên</button></div>
+        <form class="cms-form" id="memberForm"><div class="quote-form-grid"><div class="field"><label for="memberEmail">Email tài khoản</label><input id="memberEmail" type="email" maxlength="254" required></div><div class="field"><label for="memberRole">Vai trò</label><select id="memberRole"><option value="owner">Owner</option><option value="member" selected>Member</option><option value="billing">Billing</option></select></div></div><button class="btn" type="submit">Liên kết tài khoản</button><span class="cms-status" id="memberStatus" role="status"></span></form><div id="memberList" class="revision-list"><p class="muted">Chưa tải thành viên.</p></div></div>
       <form class="cms-form" id="activityForm">
         <div class="quote-form-grid">
           <div class="field"><label for="activityType">Loại hoạt động</label><select id="activityType"><option value="note">Ghi chú</option><option value="call">Cuộc gọi</option><option value="email">Email</option><option value="meeting">Cuộc họp</option><option value="status_change">Thay đổi trạng thái</option></select></div>
@@ -199,8 +201,18 @@
     }catch(error){crmMessage("Không tải được khách hàng: "+error.message,true);}
     finally{$("#crmRefresh").disabled=false;}
   }
+  async function loadCustomerMembers(){
+    if(!selectedCustomer)return;$("#memberRefresh").disabled=true;const list=$("#memberList");list.replaceChildren();
+    try{const result=await request("/api/v1/admin/customers/"+encodeURIComponent(selectedCustomer.id)+"/members");const members=result.data||[];
+      if(!members.length){const empty=document.createElement("p");empty.className="muted";empty.textContent="Chưa có tài khoản được liên kết.";list.append(empty);}
+      for(const member of members){const row=document.createElement("div");row.className="revision-item";const label=document.createElement("strong");label.textContent=(member.name||member.email)+" · "+member.email;const role=document.createElement("span");role.textContent=member.membership_role;row.append(label,role);list.append(row);}
+    }catch(error){const failure=document.createElement("p");failure.className="danger";failure.textContent="Không tải được thành viên: "+error.message;list.append(failure);}
+    finally{$("#memberRefresh").disabled=false;}
+  }
+  $("#memberRefresh").addEventListener("click",loadCustomerMembers);
+  $("#memberForm").addEventListener("submit",async event=>{event.preventDefault();if(!selectedCustomer)return;$("#memberStatus").textContent="Đang liên kết…";try{const result=await request("/api/v1/admin/customers/"+encodeURIComponent(selectedCustomer.id)+"/members",{method:"POST",body:JSON.stringify({email:$("#memberEmail").value.trim(),membership_role:$("#memberRole").value})});$("#memberStatus").textContent="Đã liên kết "+result.data.email+" ("+result.data.membership_role+").";$("#memberForm").reset();await loadCustomerMembers();}catch(error){$("#memberStatus").textContent=error.message;}});
   async function selectCustomer(customer){
-    selectedCustomer=customer;$("#customerWorkspace").hidden=false;$("#customerHeading").textContent=customer.display_name;$("#customerMeta").textContent=[customer.organization_name,customer.contact_email,customer.phone].filter(Boolean).join(" · ");await loadActivities();
+    selectedCustomer=customer;$("#customerWorkspace").hidden=false;$("#customerHeading").textContent=customer.display_name;$("#customerMeta").textContent=[customer.organization_name,customer.contact_email,customer.phone].filter(Boolean).join(" · ");await Promise.all([loadActivities(),loadCustomerMembers()]);
   }
   async function loadActivities(){
     if(!selectedCustomer)return;$("#activityRefresh").disabled=true;const timeline=$("#activityTimeline");timeline.replaceChildren();const loading=document.createElement("p");loading.className="muted";loading.textContent="Đang tải lịch sử…";timeline.appendChild(loading);

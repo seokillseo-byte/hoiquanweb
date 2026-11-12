@@ -1099,6 +1099,10 @@ test("customer portal scopes orders, projects, milestones, comments and support 
   const customerAudit = await getFor("/_test/customer-audit-count", admin.cookie);
   assert.ok((await customerAudit.json()).data.some(item => item.action === "customer.member.unlinked" && item.count >= 1),
     "membership revocation must create an audit event");
+  const membershipAudit = await getFor("/_test/resource-audit?resource_type=customer&resource_id=test-customer-a", admin.cookie);
+  const unlinkEvent = (await membershipAudit.json()).data.find(item => item.action === "customer.member.unlinked");
+  assert.deepEqual(JSON.parse(unlinkEvent.metadata_json), { user_id: userB.id, membership_role: "member" },
+    "membership audit must retain only the identity and role needed to explain revocation");
 });
 
 test("private project files enforce customer membership and staff-only internal visibility", async () => {

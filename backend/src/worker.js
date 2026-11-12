@@ -508,7 +508,7 @@ function projectFileRecord(row) {
   return {
     id: row.id, project_id: row.project_id, customer_id: row.customer_id,
     filename: row.filename, content_type: row.content_type, size_bytes: row.size_bytes,
-    sha256: row.sha256, visibility: row.visibility, uploaded_by: row.uploaded_by,
+    sha256: row.sha256, visibility: row.visibility,
     uploaded_role: row.uploaded_role, created_at: row.created_at
   };
 }

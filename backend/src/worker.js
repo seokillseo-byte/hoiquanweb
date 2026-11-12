@@ -1296,7 +1296,7 @@ async function adminMedia(request, env, url) {
       return json({ error: { code: "UPLOAD_CAPACITY", message: "Máy chủ đang xử lý nhiều lượt tải ảnh. Vui lòng thử lại sau." } }, 503, { "retry-after": "2" });
     }
     activeCmsMediaUploads++;
-    let form;
+    let form, file, mime, typeConfig, bytes;
     try {
       const boundedBody = await readRequestBodyWithinLimit(request, CMS_MEDIA_MAX_BYTES + 128 * 1024);
       if (!boundedBody) return json({ error: { code: "UPLOAD_TOO_LARGE", message: "Ảnh vượt quá giới hạn 5 MB." } }, 413);
@@ -1304,15 +1304,15 @@ async function adminMedia(request, env, url) {
       boundedHeaders.delete("content-length");
       const boundedRequest = new Request(request.url, { method: "POST", headers: boundedHeaders, body: boundedBody });
       form = await boundedRequest.formData();
+      file = form.get("file");
+      if (!file || typeof file.arrayBuffer !== "function" || typeof file.size !== "number") return json({ error: { code: "VALIDATION_ERROR", message: "Vui lòng chọn một tệp ảnh." } }, 400);
+      if (file.size < 1 || file.size > CMS_MEDIA_MAX_BYTES) return json({ error: { code: "UPLOAD_TOO_LARGE", message: "Ảnh phải có dung lượng từ 1 byte đến 5 MB." } }, 413);
+      mime = clean(file.type, 80).toLowerCase();
+      typeConfig = CMS_IMAGE_TYPES[mime];
+      if (!typeConfig) return json({ error: { code: "UNSUPPORTED_MEDIA_TYPE", message: "Chỉ chấp nhận PNG, JPEG, GIF và WebP." } }, 415);
+      bytes = new Uint8Array(await file.arrayBuffer());
     } catch { return json({ error: { code: "INVALID_UPLOAD", message: "Không đọc được dữ liệu ảnh tải lên." } }, 400); }
     finally { activeCmsMediaUploads--; }
-    const file = form.get("file");
-    if (!file || typeof file.arrayBuffer !== "function" || typeof file.size !== "number") return json({ error: { code: "VALIDATION_ERROR", message: "Vui lòng chọn một tệp ảnh." } }, 400);
-    if (file.size < 1 || file.size > CMS_MEDIA_MAX_BYTES) return json({ error: { code: "UPLOAD_TOO_LARGE", message: "Ảnh phải có dung lượng từ 1 byte đến 5 MB." } }, 413);
-    const mime = clean(file.type, 80).toLowerCase();
-    const typeConfig = CMS_IMAGE_TYPES[mime];
-    if (!typeConfig) return json({ error: { code: "UNSUPPORTED_MEDIA_TYPE", message: "Chỉ chấp nhận PNG, JPEG, GIF và WebP." } }, 415);
-    const bytes = new Uint8Array(await file.arrayBuffer());
     if (bytes.byteLength !== file.size || !typeConfig.valid(bytes)) return json({ error: { code: "INVALID_IMAGE_SIGNATURE", message: "Nội dung tệp không khớp định dạng ảnh đã khai báo." } }, 400);
     const id = crypto.randomUUID();
     const objectKey = "cms/" + id + "." + typeConfig.extension;

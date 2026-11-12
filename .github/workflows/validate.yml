@@ -1,9 +1,9 @@
 name: Validate website and API
 on:
   push:
-    branches: [main, feat/better-auth-worker-d1-integration]
+    branches: [main, feat/better-auth-worker-d1-integration, feat/hoiquanweb-public-site-v1]
   pull_request:
-    branches: [main]
+    branches: [main, feat/better-auth-worker-d1-integration]
   workflow_dispatch:
 
 permissions:
@@ -35,3 +35,7 @@ jobs:
         run: npm run typecheck
       - name: Build frontend application
         run: npm run build
+      - name: Generate bilingual public website
+        run: node scripts/build_public_site.mjs
+      - name: Validate generated public website
+        run: node scripts/validate_public_site.mjs

@@ -756,11 +756,12 @@ test("CMS media uploads validate image signatures, remain private until Admin pu
   const form = new FormData();
   form.set("file", new Blob([bytes], { type: "image/png" }), "brand-mark.png");
   form.set("alt_text", "HoiQuanWeb brand mark");
-  const upload = await server.fetch(origin + "/api/v1/admin/media", {
+  const uploadRequest = new Request(origin + "/api/v1/admin/media", {
     method: "POST",
     headers: { origin, cookie: admin.cookie },
     body: form
   });
+  const upload = await server.fetch(uploadRequest);
   assert.equal(upload.status, 201, await upload.clone().text());
   const asset = (await upload.json()).data;
   assert.equal(asset.status, "draft");
@@ -805,9 +806,10 @@ test("CMS media uploads validate image signatures, remain private until Admin pu
 
   const invalidForm = new FormData();
   invalidForm.set("file", new Blob(["not a PNG"], { type: "image/png" }), "spoofed.png");
-  const invalid = await server.fetch(origin + "/api/v1/admin/media", {
+  const invalidRequest = new Request(origin + "/api/v1/admin/media", {
     method: "POST", headers: { origin, cookie: admin.cookie }, body: invalidForm
   });
+  const invalid = await server.fetch(invalidRequest);
   assert.equal(invalid.status, 400, "declared MIME type must match the actual image signature");
 
   const archive = await server.fetch(origin + "/api/v1/admin/media/" + asset.id + "/archive", {

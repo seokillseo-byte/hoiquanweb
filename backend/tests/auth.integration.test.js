@@ -250,6 +250,7 @@ test("customer portal isolates customers and quotes; admin access requires a ser
   assert.equal(detail.status, "sent");
   assert.equal(detail.membership_role, "owner");
   assert.equal(detail.customer_id, "test-customer-a");
+  assert.equal(Object.hasOwn(detail, "notes"), false, "internal CRM notes must not be exposed to customers");
   assert.equal(detail.items.length, 1);
   assert.equal(detail.items[0].description, "Website development");
 

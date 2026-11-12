@@ -300,6 +300,71 @@ test("customer portal isolates customers and quotes; admin access requires a ser
   assert.equal(adminAccess.status, 200, await adminAccess.clone().text());
   assert.deepEqual(new Set((await adminAccess.json()).data.map(item => item.id)), new Set(["test-customer-a", "test-customer-b"]));
 
+  const forbiddenQuoteCreate = await server.fetch(origin + "/api/v1/admin/quotes", {
+    method: "POST",
+    headers: { origin, cookie: ordinaryUser.cookie, "content-type": "application/json" },
+    body: JSON.stringify({ customer_id: "test-customer-a", items: [{ description: "Website", quantity: 1, unit_price_minor: 1000000 }] })
+  });
+  assert.equal(forbiddenQuoteCreate.status, 403, "ordinary users must not create CRM quotes");
+
+  const invalidDiscount = await server.fetch(origin + "/api/v1/admin/quotes", {
+    method: "POST",
+    headers: { origin, cookie: admin.cookie, "content-type": "application/json" },
+    body: JSON.stringify({ customer_id: "test-customer-a", discount_minor: 2000000, items: [{ description: "Website", quantity: 1, unit_price_minor: 1000000 }] })
+  });
+  assert.equal(invalidDiscount.status, 400, "discount cannot exceed subtotal");
+
+  const createQuote = await server.fetch(origin + "/api/v1/admin/quotes", {
+    method: "POST",
+    headers: { origin, cookie: admin.cookie, "content-type": "application/json" },
+    body: JSON.stringify({
+      customer_id: "test-customer-a",
+      currency: "VND",
+      discount_minor: 1000000,
+      valid_until: "2099-12-31",
+      notes: "Integration test quote",
+      items: [
+        { description: "Website design", quantity: 2, unit_price_minor: 5000000, sort_order: 0 },
+        { description: "SEO setup", quantity: 1, unit_price_minor: 3000000, sort_order: 1 }
+      ]
+    })
+  });
+  assert.equal(createQuote.status, 201, await createQuote.clone().text());
+  const createdQuote = (await createQuote.json()).data;
+  assert.equal(createdQuote.status, "draft");
+  assert.equal(createdQuote.subtotal_minor, 13000000);
+  assert.equal(createdQuote.total_minor, 12000000);
+  assert.equal(createdQuote.items.length, 2);
+  const privateDraft = await getFor("/api/v1/me/quotes/" + createdQuote.id, userA.cookie);
+  assert.equal(privateDraft.status, 404, "draft quotes must remain private from customers");
+
+  const adminQuoteDetail = await getFor("/api/v1/admin/quotes/" + createdQuote.id, admin.cookie);
+  assert.equal(adminQuoteDetail.status, 200, await adminQuoteDetail.clone().text());
+  assert.equal((await adminQuoteDetail.json()).data.items.length, 2);
+
+  const sendAsCustomer = await server.fetch(origin + "/api/v1/admin/quotes/" + createdQuote.id + "/send", {
+    method: "POST",
+    headers: { origin, cookie: userA.cookie }
+  });
+  assert.equal(sendAsCustomer.status, 403, "customers must not send quotes");
+
+  const sendQuote = await server.fetch(origin + "/api/v1/admin/quotes/" + createdQuote.id + "/send", {
+    method: "POST",
+    headers: { origin, cookie: admin.cookie }
+  });
+  assert.equal(sendQuote.status, 200, await sendQuote.clone().text());
+  assert.equal((await sendQuote.json()).data.status, "sent");
+
+  const visibleSentQuote = await getFor("/api/v1/me/quotes/" + createdQuote.id, userA.cookie);
+  assert.equal(visibleSentQuote.status, 200, await visibleSentQuote.clone().text());
+  assert.equal((await visibleSentQuote.json()).data.total_minor, 12000000);
+
+  const quoteAudit = await server.fetch(origin + "/_test/quote-audit-count", { headers: { origin } });
+  assert.equal(quoteAudit.status, 200, await quoteAudit.clone().text());
+  const quoteAuditCounts = Object.fromEntries((await quoteAudit.json()).data.map(row => [row.action, row.count]));
+  assert.equal(quoteAuditCounts["quote.created"], 1);
+  assert.equal(quoteAuditCounts["quote.sent"], 1);
+
   const adminLeadAccess = await getFor("/api/admin/leads?limit=1", admin.cookie);
   assert.equal(adminLeadAccess.status, 200, await adminLeadAccess.clone().text());
 

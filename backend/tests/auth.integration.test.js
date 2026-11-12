@@ -675,6 +675,12 @@ test("CMS content API requires an authenticated admin; drafts stay private and e
 test("CMS posts persist taxonomy, publish into public blog feeds and keep drafts private", async () => {
   const admin = await createSignedInUser("Blog Admin");
   const customer = await createSignedInUser("Blog Customer");
+  const seed = await authRequest("/_test/seed-identity", {
+    userA: customer.id,
+    userB: "blog-no-membership-user",
+    adminUser: admin.id
+  });
+  assert.equal(seed.status, 200, await seed.clone().text());
   const create = await server.fetch(origin + "/api/v1/admin/posts", {
     method: "POST",
     headers: { origin, cookie: admin.cookie, "content-type": "application/json" },

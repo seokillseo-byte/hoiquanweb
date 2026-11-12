@@ -1,7 +1,7 @@
 import { getAuth, migrateAuthDatabase } from "./better-auth.js";
 const JSON_HEADERS = { "content-type": "application/json; charset=utf-8", "cache-control": "no-store" };
 const LEAD_STATUSES = new Set(["new", "contacted", "qualified", "proposal_sent", "won", "lost", "spam"]);
-const SERVICES = new Set(["Website doanh nghiệp", "Website thương mại điện tử", "Landing page", "Website chuẩn SEO", "UX/UI và Design System", "Bảo trì và tăng trưởng", "Chưa xác định"]);
+const SERVICES = new Set(["Website doanh nghiệp", "Website thương mại điện tử", "Landing page", "Website chuẩn SEO", "UX/UI và Design System", "Bảo trì và tăng trưởng", "Chưa xác định", "Thiết kế Website", "Website Design", "Phát triển Phần mềm", "Software Development", "Ứng dụng Di động", "Mobile App Development", "Phát triển Game", "Game Development", "SEO Website", "Website SEO", "AI & Tự động hóa", "AI & Automation", "Giải pháp Công nghệ khác", "Other Technology Solutions"]);
 function json(data, status = 200, extra = {}) { return new Response(JSON.stringify(data), { status, headers: { ...JSON_HEADERS, ...extra } }); }
 function clean(value, max = 2000) { return typeof value === "string" ? value.trim().replace(/\u0000/g, "").slice(0, max) : ""; }
 function validEmail(value) { return /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(value) && value.length <= 254; }

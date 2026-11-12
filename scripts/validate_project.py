@@ -82,6 +82,10 @@ for required_admin_id in ["connectForm", "apiBase", "adminEmail", "adminPassword
 for fragment in admin_parser.fragments:
     if fragment and fragment not in admin_parser.ids:
         fail("broken admin in-page anchor: #" + fragment)
+if "/api/v1/admin/media/" not in admin_html or 'credentials:"include"' not in admin_html:
+    fail("admin media library must use the authenticated media preview route")
+if 'accept="image/png,image/jpeg,image/gif,image/webp"' not in admin_html:
+    fail("admin media upload must restrict the browser picker to supported image types")
 if not parser.scripts or not any("briefForm" in chunk for script_type, chunk in parser.scripts if script_type in ("", "text/javascript", "application/javascript", "module")):
     fail("inline form handler not found")
 for fragment in parser.fragments:

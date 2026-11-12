@@ -244,7 +244,8 @@ test("customer portal isolates customers and quotes; admin access requires a ser
   const detail = (await quoteDetail.json()).data;
   assert.equal(detail.quote_number, "TEST-A");
   assert.equal(detail.status, "sent");
-  assert.deepEqual(detail.items, []);
+  assert.equal(detail.items.length, 1);
+  assert.equal(detail.items[0].description, "Website development");
 
   const crossCustomerQuote = await getFor("/api/v1/me/quotes/test-quote-a", userB.cookie);
   assert.equal(crossCustomerQuote.status, 404, "a customer must not read another customer's quote");
@@ -258,12 +259,23 @@ test("customer portal isolates customers and quotes; admin access requires a ser
   assert.equal(acceptedQuote.status, "accepted");
   assert.equal(acceptedQuote.accepted_by, userA.id);
   assert.ok(acceptedQuote.accepted_at);
+  const auditCount = await server.fetch(origin + "/_test/audit-count", { headers: { origin } });
+  assert.equal(auditCount.status, 200, await auditCount.clone().text());
+  assert.equal((await auditCount.json()).count, 1, "acceptance must write one audit event");
 
   const repeatedAcceptance = await server.fetch(origin + "/api/v1/me/quotes/test-quote-a/accept", {
     method: "POST",
     headers: { origin, cookie: userA.cookie }
   });
   assert.equal(repeatedAcceptance.status, 409, "quote acceptance must not be repeated");
+  const auditCountAfterRepeat = await server.fetch(origin + "/_test/audit-count", { headers: { origin } });
+  assert.equal((await auditCountAfterRepeat.json()).count, 1, "a repeated acceptance must not create another audit event");
+
+  const expiredAcceptance = await server.fetch(origin + "/api/v1/me/quotes/test-quote-expired/accept", {
+    method: "POST",
+    headers: { origin, cookie: userA.cookie }
+  });
+  assert.equal(expiredAcceptance.status, 409, "expired quotes must not be accepted");
 
   const crossCustomerAcceptance = await server.fetch(origin + "/api/v1/me/quotes/test-quote-b/accept", {
     method: "POST",

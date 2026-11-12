@@ -36,7 +36,7 @@ test("legacy lead administration no longer accepts the shared ADMIN_TOKEN", asyn
   const response = await request("/api/v1/admin/leads", "Bearer test-only-legacy-token");
   assert.equal(response.status, 503, "lead administration must fail closed when identity storage is unavailable");
   const versionedLeadEvents = await worker.fetch(new Request("https://api.example.test/api/v1/admin/leads/test-lead/events", {
-    method: "POST",
+    method: "GET",
     headers: { Origin: "https://example.test", Authorization: "Bearer test-only-legacy-token" }
   }), env);
   assert.equal(versionedLeadEvents.status, 503, "versioned lead event history must fail closed when identity storage is unavailable");

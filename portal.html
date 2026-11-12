@@ -6,6 +6,7 @@
   <meta name="robots" content="noindex,nofollow">
   <meta name="theme-color" content="#0B1F3A">
   <meta name="description" content="Cổng khách hàng HoiQuanWeb.">
+  <meta name="hq-api-base" content="__HQ_API_BASE__">
   <title>Cổng khách hàng | HoiQuanWeb</title>
   <style>
     :root{font-family:Inter,system-ui,-apple-system,"Segoe UI",sans-serif;color:#10233f;background:#f4f7fb;line-height:1.55;--navy:#0b1f3a;--blue:#2864d7;--cyan:#25b8d5;--line:#dce5f0;--muted:#64748b}
@@ -125,6 +126,8 @@
   $("#refreshButton").addEventListener("click",loadQuotes);
   $("#logoutButton").addEventListener("click",async()=>{try{await request("/api/v1/auth/sign-out",{method:"POST",body:"{}"});}catch{}signedIn=false;$("#portalPanel").hidden=true;$("#loginPanel").hidden=false;$("#password").value="";status("#loginStatus",t("signedOut"));});
   $("#languageButton").addEventListener("click",()=>{language=language==="vi"?"en":"vi";applyLanguage();if(signedIn)loadQuotes();});
+  const configuredApiBase=document.querySelector('meta[name="hq-api-base"]')?.content?.trim();
+  if(configuredApiBase){apiBase=configuredApiBase.replace(/\\/+$/,"");$("#apiBase").value=apiBase;$("#apiBase").readOnly=true;$("#apiBase").setAttribute("aria-readonly","true");}
   applyLanguage();
 })();
 </script>

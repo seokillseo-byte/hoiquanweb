@@ -13,6 +13,7 @@ function makeEnv(rows = {}) {
         async first() {
           if (sql.includes("FROM cms_pages")) return rows.page ?? null;
           if (sql.includes("FROM cms_posts") && sql.includes("slug = ?")) return rows.post ?? null;
+          if (sql.includes("FROM cms_templates") && sql.includes("slug = ?")) return rows.template ?? null;
           return null;
         },
         async all() {
@@ -108,4 +109,24 @@ test("public post list does not expose raw JSON storage columns", async () => {
   const body = await response.json();
   assert.deepEqual(body.data[0].seo, { title: "Hello SEO" });
   assert.equal("seo_json" in body.data[0], false);
+});
+
+test("public template detail returns only published catalog fields", async () => {
+  const { env, calls } = makeEnv({ template: { slug: "starter", name: "Starter", template_type: "wordpress", category: "Business", tags_json: '["corporate"]', summary: "Summary", description: "Details", version: "1.0.0", price_minor: 0, currency: "VND", license_key: "single_site", compatibility_json: '{"wordpress":"6.x"}', published_at: "2026-10-01T00:00:00.000Z" } });
+  const response = await request("/api/v1/public/templates/starter", env);
+  assert.equal(response.status, 200);
+  const body = (await response.json()).data;
+  assert.deepEqual(body.tags, ["corporate"]);
+  assert.deepEqual(body.compatibility, { wordpress: "6.x" });
+  assert.equal("tags_json" in body, false);
+  assert.match(calls[0], /status = 'published'/);
+  assert.match(calls[0], /published_at IS NOT NULL/);
+});
+
+test("public template detail hides drafts and malformed slugs", async () => {
+  const { env } = makeEnv({ template: null });
+  const missing = await request("/api/v1/public/templates/draft-template", env);
+  assert.equal(missing.status, 404);
+  const malformed = await request("/api/v1/public/templates/%E0%A4%A", env);
+  assert.equal(malformed.status, 404);
 });

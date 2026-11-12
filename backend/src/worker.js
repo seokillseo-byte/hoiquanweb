@@ -1700,6 +1700,8 @@ export default { async fetch(request, env) {
         response = json({ error: "VALIDATION_ERROR" }, 400);
       } else {
         const now = new Date().toISOString();
+        // Keep fixed customer fixtures deterministic across sequential integration tests.
+        await env.DB.prepare("DELETE FROM crm_customer_members WHERE customer_id IN ('test-customer-a','test-customer-b')").run();
         const customers = [
           { id: "test-customer-a", name: "Test Customer A", email: "a@example.test", userId: ids[0], quoteId: "test-quote-a", quoteNumber: "TEST-A" },
           { id: "test-customer-b", name: "Test Customer B", email: "b@example.test", userId: ids[1], quoteId: "test-quote-b", quoteNumber: "TEST-B" }

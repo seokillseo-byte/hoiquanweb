@@ -46,7 +46,7 @@ Workflow validate.yml chạy validator, API boundary tests, Better Auth + D1 int
 - Role admin/staff vẫn phải được gán qua quy trình vận hành được kiểm soát; không có public self-service role assignment.
 - Customer portal portal.html có quote, order, project/milestone/comment và support ticket. Dữ liệu riêng tư được lọc bằng crm_customer_members; message responses không trả user ID nội bộ.
 - Admin admin.html có CRM, quote, CMS, template, media library, order, project/milestone và support ticket management.
-- CMS media library upload ảnh PNG/JPEG/GIF/WebP tối đa 5 MiB, lưu R2 ở chế độ private, hỗ trợ alt text, preview có xác thực, Admin publish/archive; public route chỉ stream asset đã published.
+- CMS media library upload ảnh PNG/JPEG/GIF/WebP tối đa 5 MiB, lưu R2 ở chế độ private, hỗ trợ alt text, preview có xác thực, Admin publish/archive; public route chỉ stream asset đã published. API upload dùng multipart/form-data và không đặt thủ công Content-Type ở trình duyệt để giữ boundary do browser sinh.
 
 Các endpoint đã có integration tests local với Wrangler D1; đây không thay thế staging/browser E2E. Không chạy SQL gán role trực tiếp trên production khi chưa có xác minh tài khoản, backup và rollback.
 

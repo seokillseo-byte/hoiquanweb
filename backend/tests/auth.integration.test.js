@@ -753,15 +753,21 @@ test("CMS media uploads validate image signatures, remain private until Admin pu
   assert.equal(seed.status, 200, await seed.clone().text());
 
   const bytes = new Uint8Array([137,80,78,71,13,10,26,10,0,0,0,0]);
-  const form = new FormData();
-  form.set("file", new Blob([bytes], { type: "image/png" }), "brand-mark.png");
-  form.set("alt_text", "HoiQuanWeb brand mark");
-  const uploadRequest = new Request(origin + "/api/v1/admin/media", {
+  const makeMultipart = (fileBytes, mime, filename, altText, boundary) => {
+    const encoder = new TextEncoder();
+    const head = encoder.encode("--" + boundary + "\\r\\nContent-Disposition: form-data; name=\\"file\\"; filename=\\""+filename+"\\"\\r\\nContent-Type: "+mime+"\\r\\n\\r\\n");
+    const tail = encoder.encode("\\r\\n--" + boundary + "\\r\\nContent-Disposition: form-data; name=\\"alt_text\\"\\r\\n\\r\\n"+altText+"\\r\\n--"+boundary+"--\\r\\n");
+    const body = new Uint8Array(head.length + fileBytes.length + tail.length);
+    body.set(head, 0); body.set(fileBytes, head.length); body.set(tail, head.length + fileBytes.length);
+    return body;
+  };
+  const boundary = "----hoiquanweb-media-" + crypto.randomUUID();
+  const uploadBody = makeMultipart(bytes, "image/png", "brand-mark.png", "HoiQuanWeb brand mark", boundary);
+  const upload = await server.fetch(origin + "/api/v1/admin/media", {
     method: "POST",
-    headers: { origin, cookie: admin.cookie },
-    body: form
+    headers: { origin, cookie: admin.cookie, "content-type": "multipart/form-data; boundary=" + boundary },
+    body: uploadBody
   });
-  const upload = await server.fetch(uploadRequest);
   assert.equal(upload.status, 201, await upload.clone().text());
   const asset = (await upload.json()).data;
   assert.equal(asset.status, "draft");
@@ -804,12 +810,13 @@ test("CMS media uploads validate image signatures, remain private until Admin pu
   assert.equal(publicAsset.headers.get("x-content-type-options"), "nosniff");
   assert.deepEqual(new Uint8Array(await publicAsset.arrayBuffer()), bytes);
 
-  const invalidForm = new FormData();
-  invalidForm.set("file", new Blob(["not a PNG"], { type: "image/png" }), "spoofed.png");
-  const invalidRequest = new Request(origin + "/api/v1/admin/media", {
-    method: "POST", headers: { origin, cookie: admin.cookie }, body: invalidForm
+  const invalidBoundary = "----hoiquanweb-invalid-media-" + crypto.randomUUID();
+  const invalidBytes = new TextEncoder().encode("not a PNG");
+  const invalid = await server.fetch(origin + "/api/v1/admin/media", {
+    method: "POST",
+    headers: { origin, cookie: admin.cookie, "content-type": "multipart/form-data; boundary=" + invalidBoundary },
+    body: makeMultipart(invalidBytes, "image/png", "spoofed.png", "", invalidBoundary)
   });
-  const invalid = await server.fetch(invalidRequest);
   assert.equal(invalid.status, 400, "declared MIME type must match the actual image signature");
 
   const archive = await server.fetch(origin + "/api/v1/admin/media/" + asset.id + "/archive", {

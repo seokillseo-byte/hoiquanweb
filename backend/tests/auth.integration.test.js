@@ -1253,3 +1253,85 @@ test("in-app notifications are generated for project and ticket events and isola
   assert.equal((await getNotifications(admin.cookie).then(response => response.json())).meta.unread_count, 0);
 });
 
+
+
+test("authorization matrix separates admin, staff, customer membership roles, ordinary users and anonymous requests", async () => {
+  const owner = await createSignedInUser("Matrix Customer Owner");
+  const otherCustomer = await createSignedInUser("Matrix Other Customer");
+  const admin = await createSignedInUser("Matrix Admin");
+  const staff = await createSignedInUser("Matrix Staff");
+  const member = await createSignedInUser("Matrix Customer Member");
+  const billing = await createSignedInUser("Matrix Customer Billing");
+  const ordinary = await createSignedInUser("Matrix Ordinary User");
+
+  const seed = await authRequest("/_test/seed-identity", {
+    userA: owner.id, userB: otherCustomer.id, adminUser: admin.id,
+    staffUser: staff.id, memberUser: member.id, billingUser: billing.id
+  });
+  assert.equal(seed.status, 200, await seed.clone().text());
+
+  const getFor = (path, cookie) => server.fetch(origin + path, { headers: { origin, cookie } });
+  const postFor = (path, cookie, body) => server.fetch(origin + path, {
+    method: "POST",
+    headers: { origin, cookie, "content-type": "application/json" },
+    body: JSON.stringify(body)
+  });
+
+  assert.equal((await server.fetch(origin + "/api/v1/admin/customers", { headers: { origin } })).status, 401);
+  assert.equal((await getFor("/api/v1/admin/customers", ordinary.cookie)).status, 403);
+  assert.equal((await getFor("/api/v1/admin/leads", ordinary.cookie)).status, 403);
+  assert.equal((await getFor("/api/v1/admin/projects", ordinary.cookie)).status, 403);
+  assert.equal((await getFor("/api/v1/admin/templates", ordinary.cookie)).status, 403);
+
+  for (const path of ["/api/v1/admin/customers", "/api/v1/admin/leads", "/api/v1/admin/projects", "/api/v1/admin/staff"]) {
+    const response = await getFor(path, staff.cookie);
+    assert.equal(response.status, 200, "staff should have operational access to " + path + ": " + await response.clone().text());
+  }
+
+  const pageSlug = "authorization-matrix-" + crypto.randomUUID().slice(0, 8);
+  const pageCreate = await postFor("/api/v1/admin/pages", staff.cookie, {
+    slug: pageSlug, title: "Authorization Matrix Draft",
+    content: { blocks: [{ type: "paragraph", text: "Staff-managed draft content." }] }
+  });
+  assert.equal(pageCreate.status, 201, await pageCreate.clone().text());
+  const page = (await pageCreate.json()).data;
+  assert.equal(page.status, "draft");
+  const pageUpdate = await server.fetch(origin + "/api/v1/admin/pages/" + page.id, {
+    method: "PATCH",
+    headers: { origin, cookie: staff.cookie, "content-type": "application/json" },
+    body: JSON.stringify({ title: "Staff Updated Draft" })
+  });
+  assert.equal(pageUpdate.status, 200, await pageUpdate.clone().text());
+  assert.equal((await postFor("/api/v1/admin/pages/" + page.id + "/publish", staff.cookie, {})).status, 403);
+  assert.equal((await server.fetch(origin + "/api/v1/admin/pages/" + page.id, { method: "DELETE", headers: { origin, cookie: staff.cookie } })).status, 403);
+  const adminPublish = await postFor("/api/v1/admin/pages/" + page.id + "/publish", admin.cookie, {});
+  assert.equal(adminPublish.status, 200, await adminPublish.clone().text());
+
+  const templateCreate = await postFor("/api/v1/admin/templates", staff.cookie, {
+    slug: "matrix-template-" + crypto.randomUUID().slice(0, 8),
+    name: "Authorization Matrix Template", template_type: "html_css",
+    category: "Business", summary: "Draft created by staff.",
+    description: "Used to verify staff permissions.", version: "1.0.0",
+    preview_url: "https://demo.example.test/matrix-template",
+    price_minor: 0, currency: "VND", license_key: "review_required", compatibility: {}
+  });
+  assert.equal(templateCreate.status, 201, await templateCreate.clone().text());
+  const template = (await templateCreate.json()).data;
+  const templateUpdate = await server.fetch(origin + "/api/v1/admin/templates/" + template.id, {
+    method: "PATCH",
+    headers: { origin, cookie: staff.cookie, "content-type": "application/json" },
+    body: JSON.stringify({ description: "Updated by staff." })
+  });
+  assert.equal(templateUpdate.status, 200, await templateUpdate.clone().text());
+  assert.equal((await postFor("/api/v1/admin/templates/" + template.id + "/publish", staff.cookie, {})).status, 403);
+  assert.equal((await postFor("/api/v1/admin/templates/" + template.id + "/archive", staff.cookie, {})).status, 403);
+
+  assert.equal((await getFor("/api/v1/me/quotes/test-quote-a", owner.cookie)).status, 200);
+  assert.equal((await getFor("/api/v1/me/quotes/test-quote-a", member.cookie)).status, 200);
+  assert.equal((await getFor("/api/v1/me/quotes/test-quote-a", billing.cookie)).status, 200);
+  assert.equal((await getFor("/api/v1/me/quotes/test-quote-a", otherCustomer.cookie)).status, 404);
+  assert.equal((await postFor("/api/v1/me/quotes/test-quote-a/accept", member.cookie, {})).status, 403);
+  assert.equal((await postFor("/api/v1/me/quotes/test-quote-a/accept", billing.cookie, {})).status, 200);
+  assert.equal((await postFor("/api/v1/me/quotes/test-quote-a/accept", owner.cookie, {})).status, 409);
+  assert.equal((await getFor("/api/v1/me/orders", ordinary.cookie)).status, 200);
+});

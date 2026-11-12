@@ -32,8 +32,8 @@ async function adminLeads(request, env, url) {
     const status = clean(url.searchParams.get("status"), 30);
     const limit = Math.max(1, Math.min(100, Number.parseInt(url.searchParams.get("limit"), 10) || 50));
     const result = status && LEAD_STATUSES.has(status)
-      ? await env.DB.prepare("SELECT id,name,email,service,budget,goals,status,consent_at,created_at,updated_at FROM leads WHERE status = ? ORDER BY created_at DESC LIMIT ?").bind(status, limit).all()
-      : await env.DB.prepare("SELECT id,name,email,service,budget,goals,status,consent_at,created_at,updated_at FROM leads ORDER BY created_at DESC LIMIT ?").bind(limit).all();
+      ? await env.DB.prepare("SELECT l.id,l.name,l.email,l.service,l.budget,l.goals,l.status,l.consent_at,l.created_at,l.updated_at,c.id AS customer_id FROM leads l LEFT JOIN crm_customers c ON c.lead_id = l.id WHERE l.status = ? ORDER BY l.created_at DESC LIMIT ?").bind(status, limit).all()
+      : await env.DB.prepare("SELECT l.id,l.name,l.email,l.service,l.budget,l.goals,l.status,l.consent_at,l.created_at,l.updated_at,c.id AS customer_id FROM leads l LEFT JOIN crm_customers c ON c.lead_id = l.id ORDER BY l.created_at DESC LIMIT ?").bind(limit, limit).all();
     return json({ leads: result.results || [] });
   }
   if (request.method === "PATCH") {
@@ -104,6 +104,9 @@ async function identityRoutes(request, env, url) {
     if (!leadId || leadId.length > 80 || leadId.includes("/")) return json({ error: { code: "NOT_FOUND", message: "Không tìm thấy lead." } }, 404);
     const lead = await env.DB.prepare("SELECT id, name, email, service, budget, goals, status FROM leads WHERE id = ? LIMIT 1").bind(leadId).first();
     if (!lead) return json({ error: { code: "NOT_FOUND", message: "Không tìm thấy lead." } }, 404);
+    if (!["qualified", "proposal_sent", "won"].includes(lead.status)) {
+      return json({ error: { code: "INVALID_LEAD_STAGE", message: "Chỉ lead đã đủ điều kiện, đã gửi đề xuất hoặc thành công mới có thể chuyển vào CRM." } }, 409);
+    }
     const existing = await env.DB.prepare("SELECT id FROM crm_customers WHERE lead_id = ? LIMIT 1").bind(leadId).first();
     if (existing) return json({ data: { customer_id: existing.id, lead_id: leadId, already_converted: true } });
     if (!validEmail(lead.email)) return json({ error: { code: "LEAD_EMAIL_INVALID", message: "Email của lead không hợp lệ; cần cập nhật lead trước khi chuyển đổi." } }, 409);
@@ -740,11 +743,11 @@ export default { async fetch(request, env) {
     }
     else if (url.pathname === "/_test/seed-lead" && request.method === "POST" && env.TEST_MODE === "true") {
       const body = await readJson(request), id = clean(body?.id, 80) || crypto.randomUUID();
-      const name = clean(body?.name, 120), email = clean(body?.email, 254).toLowerCase(), service = clean(body?.service, 100);
-      if (name.length < 2 || !validEmail(email) || !SERVICES.has(service)) response = json({ error: "INVALID_TEST_LEAD" }, 400);
+      const name = clean(body?.name, 120), email = clean(body?.email, 254).toLowerCase(), service = clean(body?.service, 100), status = clean(body?.status || "qualified", 30);
+      if (name.length < 2 || !validEmail(email) || !SERVICES.has(service) || !LEAD_STATUSES.has(status)) response = json({ error: "INVALID_TEST_LEAD" }, 400);
       else {
         const now = new Date().toISOString();
-        await env.DB.prepare("INSERT INTO leads (id, name, email, service, budget, goals, status, consent_at, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, 'qualified', ?, ?, ?)").bind(id, name, email, service, clean(body?.budget, 100), clean(body?.goals, 3000), now, now, now).run();
+        await env.DB.prepare("INSERT INTO leads (id, name, email, service, budget, goals, status, consent_at, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)").bind(id, name, email, service, clean(body?.budget, 100), clean(body?.goals, 3000), status, now, now, now).run();
         response = json({ id }, 201);
       }
     }
@@ -794,7 +797,7 @@ export default { async fetch(request, env) {
     else if (url.pathname.startsWith("/api/v1/public/")) response = await publicContent(request, env, url) || json({ error: { code: "NOT_FOUND", message: "Không tìm thấy tài nguyên." } }, 404);
     else if (url.pathname === "/api/leads" && request.method === "POST") response = await createLead(request, env);
     else if (url.pathname === "/api/estimate" && request.method === "POST") response = await estimate(request);
-    else if (url.pathname === "/api/admin/leads") response = await adminLeads(request, env, url);
+    else if (url.pathname === "/api/admin/leads" || url.pathname === "/api/v1/admin/leads") response = await adminLeads(request, env, url);
     else if (url.pathname === "/api/booking" && request.method === "GET") response = env.BOOKING_URL ? json({ url: env.BOOKING_URL }) : json({ error: "BOOKING_NOT_CONFIGURED", message: "Chưa cấu hình nhà cung cấp lịch hẹn." }, 503);
     else response = json({ error: "NOT_FOUND" }, 404);
     const headers = new Headers(response.headers); for (const [key, value] of Object.entries(cors)) headers.set(key, value); return withSecurity(new Response(response.body, { status: response.status, headers }));

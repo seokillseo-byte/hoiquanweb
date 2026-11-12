@@ -97,7 +97,7 @@ Mục tiêu: dựng nền tảng có thể mở rộng, không chỉ thêm HTML 
 
 ## Phase 5 — CRM và vận hành kinh doanh
 
-**Đã merge vào `main`:** migration `0003_crm_foundation.sql` bổ sung bảng khách hàng CRM, timeline hoạt động, báo giá, dòng báo giá và audit events; validator kiểm tra schema/foreign keys/ràng buộc tính tổng. Identity/customer read APIs đã có; CRM pipeline, activities, quote management UI/API đầy đủ vẫn chưa hoàn thiện và chưa deploy production.
+**Đã merge vào `main`:** migration `0003_crm_foundation.sql` bổ sung bảng khách hàng CRM, timeline hoạt động, báo giá, dòng báo giá và audit events; validator kiểm tra schema/foreign keys/ràng buộc tính tổng. Identity/customer read APIs và quote workflow APIs đã có: admin/staff tạo/list/detail/gửi báo giá; customer xem quote/line items theo membership và owner/billing xác nhận. Quote totals được tính server-side; create/send/accept có audit events và test CI. CRM pipeline, activities, quote management UI, email delivery và các workflow đơn hàng/dự án vẫn chưa hoàn thiện hoặc deploy production.
 
 - Lead pipeline, nguồn lead, lịch sử liên hệ, assignment, khách hàng, báo giá theo hạng mục, đơn hàng, hợp đồng/tài liệu, dự án, tasks, milestone và ticket hỗ trợ.
 - Thông báo email khi provider và sender được cấu hình; lỗi gửi thông báo không làm mất giao dịch đã lưu.
@@ -105,9 +105,12 @@ Mục tiêu: dựng nền tảng có thể mở rộng, không chỉ thêm HTML 
 - Tích hợp booking/payment/e-signature chỉ sau khi chốt nhà cung cấp, bảo mật webhook, idempotency và xử lý hoàn tiền/thất bại.
 
 **Acceptance gates**
-- [x] Migration nền CRM có customer/activity/quote/quote-item/audit schema và ràng buộc dữ liệu cơ bản (CI cần xác nhận trên PR).
-- [ ] Tính giá và trạng thái quan trọng do backend quyết định.
-- [ ] Audit trail và idempotency cho các hành động tạo đơn/duyệt/billing.
+- [x] Migration nền CRM có customer/activity/quote/quote-item/audit schema và ràng buộc dữ liệu cơ bản.
+- [x] Backend tính subtotal/discount/total, kiểm tra line items và chỉ cho phép chuyển draft → sent khi quote hợp lệ.
+- [x] Audit events cho quote.created, quote.sent và quote.accepted; CI xác minh quyền và trạng thái.
+- [ ] Idempotency cho các hành động tạo quote/order/duyệt/billing.
+- [ ] CRM pipeline, activity timeline, quote management UI và quy trình email thông báo.
+- [ ] Kiểm thử email/webhook và lỗi mạng; không báo thành công giả.
 - [ ] Kiểm thử email/webhook và lỗi mạng; không báo thành công giả.
 - [ ] Kiểm tra quyền, retention, export/delete dữ liệu và báo cáo.
 

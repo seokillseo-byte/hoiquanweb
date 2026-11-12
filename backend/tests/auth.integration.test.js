@@ -221,6 +221,16 @@ test("customer portal isolates customers and quotes; admin access requires a ser
   });
   assert.equal(seed.status, 200, await seed.clone().text());
 
+  const seededLead = await authRequest("/_test/seed-lead", {
+    id: "test-lead-convert",
+    name: "Lead To Convert",
+    email: "convert@example.test",
+    service: "Website Design",
+    budget: "20-50 million VND",
+    goals: "Build a bilingual company website"
+  });
+  assert.equal(seededLead.status, 201, await seededLead.clone().text());
+
   async function getFor(path, cookie) {
     return server.fetch(origin + path, { headers: { origin, cookie } });
   }
@@ -304,6 +314,28 @@ test("customer portal isolates customers and quotes; admin access requires a ser
   const adminAccess = await getFor("/api/v1/admin/customers", admin.cookie);
   assert.equal(adminAccess.status, 200, await adminAccess.clone().text());
   assert.deepEqual(new Set((await adminAccess.json()).data.map(item => item.id)), new Set(["test-customer-a", "test-customer-b"]));
+
+  const anonymousLeadConversion = await server.fetch(origin + "/api/v1/admin/leads/test-lead-convert/convert", { method: "POST", headers: { origin } });
+  assert.equal(anonymousLeadConversion.status, 401, "lead conversion must require authentication");
+  const forbiddenLeadConversion = await server.fetch(origin + "/api/v1/admin/leads/test-lead-convert/convert", {
+    method: "POST", headers: { origin, cookie: ordinaryUser.cookie }
+  });
+  assert.equal(forbiddenLeadConversion.status, 403, "ordinary users must not convert leads");
+  const convertedLead = await server.fetch(origin + "/api/v1/admin/leads/test-lead-convert/convert", {
+    method: "POST", headers: { origin, cookie: admin.cookie }
+  });
+  assert.equal(convertedLead.status, 201, await convertedLead.clone().text());
+  const conversion = (await convertedLead.json()).data;
+  assert.equal(conversion.lead_id, "test-lead-convert");
+  assert.equal(conversion.already_converted, false);
+  const repeatedConversion = await server.fetch(origin + "/api/v1/admin/leads/test-lead-convert/convert", {
+    method: "POST", headers: { origin, cookie: admin.cookie }
+  });
+  assert.equal(repeatedConversion.status, 200, "repeating lead conversion must be idempotent");
+  assert.equal((await repeatedConversion.json()).data.customer_id, conversion.customer_id);
+  const convertedActivities = await getFor("/api/v1/admin/customers/" + conversion.customer_id + "/activities", admin.cookie);
+  assert.equal(convertedActivities.status, 200, await convertedActivities.clone().text());
+  assert.equal((await convertedActivities.json()).data[0].activity_type, "system");
 
 
 

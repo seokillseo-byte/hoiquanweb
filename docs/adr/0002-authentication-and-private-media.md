@@ -39,3 +39,10 @@ The platform needs staff-only CMS/CRM access and a customer portal. The reposito
 - Admin publication/archive is an explicit state transition. Archiving revokes the public Worker route while retaining the object for controlled retention/deletion.
 - Customer project attachments still require separate project/customer authorization and must never reuse the public CMS media route.
 - Staging and production bucket creation, D1 migration application, and browser/runtime verification remain owner-account deployment steps.
+
+
+## Customer project files and in-app notifications
+
+- Customer project files use the private R2 binding and are never delivered through public URLs. Every list/download request checks current customer membership and the file visibility flag.
+- In-app notifications are stored in D1 and scoped to the authenticated user. Notification payloads contain generic event summaries and resource references only, not comment or ticket message bodies.
+- Email delivery is a separate integration; an in-app notification must not be reported as an email sent. Resend sender identity, secrets, retry policy and consent remain staging/production configuration gates.

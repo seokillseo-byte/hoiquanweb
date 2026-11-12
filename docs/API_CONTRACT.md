@@ -73,9 +73,9 @@ Never accept a client-provided customer ID as proof of ownership. Resolve member
 | GET/PATCH/DELETE | `/api/v1/admin/services/:id` | Read/update/archive service content | Admin or staff for read/update; admin for archive |
 | POST | `/api/v1/admin/services/:id/publish` | Publish a service and record a revision | Admin |
 | GET/POST/PATCH | `/api/v1/admin/templates` | Manage template metadata | Template permission |
-| GET/PATCH | `/api/v1/admin/leads` | Review/assign/update leads | CRM permission |
-| GET | `/api/admin/leads/:id/events` | Read lead history | Admin or staff |
-| POST | `/api/admin/leads/:id/convert` | Convert an eligible lead to a CRM customer exactly once | Admin or staff
+| GET/PATCH | `/api/v1/admin/leads` | Review/update lead status | Admin or staff |
+| GET | `/api/v1/admin/leads/:id/events` | Read lead history | Admin or staff |
+| POST | `/api/v1/admin/leads/:id/convert` | Convert an eligible lead to a CRM customer exactly once | Admin or staff
 | GET/POST | `/api/v1/admin/customers` | Manage customer records | CRM permission |
 | GET/PATCH | `/api/v1/admin/customers/:id` | Read or update customer details/status | Admin or staff |
 | GET/POST | `/api/v1/admin/customers/:id/activities` | Read or add customer activity timeline entries | Admin or staff

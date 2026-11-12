@@ -84,8 +84,8 @@ async function adminLeads(request, env, url) {
     const status = clean(url.searchParams.get("status"), 30);
     const limit = Math.max(1, Math.min(100, Number.parseInt(url.searchParams.get("limit"), 10) || 50));
     const result = status && LEAD_STATUSES.has(status)
-      ? await env.DB.prepare("SELECT id,name,email,service,budget,goals,status,consent_at,created_at,updated_at FROM leads WHERE status = ? ORDER BY created_at DESC LIMIT ?").bind(status, limit).all()
-      : await env.DB.prepare("SELECT id,name,email,service,budget,goals,status,consent_at,created_at,updated_at FROM leads ORDER BY created_at DESC LIMIT ?").bind(limit).all();
+      ? await env.DB.prepare("SELECT l.id,l.name,l.email,l.service,l.budget,l.goals,l.status,l.consent_at,l.created_at,l.updated_at,c.id AS customer_id FROM leads l LEFT JOIN crm_customers c ON c.lead_id = l.id WHERE l.status = ? ORDER BY l.created_at DESC LIMIT ?").bind(status, limit).all()
+      : await env.DB.prepare("SELECT l.id,l.name,l.email,l.service,l.budget,l.goals,l.status,l.consent_at,l.created_at,l.updated_at,c.id AS customer_id FROM leads l LEFT JOIN crm_customers c ON c.lead_id = l.id ORDER BY l.created_at DESC LIMIT ?").bind(limit).all();
     return json({ leads: result.results || [] });
   }
   if (request.method === "PATCH") {

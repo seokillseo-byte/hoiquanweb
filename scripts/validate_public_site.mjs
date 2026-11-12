@@ -88,6 +88,8 @@ for (const file of files) {
 const portal = await readFile(join(root, "portal.html"), "utf8");
 assert.ok(portal.includes('name="robots" content="noindex,nofollow"'), "Customer portal must not be indexed");
 assert.ok(portal.includes('id="loginForm"') && portal.includes('id="quoteList"'), "Customer portal must provide login and quote views");
+assert.ok(portal.includes('name="hq-api-base"'), "Customer portal must receive the configured API base");
+assert.ok(!portal.includes("__HQ_API_BASE__"), "Customer portal API base placeholder must be replaced during build");
 assert.ok(!portal.includes("innerHTML"), "Customer portal must render API content without raw HTML injection");
 
 const notFound = await readFile(join(root, "404.html"), "utf8");

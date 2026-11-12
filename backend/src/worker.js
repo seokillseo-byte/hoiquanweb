@@ -447,7 +447,7 @@ async function customerProjectRoutes(request, env, url) {
     if (!project) return json({ error: { code: "NOT_FOUND", message: "Không tìm thấy dự án." } }, 404);
     if (projectMatch[2] === "comments") {
       if (request.method === "GET") {
-        const result = await env.DB.prepare("SELECT id, actor_id, actor_type, body, created_at FROM crm_project_comments WHERE project_id = ? AND visibility = 'customer' ORDER BY created_at ASC LIMIT 200").bind(projectId).all();
+        const result = await env.DB.prepare("SELECT id, actor_type, body, created_at FROM crm_project_comments WHERE project_id = ? AND visibility = 'customer' ORDER BY created_at ASC LIMIT 200").bind(projectId).all();
         return json({ data: result.results || [] });
       }
       if (request.method === "POST") {
@@ -494,7 +494,7 @@ async function customerProjectRoutes(request, env, url) {
     const ticket = await env.DB.prepare("SELECT t.id, t.status FROM crm_tickets t INNER JOIN crm_customer_members m ON m.customer_id = t.customer_id WHERE t.id = ? AND m.user_id = ? LIMIT 1").bind(ticketId, principal.user.id).first();
     if (!ticket) return json({ error: { code: "NOT_FOUND", message: "Không tìm thấy yêu cầu hỗ trợ." } }, 404);
     if (request.method === "GET") {
-      const result = await env.DB.prepare("SELECT id, actor_id, actor_type, body, created_at FROM crm_ticket_messages WHERE ticket_id = ? ORDER BY created_at ASC LIMIT 200").bind(ticketId).all();
+      const result = await env.DB.prepare("SELECT id, actor_type, body, created_at FROM crm_ticket_messages WHERE ticket_id = ? ORDER BY created_at ASC LIMIT 200").bind(ticketId).all();
       return json({ data: result.results || [] });
     }
     if (request.method === "POST") {

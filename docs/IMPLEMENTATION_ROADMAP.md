@@ -6,10 +6,10 @@
 
 ## Baseline đã kiểm tra
 
-- Public website đã có generator tĩnh song ngữ Việt/Anh với 38 trang nội dung, metadata theo trang, hreflang, canonical, sitemap, blog listing/detail và biểu mẫu tư vấn. CMS pages/posts/services có admin UI + API, draft-first workflow và revision history; blog có taxonomy; CMS media library upload R2, alt text, preview, publish/archive đang được triển khai trên feature branch. Public renderer có thể đọc page đã xuất bản để ghi đè route tĩnh cùng slug khi HQ_API_BASE được cấu hình; biến này chưa được cấu hình và chưa xác minh runtime với Worker/D1.
+- Public website đã có generator tĩnh song ngữ Việt/Anh với 40 trang nội dung, metadata theo trang, hreflang, canonical, sitemap, blog listing/detail và biểu mẫu tư vấn. CMS pages/posts/services có admin UI + API, draft-first workflow và revision history; blog có taxonomy; CMS media library upload R2, alt text, preview, publish/archive đã merge vào main và CI/Pages deploy xanh. Public renderer có thể đọc page đã xuất bản để ghi đè route tĩnh cùng slug khi HQ_API_BASE được cấu hình; biến này chưa được cấu hình và chưa xác minh runtime với Worker/D1.
 - Có Worker scaffold và D1 migration cho lead, lead events và rate limiting.
 - `backend/wrangler.toml` vẫn chứa database ID placeholder; API base trên frontend hiện để trống.
-- Better Auth và role checks có integration tests; CMS API/UI cho pages/posts/services có kiểm thử. D1 migrations chưa deploy; public CMS rendering, media library và template package/provisioning chưa hoàn thiện. Customer portal đã có báo giá, đơn hàng, dự án/milestone/bình luận và ticket hỗ trợ ở mức nền tảng; CRM order/project/ticket admin UI và membership onboarding đã có. Các tích hợp production, file riêng tư và thanh toán chưa hoàn thiện.
+- Better Auth và role checks có integration tests; CMS API/UI cho pages/posts/services có kiểm thử. D1 migrations chưa deploy; public CMS rendering chưa xác minh runtime; template package/provisioning chưa hoàn thiện. CMS media code đã có nhưng cần R2 bucket và migration trên Cloudflare. Customer portal đã có báo giá, đơn hàng, dự án/milestone/bình luận và ticket hỗ trợ ở mức nền tảng; CRM order/project/ticket admin UI và membership onboarding đã có. Các tích hợp production, file riêng tư và thanh toán chưa hoàn thiện.
 - GitHub Pages chỉ deploy frontend tĩnh. Backend Cloudflare và database cần cấu hình/deploy riêng.
 - Vì vậy Phase 2 trước đây không được coi là production-ready; roadmap này thay thế thứ tự ưu tiên cũ.
 
@@ -62,7 +62,8 @@ Mục tiêu: dựng nền tảng có thể mở rộng, không chỉ thêm HTML 
 - [ ] Public routes hoạt động trực tiếp khi mở URL, gồm refresh và 404.
 - [x] Test quyền xuất bản, revision history và restore; restore không tự xuất bản nội dung.
 - [x] Test media upload: file type/signature, size cap, draft privacy, admin preview, role boundary, publish and archive.
-- [ ] Test XSS-safe rendering, validation, customer-private file upload/download.
+- [x] Test private customer project file upload/download, customer membership isolation, internal visibility, MIME/signature validation and 10 MiB size cap.
+- [ ] Test XSS-safe rendering, validation, malware scanning/retention policy for customer-private files.
 - [ ] Kiểm tra link, SEO metadata, sitemap, accessibility, mobile, Lighthouse và lỗi API.
 
 ## Phase 3 — Kho template WordPress + HTML/CSS
@@ -177,4 +178,4 @@ Không công bố hệ thống là production-ready cho đến khi có domain v�
 - [x] Customer portal marked noindex; runtime script and schema validation added to repository checks.
 - [x] Admin UI for order creation from accepted quotes, project creation/status/milestones, ticket queue/status/priority and staff replies.
 - [x] Customer account onboarding: staff can link an already registered Better Auth identity to a CRM customer from the admin CRM workspace; membership updates are audited.
-- [ ] Secure private file attachments, notification delivery, invoicing/payment and production deployment.
+- [ ] Secure private project file APIs/UI and local integration tests are implemented; Cloudflare staging R2/D1 runtime acceptance remains pending. Notification delivery, invoicing/payment and production deployment remain incomplete.

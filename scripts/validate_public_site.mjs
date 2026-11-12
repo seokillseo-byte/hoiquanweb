@@ -48,13 +48,16 @@ for (const file of files) {
     ["Vietnamese hreflang", /hreflang="vi"/],
     ["English hreflang", /hreflang="en"/],
     ["x-default hreflang", /hreflang="x-default"/],
-    ["main landmark", /<main id="main">/],
+    ["main landmark", /<main id="main" data-cms-page="[^"]+">/],
     ["site stylesheet", /\/assets\/css\/site\.css/],
     ["site script", /\/assets\/js\/site\.js/],
-    ["API base metadata in head", /<head>[\s\S]*<meta name="hq-api-base" content="">/]
+    ["API base metadata in head", /<head>[\s\S]*<meta name="hq-api-base" content="[^"]*">/],
+    ["CMS page slug hook", /<main id="main" data-cms-page="[^"]+">/]
   ]) {
     if (!pattern.test(html)) errors.push(name + ": missing " + label);
   }
+
+  if ((html.match(/name="hq-api-base"/g) || []).length !== 1) errors.push(name + ": expected exactly one API base meta tag");
 
   const alternates = [...html.matchAll(/<link rel="alternate" hreflang="(vi|en|x-default)" href="([^"]+)">/g)];
   if (alternates.length !== 3) errors.push(name + ": expected exactly three language alternates");
@@ -103,6 +106,9 @@ const css = await readFile(join(root, "assets", "css", "site.css"), "utf8");
 const js = await readFile(join(root, "assets", "js", "site.js"), "utf8");
 assert.ok(css.includes("#155EEF") && css.includes("#0B1F3A") && css.includes("#38BDF8"), "Brand colors must match the approved palette");
 assert.ok(js.includes("/api/leads"), "Inquiry form must use the existing lead API when configured");
+assert.ok(js.includes("/api/v1/public/pages/"), "Public renderer must fetch published CMS pages when configured");
+assert.ok(js.includes('credentials:"omit"'), "Public CMS reads must not send admin session cookies");
+assert.ok(!js.includes("innerHTML"), "Public CMS renderer must not inject stored content as HTML");
 assert.ok(js.includes("hoiquanweb-project-brief.txt"), "Unconfigured API must not report a false successful submission");
 
 if (errors.length) {

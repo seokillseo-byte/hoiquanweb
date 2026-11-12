@@ -105,6 +105,11 @@ try:
         input=(ROOT / "backend/src/worker.js").read_text(encoding="utf-8"),
         text=True, check=True, capture_output=True,
     )
+    subprocess.run(
+        ["node", "--input-type=module", "--check"],
+        input=(ROOT / "public-site/src/site.js").read_text(encoding="utf-8"),
+        text=True, check=True, capture_output=True,
+    )
     validate_script_blocks(parser, "index.html")
     validate_script_blocks(admin_parser, "admin.html")
 except FileNotFoundError:

@@ -819,6 +819,22 @@ test("CMS media uploads validate image signatures, remain private until Admin pu
   });
   assert.equal(invalid.status, 400, "declared MIME type must match the actual image signature");
 
+  const oversizedBoundary = "----hoiquanweb-oversized-media-" + crypto.randomUUID();
+  const oversizedBytes = new Uint8Array(5 * 1024 * 1024 + 128 * 1024 + 1);
+  const oversizedBody = makeMultipart(oversizedBytes, "image/png", "oversized.png", "", oversizedBoundary);
+  const oversizedRequest = new Request(origin + "/api/v1/admin/media", {
+    method: "POST",
+    headers: { origin, cookie: admin.cookie, "content-type": "multipart/form-data; boundary=" + oversizedBoundary },
+    body: oversizedBody
+  });
+  assert.equal(oversizedRequest.headers.get("content-length"), null, "the regression case must omit Content-Length");
+  const oversized = await server.fetch(oversizedRequest.url, {
+    method: oversizedRequest.method,
+    headers: oversizedRequest.headers,
+    body: oversizedBody
+  });
+  assert.equal(oversized.status, 413, "streamed multipart bodies must be capped before form parsing when Content-Length is absent");
+
   const archive = await server.fetch(origin + "/api/v1/admin/media/" + asset.id + "/archive", {
     method: "POST", headers: { origin, cookie: admin.cookie }
   });

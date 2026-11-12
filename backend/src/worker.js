@@ -1234,6 +1234,34 @@ function mediaRecord(row) {
   };
 }
 
+let activeCmsMediaUploads = 0;
+const CMS_MEDIA_MAX_CONCURRENT_UPLOADS = 4;
+
+async function readRequestBodyWithinLimit(request, maxBytes) {
+  const reader = request.body?.getReader();
+  if (!reader) return new Uint8Array();
+  // Allocate the bounded body once. Retaining chunk arrays and then flattening
+  // them created a second full-size copy for every concurrent upload.
+  const body = new Uint8Array(maxBytes);
+  let total = 0;
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      if (value.byteLength > maxBytes - total) {
+        try { await reader.cancel(); } catch {}
+        return null;
+      }
+      body.set(value, total);
+      total += value.byteLength;
+    }
+  } catch (error) {
+    try { await reader.cancel(); } catch {}
+    throw error;
+  }
+  return body.subarray(0, total);
+}
+
 async function adminMedia(request, env, url) {
   const principal = await authenticatedPrincipal(request, env);
   if (principal.error) return principal.error;
@@ -1264,34 +1292,48 @@ async function adminMedia(request, env, url) {
     if (length > CMS_MEDIA_MAX_BYTES + 128 * 1024) return json({ error: { code: "UPLOAD_TOO_LARGE", message: "Ảnh vượt quá giới hạn 5 MB." } }, 413);
     const contentType = request.headers.get("content-type") || "";
     if (!contentType.toLowerCase().startsWith("multipart/form-data")) return json({ error: { code: "VALIDATION_ERROR", message: "Yêu cầu tải ảnh phải dùng multipart/form-data." } }, 400);
-    let form;
-    try { form = await request.formData(); } catch { return json({ error: { code: "INVALID_UPLOAD", message: "Không đọc được dữ liệu ảnh tải lên." } }, 400); }
-    const file = form.get("file");
-    if (!file || typeof file.arrayBuffer !== "function" || typeof file.size !== "number") return json({ error: { code: "VALIDATION_ERROR", message: "Vui lòng chọn một tệp ảnh." } }, 400);
-    if (file.size < 1 || file.size > CMS_MEDIA_MAX_BYTES) return json({ error: { code: "UPLOAD_TOO_LARGE", message: "Ảnh phải có dung lượng từ 1 byte đến 5 MB." } }, 413);
-    const mime = clean(file.type, 80).toLowerCase();
-    const typeConfig = CMS_IMAGE_TYPES[mime];
-    if (!typeConfig) return json({ error: { code: "UNSUPPORTED_MEDIA_TYPE", message: "Chỉ chấp nhận PNG, JPEG, GIF và WebP." } }, 415);
-    const bytes = new Uint8Array(await file.arrayBuffer());
-    if (bytes.byteLength !== file.size || !typeConfig.valid(bytes)) return json({ error: { code: "INVALID_IMAGE_SIGNATURE", message: "Nội dung tệp không khớp định dạng ảnh đã khai báo." } }, 400);
-    const id = crypto.randomUUID();
-    const objectKey = "cms/" + id + "." + typeConfig.extension;
-    const filename = clean(String(file.name || "image." + typeConfig.extension).replace(/[\\u0000-\\u001f\\/:*?"<>|]/g, "_"), 120) || "image." + typeConfig.extension;
-    const altText = clean(form.get("alt_text"), 250);
+    if (activeCmsMediaUploads >= CMS_MEDIA_MAX_CONCURRENT_UPLOADS) {
+      return json({ error: { code: "UPLOAD_CAPACITY", message: "Máy chủ đang xử lý nhiều lượt tải ảnh. Vui lòng thử lại sau." } }, 503, { "retry-after": "2" });
+    }
+    activeCmsMediaUploads++;
     try {
-      await env.MEDIA_BUCKET.put(objectKey, bytes, {
-        httpMetadata: { contentType: mime, cacheControl: "public, max-age=3600" },
-        customMetadata: { assetId: id, uploadedBy: principal.user.id }
-      });
-      const row = { id, filename, content_type: mime, size_bytes: bytes.byteLength, alt_text: altText, status: "draft", uploaded_by: principal.user.id, created_at: now, updated_at: now };
-      await env.DB.batch([
-        env.DB.prepare("INSERT INTO cms_media_assets (id, object_key, filename, content_type, size_bytes, alt_text, status, uploaded_by, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, 'draft', ?, ?, ?)").bind(id, objectKey, filename, mime, bytes.byteLength, altText, principal.user.id, now, now),
-        env.DB.prepare("INSERT INTO crm_audit_events (id, actor_id, action, resource_type, resource_id, metadata_json, created_at) VALUES (?, ?, 'media.uploaded', 'media', ?, ?, ?)").bind(crypto.randomUUID(), principal.user.id, id, JSON.stringify({ filename, contentType: mime, sizeBytes: bytes.byteLength }), now)
-      ]);
-      return json({ data: mediaRecord(row) }, 201);
+      const boundedBody = await readRequestBodyWithinLimit(request, CMS_MEDIA_MAX_BYTES + 128 * 1024);
+      if (!boundedBody) return json({ error: { code: "UPLOAD_TOO_LARGE", message: "Ảnh vượt quá giới hạn 5 MB." } }, 413);
+      const boundedHeaders = new Headers(request.headers);
+      boundedHeaders.delete("content-length");
+      const boundedRequest = new Request(request.url, { method: "POST", headers: boundedHeaders, body: boundedBody });
+      const form = await boundedRequest.formData();
+      const file = form.get("file");
+      if (!file || typeof file.arrayBuffer !== "function" || typeof file.size !== "number") return json({ error: { code: "VALIDATION_ERROR", message: "Vui lòng chọn một tệp ảnh." } }, 400);
+      if (file.size < 1 || file.size > CMS_MEDIA_MAX_BYTES) return json({ error: { code: "UPLOAD_TOO_LARGE", message: "Ảnh phải có dung lượng từ 1 byte đến 5 MB." } }, 413);
+      const mime = clean(file.type, 80).toLowerCase();
+      const typeConfig = CMS_IMAGE_TYPES[mime];
+      if (!typeConfig) return json({ error: { code: "UNSUPPORTED_MEDIA_TYPE", message: "Chỉ chấp nhận PNG, JPEG, GIF và WebP." } }, 415);
+      const bytes = new Uint8Array(await file.arrayBuffer());
+      if (bytes.byteLength !== file.size || !typeConfig.valid(bytes)) return json({ error: { code: "INVALID_IMAGE_SIGNATURE", message: "Nội dung tệp không khớp định dạng ảnh đã khai báo." } }, 400);
+      const id = crypto.randomUUID();
+      const objectKey = "cms/" + id + "." + typeConfig.extension;
+      const filename = clean(String(file.name || "image." + typeConfig.extension).replace(/[\\u0000-\\u001f\\/:*?"<>|]/g, "_"), 120) || "image." + typeConfig.extension;
+      const altText = clean(form.get("alt_text"), 250);
+      try {
+        await env.MEDIA_BUCKET.put(objectKey, bytes, {
+          httpMetadata: { contentType: mime, cacheControl: "public, max-age=3600" },
+          customMetadata: { assetId: id, uploadedBy: principal.user.id }
+        });
+        const row = { id, filename, content_type: mime, size_bytes: bytes.byteLength, alt_text: altText, status: "draft", uploaded_by: principal.user.id, created_at: now, updated_at: now };
+        await env.DB.batch([
+          env.DB.prepare("INSERT INTO cms_media_assets (id, object_key, filename, content_type, size_bytes, alt_text, status, uploaded_by, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, 'draft', ?, ?, ?)").bind(id, objectKey, filename, mime, bytes.byteLength, altText, principal.user.id, now, now),
+          env.DB.prepare("INSERT INTO crm_audit_events (id, actor_id, action, resource_type, resource_id, metadata_json, created_at) VALUES (?, ?, 'media.uploaded', 'media', ?, ?, ?)").bind(crypto.randomUUID(), principal.user.id, id, JSON.stringify({ filename, contentType: mime, sizeBytes: bytes.byteLength }), now)
+        ]);
+        return json({ data: mediaRecord(row) }, 201);
+      } catch {
+        try { await env.MEDIA_BUCKET.delete(objectKey); } catch {}
+        return json({ error: { code: "MEDIA_UPLOAD_FAILED", message: "Không thể lưu ảnh. Vui lòng thử lại." } }, 503);
+      }
     } catch {
-      try { await env.MEDIA_BUCKET.delete(objectKey); } catch {}
-      return json({ error: { code: "MEDIA_UPLOAD_FAILED", message: "Không thể lưu ảnh. Vui lòng thử lại." } }, 503);
+      return json({ error: { code: "INVALID_UPLOAD", message: "Không đọc được dữ liệu ảnh tải lên." } }, 400);
+    } finally {
+      activeCmsMediaUploads--;
     }
   }
   if (!mediaId) return json({ error: { code: "METHOD_NOT_ALLOWED", message: "Phương thức không được hỗ trợ." } }, 405);

@@ -17,11 +17,13 @@ This is not just a static marketing site. Existing lead API scaffolding should b
 
 ## Current verified baseline and gaps
 
-- Public frontend is currently a static `index.html` landing page plus `privacy.html`, `404.html`, and `admin.html`.
-- A Cloudflare Worker source file and D1 migration exist for lead intake, lead status/history, and basic rate limiting.
-- `backend/wrangler.toml` contains the placeholder `REPLACE_WITH_CLOUDFLARE_D1_DATABASE_ID`.
-- The frontend API-base metadata is empty in the current baseline.
-- The repository does not currently contain an implemented multi-page CMS, template catalog, real authentication/customer portal, order/project management, or persistent content-management interface.
+- Public website is generated as a bilingual static site with 34 content pages, per-page SEO metadata, canonical/hreflang, sitemap, robots and a working project-pages base-path build.
+- `admin.html` contains a session-protected CMS workspace for pages, posts and services. Staff/admin can create/edit drafts; admin can publish/archive. Content revisions are stored by the Worker API.
+- Worker APIs include Better Auth session handling, server-assigned roles, public published-content reads, protected CMS writes, lead intake and the initial CRM identity/customer foundations.
+- D1 migrations include CMS content and revision tables, identity/authorization and CRM foundations. They have not yet been applied to a real Cloudflare database.
+- `backend/wrangler.toml` still contains the placeholder `REPLACE_WITH_CLOUDFLARE_D1_DATABASE_ID`; API base and allowed origins must be configured per environment.
+- The public static renderer does not yet fetch/render CMS-managed content; CMS API and admin UI are implemented foundations, not a fully connected dynamic publishing pipeline.
+- Template marketplace, media library, full CRM workflow, customer portal, order/project management and production integrations remain incomplete.
 - GitHub Pages workflows can deploy static assets; they do not run the Worker or create/configure Cloudflare D1 resources.
 - CI success means the configured repository checks passed; it does not prove that a live API, database, email sender, or customer portal is operational.
 
@@ -53,7 +55,7 @@ The frontend must never be trusted to authorize a user, determine final prices, 
 - **Environment separation:** local/test, preview/staging, production. Each environment must have distinct credentials and data resources.
 - **Custom domain:** configure canonical URLs, CORS origins, cookies/session policy, sitemap, and security headers for the actual production domain before launch.
 
-The choice of identity/session implementation, object storage provider, and production frontend host remains an architecture decision to be recorded before implementation. Do not assume GitHub Pages alone can provide a secure authenticated application.
+The identity/session baseline now uses Better Auth with database-backed sessions and server-assigned application roles. Object storage provider, production frontend host and full deployment topology remain to be decided and recorded before production implementation. Do not assume GitHub Pages alone can provide a secure authenticated application.
 
 ## Application areas
 

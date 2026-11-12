@@ -14,7 +14,7 @@ assert.ok(await exists(join(root,"index.html")),"Vietnamese homepage must exist"
 assert.ok(await exists(join(root,"en","index.html")),"English homepage must exist");
 assert.ok(await exists(join(root,"assets","css","site.css")),"Generated CSS must exist");
 assert.ok(await exists(join(root,"assets","js","site.js")),"Generated JavaScript must exist");
-const files=(await walk(root)).filter(path=>path.endsWith(".html"));
+const files=(await walk(root)).filter(path=>path.endsWith(".html")&&!path.endsWith("404.html"));
 assert.ok(files.length>=30,"Expected a complete bilingual set of public pages");
 const errors=[];
 for(const file of files){
@@ -34,6 +34,9 @@ for(const file of files){
   ]) if(!pattern.test(html)) errors.push(name+": missing "+label);
   if(/REPLACE_ME|TODO|Lorem ipsum|example\.com/i.test(html)) errors.push(name+": contains placeholder content");
 }
+const notFound=await readFile(join(root,"404.html"),"utf8");
+assert.ok(notFound.includes('name="robots" content="noindex,follow"'),"404 page must not be indexed");
+assert.ok(notFound.includes('href="/">Về trang chủ'),"404 page must link back to the homepage");
 const sitemap=await readFile(join(root,"sitemap.xml"),"utf8");
 assert.ok(sitemap.includes("https://hoiquanweb.io.vn/"),"Sitemap must use the production domain");
 assert.ok((sitemap.match(/<url>/g)||[]).length>=30,"Sitemap must include the bilingual page set");

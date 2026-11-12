@@ -103,7 +103,7 @@ Mục tiêu: dựng nền tảng có thể mở rộng, không chỉ thêm HTML 
 
 ## Phase 5 — CRM và vận hành kinh doanh
 
-**Đã merge vào `main`:** migration `0003_crm_foundation.sql` bổ sung bảng khách hàng CRM, timeline hoạt động, báo giá, dòng báo giá và audit events; validator kiểm tra schema/foreign keys/ràng buộc tính tổng. Admin/staff có API quản lý khách hàng (list/create/detail/update status/profile), activity timeline (list/create), lead conversion và quote workflow (create/list/detail/send); customer xem quote/line items theo membership và owner/billing xác nhận. Admin UI có CRM workspace để thêm khách hàng, đổi trạng thái vòng đời, xem timeline, ghi nhận note/call/email/meeting và chuyển lead thành khách hàng, đồng thời quản lý báo giá. Lead conversion giữ source attribution, ghi activity/audit và idempotent. Quote totals được tính server-side; customer/activity/quote mutations có audit events và integration tests. Lead assignment, CRM dashboard và email delivery tự động chưa hoàn thiện; order/project/milestone/ticket workflow đã có API/UI nền tảng nhưng chưa deploy production.
+**Đã merge vào `main`:** migration `0003_crm_foundation.sql` bổ sung bảng khách hàng CRM, timeline hoạt động, báo giá, dòng báo giá và audit events; validator kiểm tra schema/foreign keys/ràng buộc tính tổng. Admin/staff có API quản lý khách hàng (list/create/detail/update status/profile), activity timeline (list/create), lead conversion và quote workflow (create/list/detail/send); customer xem quote/line items theo membership và owner/billing xác nhận. Admin UI có CRM workspace để thêm khách hàng, đổi trạng thái vòng đời, xem timeline, ghi nhận note/call/email/meeting và chuyển lead thành khách hàng, đồng thời quản lý báo giá. Lead conversion giữ source attribution, ghi activity/audit và idempotent. Quote totals được tính server-side; customer/activity/quote mutations có audit events và integration tests. Lead assignment có API, phân quyền admin/staff, lịch sử sự kiện và giao diện phân công trong admin; CRM dashboard và email delivery tự động chưa hoàn thiện. Order/project/milestone/ticket workflow đã có API/UI nền tảng nhưng chưa deploy production.
 
 - Lead pipeline, nguồn lead, lịch sử liên hệ, assignment, khách hàng, báo giá theo hạng mục, đơn hàng, hợp đồng/tài liệu, dự án, tasks, milestone và ticket hỗ trợ.
 - Thông báo email khi provider và sender được cấu hình; lỗi gửi thông báo không làm mất giao dịch đã lưu.
@@ -119,7 +119,8 @@ Mục tiêu: dựng nền tảng có thể mở rộng, không chỉ thêm HTML 
 - [x] Admin UI tạo bản nháp, xem danh sách/chi tiết và chuyển báo giá sang trạng thái đã gửi.
 - [x] CRM customer workspace: tạo/list khách hàng, cập nhật trạng thái active/inactive/archived, ghi nhận và xem activity timeline.
 - [x] Lead conversion vào CRM, giữ source attribution, ghi activity/audit và chống tạo khách hàng trùng khi retry.
-- [ ] Lead assignment, CRM dashboard và quy trình email thông báo.
+- [x] Lead assignment: chỉ admin/staff được xem danh sách nhân sự; chỉ tài khoản có role admin/staff được giao lead; assignment/unassignment và status changes được ghi history + CRM audit trong một D1 batch.
+- [ ] CRM dashboard và quy trình email thông báo.
 - [ ] Kiểm thử email/webhook và lỗi mạng; không báo thành công giả.
 - [ ] Kiểm tra quyền, retention, export/delete dữ liệu và báo cáo.
 

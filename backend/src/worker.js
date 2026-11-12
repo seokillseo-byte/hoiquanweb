@@ -191,11 +191,11 @@ async function adminContent(request, env, url) {
   if (resourceId && (!resourceId || resourceId.length > 80 || resourceId.includes("/"))) {
     return json({ error: { code: "NOT_FOUND", message: "Không tìm thấy nội dung." } }, 404);
   }
-  if (action && !["publish", "archive"].includes(action)) {
+  if (action && !["publish", "archive", "revisions", "restore"].includes(action)) {
     return json({ error: { code: "NOT_FOUND", message: "Không tìm thấy thao tác." } }, 404);
   }
 
-  if (action === "publish" || action === "archive" || request.method === "DELETE") {
+  if (action === "publish" || action === "archive" || action === "restore" || request.method === "DELETE") {
     if (!hasAnyRole(principal, ["admin"])) {
       return json({ error: { code: "FORBIDDEN", message: "Chỉ quản trị viên được xuất bản hoặc lưu trữ nội dung." } }, 403);
     }
@@ -263,6 +263,59 @@ async function adminContent(request, env, url) {
   if (!resourceId) return json({ error: { code: "METHOD_NOT_ALLOWED", message: "Phương thức không được hỗ trợ." } }, 405);
   const existing = await env.DB.prepare("SELECT " + config.select + " FROM " + config.table + " WHERE id = ? LIMIT 1").bind(resourceId).first();
   if (!existing) return json({ error: { code: "NOT_FOUND", message: "Không tìm thấy nội dung." } }, 404);
+
+  if (action === "revisions" && request.method === "GET") {
+    const limit = Math.max(1, Math.min(50, Number.parseInt(url.searchParams.get("limit") || "20", 10) || 20));
+    const result = await env.DB.prepare(
+      "SELECT id, action, actor_id, created_at FROM cms_revisions WHERE resource_type = ? AND resource_id = ? ORDER BY created_at DESC, id DESC LIMIT ?"
+    ).bind(resourceName, resourceId, limit).all();
+    return json({ data: result.results || [], meta: { limit } });
+  }
+
+  if (action === "restore" && request.method === "POST") {
+    const body = await readJson(request);
+    const revisionId = clean(body?.revision_id, 80);
+    if (!revisionId) return json({ error: { code: "VALIDATION_ERROR", message: "Mã phiên bản cần khôi phục không hợp lệ." } }, 400);
+    const revision = await env.DB.prepare(
+      "SELECT snapshot_json FROM cms_revisions WHERE id = ? AND resource_type = ? AND resource_id = ? LIMIT 1"
+    ).bind(revisionId, resourceName, resourceId).first();
+    if (!revision) return json({ error: { code: "NOT_FOUND", message: "Không tìm thấy phiên bản nội dung." } }, 404);
+    const previous = parseJsonField(revision.snapshot_json);
+    const titleKey = resourceName === "services" ? "name" : "title";
+    const slug = clean(previous.slug, 180);
+    const title = clean(previous[titleKey], 240);
+    if (!validCmsSlug(slug) || title.length < 2) {
+      return json({ error: { code: "INVALID_REVISION", message: "Phiên bản lưu trữ không có cấu trúc hợp lệ." } }, 409);
+    }
+    const excerpt = clean(previous.excerpt, 500);
+    const seo = cmsObject(previous.seo || {}, 10000);
+    if (seo === null) return json({ error: { code: "INVALID_REVISION", message: "Dữ liệu SEO trong phiên bản không hợp lệ." } }, 409);
+    let snapshot, update;
+    if (resourceName === "pages") {
+      const content = cmsObject(previous.content || {}, 100000);
+      if (content === null) return json({ error: { code: "INVALID_REVISION", message: "Nội dung trang trong phiên bản không hợp lệ." } }, 409);
+      snapshot = { ...previous, id: resourceId, slug, title, excerpt, content, seo, status: "draft", published_at: null, updated_at: now };
+      update = env.DB.prepare("UPDATE cms_pages SET slug = ?, title = ?, excerpt = ?, content_json = ?, seo_json = ?, status = 'draft', published_at = NULL, updated_at = ? WHERE id = ?")
+        .bind(slug, title, excerpt, JSON.stringify(content), JSON.stringify(seo), now, resourceId);
+    } else if (resourceName === "posts") {
+      const bodyContent = cmsObject(previous.body || {}, 150000);
+      const author = clean(previous.author_name || "", 120);
+      if (bodyContent === null) return json({ error: { code: "INVALID_REVISION", message: "Nội dung bài viết trong phiên bản không hợp lệ." } }, 409);
+      snapshot = { ...previous, id: resourceId, slug, title, excerpt, body: bodyContent, seo, author_name: author, status: "draft", published_at: null, updated_at: now };
+      update = env.DB.prepare("UPDATE cms_posts SET slug = ?, title = ?, excerpt = ?, body_json = ?, seo_json = ?, author_name = ?, status = 'draft', published_at = NULL, updated_at = ? WHERE id = ?")
+        .bind(slug, title, excerpt, JSON.stringify(bodyContent), JSON.stringify(seo), author, now, resourceId);
+    } else {
+      const summary = clean(previous.summary || "", 500);
+      const description = cmsObject(previous.description || {}, 100000);
+      const sortOrder = Number.isInteger(previous.sort_order) ? Math.max(0, Math.min(100000, previous.sort_order)) : 0;
+      if (description === null) return json({ error: { code: "INVALID_REVISION", message: "Mô tả dịch vụ trong phiên bản không hợp lệ." } }, 409);
+      snapshot = { ...previous, id: resourceId, slug, name: title, summary, description, sort_order: sortOrder, seo, status: "draft", published_at: null, updated_at: now };
+      update = env.DB.prepare("UPDATE cms_services SET slug = ?, name = ?, summary = ?, description_json = ?, sort_order = ?, status = 'draft', published_at = NULL, updated_at = ? WHERE id = ?")
+        .bind(slug, title, summary, JSON.stringify(description), sortOrder, now, resourceId);
+    }
+    await env.DB.batch([update, recordCmsRevision(env, resourceName, resourceId, "updated", principal.user.id, snapshot, now)]);
+    return json({ data: snapshot, restored_from: revisionId });
+  }
 
   if (!action && request.method === "GET") {
     return json({ data: cmsSnapshot(config, existing) });

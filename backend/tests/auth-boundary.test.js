@@ -33,8 +33,10 @@ test("legacy ADMIN_TOKEN does not bypass identity-protected routes", async () =>
 });
 
 test("legacy lead administration no longer accepts the shared ADMIN_TOKEN", async () => {
-  const response = await request("/api/admin/leads", "Bearer test-only-legacy-token");
+  const response = await request("/api/v1/admin/leads", "Bearer test-only-legacy-token");
   assert.equal(response.status, 503, "lead administration must fail closed when identity storage is unavailable");
+  const conversion = await request("/api/v1/admin/leads/test-lead/convert", "Bearer test-only-legacy-token");
+  assert.equal(conversion.status, 503, "lead conversion must fail closed when identity storage is unavailable");
   const body = await response.json();
   assert.equal(body.error.code, "SERVICE_UNAVAILABLE");
 });

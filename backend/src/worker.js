@@ -28,6 +28,58 @@ async function adminLeads(request, env, url) {
   if (!hasAnyRole(principal, ["admin", "staff"])) {
     return json({ error: { code: "FORBIDDEN", message: "Bạn không có quyền quản trị lead." } }, 403);
   }
+  const leadRoute = url.pathname.match(/^\/api\/admin\/leads\/([^/]+)(?:\/(events|convert))?$/);
+  if (leadRoute) {
+    let leadId;
+    try { leadId = decodeURIComponent(leadRoute[1]); }
+    catch { return json({ error: "NOT_FOUND" }, 404); }
+    if (!leadId || leadId.length > 80 || leadId.includes("/")) return json({ error: "NOT_FOUND" }, 404);
+    const action = leadRoute[2] || "";
+    const lead = await env.DB.prepare("SELECT id, name, email, service, budget, goals, status, created_at, updated_at FROM leads WHERE id = ? LIMIT 1").bind(leadId).first();
+    if (!lead) return json({ error: "NOT_FOUND" }, 404);
+    if (action === "events" && request.method === "GET") {
+      const result = await env.DB.prepare("SELECT id, event_type, details, created_at FROM lead_events WHERE lead_id = ? ORDER BY created_at DESC, id DESC LIMIT 100").bind(leadId).all();
+      return json({ data: result.results || [] });
+    }
+    if (action === "convert" && request.method === "POST") {
+      const existing = await env.DB.prepare("SELECT id, lead_id, display_name, organization_name, contact_email, phone, status, created_at FROM crm_customers WHERE lead_id = ? LIMIT 1").bind(leadId).first();
+      if (existing) return json({ data: existing, already_converted: true });
+      if (!["qualified", "proposal_sent", "won"].includes(lead.status)) {
+        return json({ error: "INVALID_STATE", message: "Chỉ lead đã đủ điều kiện hoặc đã gửi đề xuất mới có thể chuyển thành khách hàng." }, 409);
+      }
+      const now = new Date().toISOString(), customerId = crypto.randomUUID();
+      const notes = ["Nguồn: Lead website", "Dịch vụ: " + lead.service, "Ngân sách: " + (lead.budget || "Chưa xác định"), "Mục tiêu: " + (lead.goals || "Chưa cung cấp")].join("\n");
+      const activityId = crypto.randomUUID(), leadEventId = crypto.randomUUID();
+      const leadAuditId = crypto.randomUUID(), customerAuditId = crypto.randomUUID();
+      const insertCustomer = env.DB.prepare(
+        "INSERT OR IGNORE INTO crm_customers (id, lead_id, display_name, organization_name, contact_email, phone, status, notes, created_at, updated_at) SELECT ?, id, name, '', email, '', 'active', ?, ?, ? FROM leads WHERE id = ? AND status IN ('qualified','proposal_sent','won')"
+      ).bind(customerId, notes, now, now, leadId);
+      const updateLead = env.DB.prepare(
+        "UPDATE leads SET status = 'won', updated_at = ? WHERE id = ? AND status IN ('qualified','proposal_sent','won') AND EXISTS (SELECT 1 FROM crm_customers WHERE lead_id = ? AND id = ?)"
+      ).bind(now, leadId, leadId, customerId);
+      const recordLeadEvent = env.DB.prepare(
+        "INSERT INTO lead_events (id, lead_id, event_type, details, created_at) SELECT ?, ?, 'converted_to_customer', ?, ? WHERE EXISTS (SELECT 1 FROM crm_customers WHERE lead_id = ? AND id = ?)"
+      ).bind(leadEventId, leadId, JSON.stringify({ customer_id: customerId, actor_id: principal.user.id }), now, leadId, customerId);
+      const recordActivity = env.DB.prepare(
+        "INSERT INTO crm_activities (id, customer_id, lead_id, activity_type, subject, body, actor_id, occurred_at, created_at) SELECT ?, ?, ?, 'system', 'Lead converted to customer', ?, ?, ?, ? WHERE EXISTS (SELECT 1 FROM crm_customers WHERE lead_id = ? AND id = ?)"
+      ).bind(activityId, customerId, leadId, "Converted from lead " + leadId, principal.user.id, now, now, leadId, customerId);
+      const auditLead = env.DB.prepare(
+        "INSERT INTO crm_audit_events (id, actor_id, action, resource_type, resource_id, metadata_json, created_at) SELECT ?, ?, 'lead.converted', 'lead', ?, ?, ? WHERE EXISTS (SELECT 1 FROM crm_customers WHERE lead_id = ? AND id = ?)"
+      ).bind(leadAuditId, principal.user.id, leadId, JSON.stringify({ customer_id: customerId }), now, leadId, customerId);
+      const auditCustomer = env.DB.prepare(
+        "INSERT INTO crm_audit_events (id, actor_id, action, resource_type, resource_id, metadata_json, created_at) SELECT ?, ?, 'customer.created_from_lead', 'customer', id, ?, ? FROM crm_customers WHERE lead_id = ? AND id = ?"
+      ).bind(customerAuditId, principal.user.id, JSON.stringify({ lead_id: leadId }), now, leadId, customerId);
+      const results = await env.DB.batch([insertCustomer, updateLead, recordLeadEvent, recordActivity, auditLead, auditCustomer]);
+      if (!results?.[0]?.meta?.changes) {
+        const duplicate = await env.DB.prepare("SELECT id, lead_id, display_name, organization_name, contact_email, phone, status, created_at FROM crm_customers WHERE lead_id = ? LIMIT 1").bind(leadId).first();
+        if (duplicate) return json({ data: duplicate, already_converted: true });
+        return json({ error: "INVALID_STATE", message: "Lead đã thay đổi hoặc không còn đủ điều kiện chuyển đổi." }, 409);
+      }
+      const customer = await env.DB.prepare("SELECT id, lead_id, display_name, organization_name, contact_email, phone, status, notes, created_at, updated_at FROM crm_customers WHERE id = ? LIMIT 1").bind(customerId).first();
+      return json({ data: customer, already_converted: false }, 201);
+    }
+    return json({ error: "METHOD_NOT_ALLOWED" }, 405);
+  }
   if (request.method === "GET") {
     const status = clean(url.searchParams.get("status"), 30);
     const limit = Math.max(1, Math.min(100, Number.parseInt(url.searchParams.get("limit"), 10) || 50));
@@ -676,7 +728,7 @@ export default { async fetch(request, env) {
       await migrateAuthDatabase(auth);
       // Wrangler's test harness does not automatically apply application D1
       // migrations. Build the minimal CRM fixture schema only in TEST_MODE.
-      await env.DB.prepare("CREATE TABLE IF NOT EXISTS crm_customers (id TEXT PRIMARY KEY, display_name TEXT NOT NULL, organization_name TEXT NOT NULL DEFAULT '', contact_email TEXT NOT NULL, phone TEXT NOT NULL DEFAULT '', status TEXT NOT NULL DEFAULT 'active', notes TEXT NOT NULL DEFAULT '', created_at TEXT NOT NULL, updated_at TEXT NOT NULL)").run();
+      await env.DB.prepare("CREATE TABLE IF NOT EXISTS crm_customers (id TEXT PRIMARY KEY, lead_id TEXT REFERENCES leads(id) ON DELETE SET NULL, display_name TEXT NOT NULL, organization_name TEXT NOT NULL DEFAULT '', contact_email TEXT NOT NULL, phone TEXT NOT NULL DEFAULT '', status TEXT NOT NULL DEFAULT 'active', notes TEXT NOT NULL DEFAULT '', created_at TEXT NOT NULL, updated_at TEXT NOT NULL)").run();
       await env.DB.prepare("CREATE TABLE IF NOT EXISTS app_user_roles (user_id TEXT NOT NULL, role TEXT NOT NULL CHECK(role IN ('admin','staff','customer')), assigned_by TEXT NOT NULL, assigned_at TEXT NOT NULL, PRIMARY KEY(user_id, role))").run();
       await env.DB.prepare("CREATE TABLE IF NOT EXISTS crm_customer_members (customer_id TEXT NOT NULL REFERENCES crm_customers(id) ON DELETE CASCADE, user_id TEXT NOT NULL, membership_role TEXT NOT NULL DEFAULT 'owner' CHECK(membership_role IN ('owner','member','billing')), created_at TEXT NOT NULL, PRIMARY KEY(customer_id, user_id))").run();
       await env.DB.prepare("CREATE TABLE IF NOT EXISTS crm_activities (id TEXT PRIMARY KEY, customer_id TEXT NOT NULL REFERENCES crm_customers(id) ON DELETE CASCADE, lead_id TEXT REFERENCES leads(id) ON DELETE SET NULL, activity_type TEXT NOT NULL, subject TEXT NOT NULL, body TEXT NOT NULL DEFAULT '', actor_id TEXT NOT NULL, occurred_at TEXT NOT NULL, created_at TEXT NOT NULL)").run();
@@ -684,6 +736,7 @@ export default { async fetch(request, env) {
       await env.DB.prepare("CREATE TABLE IF NOT EXISTS crm_quote_items (id TEXT PRIMARY KEY, quote_id TEXT NOT NULL REFERENCES crm_quotes(id) ON DELETE CASCADE, description TEXT NOT NULL, quantity INTEGER NOT NULL, unit_price_minor INTEGER NOT NULL, line_total_minor INTEGER NOT NULL, sort_order INTEGER NOT NULL DEFAULT 0)").run();
       await env.DB.prepare("CREATE TABLE IF NOT EXISTS crm_audit_events (id TEXT PRIMARY KEY, actor_id TEXT NOT NULL, action TEXT NOT NULL, resource_type TEXT NOT NULL, resource_id TEXT NOT NULL, metadata_json TEXT NOT NULL DEFAULT '{}', created_at TEXT NOT NULL)").run();
       await env.DB.prepare("CREATE TABLE IF NOT EXISTS leads (id TEXT PRIMARY KEY, name TEXT NOT NULL, email TEXT NOT NULL, service TEXT NOT NULL, budget TEXT NOT NULL DEFAULT '', goals TEXT NOT NULL DEFAULT '', status TEXT NOT NULL DEFAULT 'new', consent_at TEXT, created_at TEXT NOT NULL, updated_at TEXT NOT NULL)").run();
+      await env.DB.prepare("CREATE UNIQUE INDEX IF NOT EXISTS idx_crm_customers_lead_unique ON crm_customers(lead_id) WHERE lead_id IS NOT NULL").run();
       await env.DB.prepare("CREATE TABLE IF NOT EXISTS lead_events (id TEXT PRIMARY KEY, lead_id TEXT NOT NULL REFERENCES leads(id) ON DELETE CASCADE, event_type TEXT NOT NULL, details TEXT NOT NULL DEFAULT '', created_at TEXT NOT NULL)").run();
       await env.DB.prepare("CREATE TABLE IF NOT EXISTS cms_pages (id TEXT PRIMARY KEY, slug TEXT NOT NULL UNIQUE, title TEXT NOT NULL, excerpt TEXT NOT NULL DEFAULT '', content_json TEXT NOT NULL DEFAULT '{}', seo_json TEXT NOT NULL DEFAULT '{}', status TEXT NOT NULL DEFAULT 'draft', published_at TEXT, created_at TEXT NOT NULL, updated_at TEXT NOT NULL)").run();
       await env.DB.prepare("CREATE TABLE IF NOT EXISTS cms_posts (id TEXT PRIMARY KEY, slug TEXT NOT NULL UNIQUE, title TEXT NOT NULL, excerpt TEXT NOT NULL DEFAULT '', body_json TEXT NOT NULL DEFAULT '{}', seo_json TEXT NOT NULL DEFAULT '{}', author_name TEXT NOT NULL DEFAULT '', status TEXT NOT NULL DEFAULT 'draft', published_at TEXT, created_at TEXT NOT NULL, updated_at TEXT NOT NULL)").run();
@@ -745,7 +798,7 @@ export default { async fetch(request, env) {
     else if (url.pathname.startsWith("/api/v1/public/")) response = await publicContent(request, env, url) || json({ error: { code: "NOT_FOUND", message: "Không tìm thấy tài nguyên." } }, 404);
     else if (url.pathname === "/api/leads" && request.method === "POST") response = await createLead(request, env);
     else if (url.pathname === "/api/estimate" && request.method === "POST") response = await estimate(request);
-    else if (url.pathname === "/api/admin/leads") response = await adminLeads(request, env, url);
+    else if (url.pathname === "/api/admin/leads" || url.pathname.startsWith("/api/admin/leads/")) response = await adminLeads(request, env, url);
     else if (url.pathname === "/api/booking" && request.method === "GET") response = env.BOOKING_URL ? json({ url: env.BOOKING_URL }) : json({ error: "BOOKING_NOT_CONFIGURED", message: "Chưa cấu hình nhà cung cấp lịch hẹn." }, 503);
     else response = json({ error: "NOT_FOUND" }, 404);
     const headers = new Headers(response.headers); for (const [key, value] of Object.entries(cors)) headers.set(key, value); return withSecurity(new Response(response.body, { status: response.status, headers }));

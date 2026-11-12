@@ -235,7 +235,9 @@ test("customer portal isolates customers and quotes; admin access requires a ser
 
   const quotesA = await getFor("/api/v1/me/quotes", userA.cookie);
   assert.equal(quotesA.status, 200, await quotesA.clone().text());
-  assert.deepEqual((await quotesA.json()).data.map(item => item.quote_number).sort(), ["TEST-A", "TEST-EXPIRED"]);
+  const quotesAData = (await quotesA.json()).data;
+  assert.deepEqual(quotesAData.map(item => item.quote_number).sort(), ["TEST-A", "TEST-EXPIRED"]);
+  assert.ok(quotesAData.every(item => item.membership_role === "owner"), "quote list must include the authenticated user's membership role");
 
   const quotesB = await getFor("/api/v1/me/quotes", userB.cookie);
   assert.equal(quotesB.status, 200, await quotesB.clone().text());
@@ -246,6 +248,9 @@ test("customer portal isolates customers and quotes; admin access requires a ser
   const detail = (await quoteDetail.json()).data;
   assert.equal(detail.quote_number, "TEST-A");
   assert.equal(detail.status, "sent");
+  assert.equal(detail.membership_role, "owner");
+  assert.equal(detail.customer_id, "test-customer-a");
+  assert.equal(Object.hasOwn(detail, "notes"), false, "internal CRM notes must not be exposed to customers");
   assert.equal(detail.items.length, 1);
   assert.equal(detail.items[0].description, "Website development");
 

@@ -34,7 +34,7 @@
         <div class="field"><label for="quoteCurrency">Tiền tệ</label><input id="quoteCurrency" value="VND" maxlength="3" pattern="[A-Za-z]{3}" required></div>
         <div class="field"><label for="quoteDiscount">Giảm giá (đơn vị tiền tệ)</label><input id="quoteDiscount" type="number" min="0" step="1" value="0" required></div>
         <div class="field"><label for="quoteValidUntil">Ngày hết hạn</label><input id="quoteValidUntil" type="date"></div>
-        <div class="field wide"><label for="quoteNotes">Ghi chú nội bộ / điều khoản</label><textarea id="quoteNotes" maxlength="5000" rows="2"></textarea></div>
+        <div class="field wide"><label for="quoteNotes">Ghi chú nội bộ</label><textarea id="quoteNotes" maxlength="5000" rows="2"></textarea></div>
         <div class="field wide"><label>Hạng mục báo giá</label><div class="quote-items" id="quoteItems"></div><button class="btn secondary" type="button" id="quoteAddItem">+ Thêm hạng mục</button><p class="quote-help">Số lượng và đơn giá phải là số nguyên. Tổng tiền do máy chủ tự tính; không nhập tổng thủ công.</p></div>
       </div>
       <div class="cms-actions"><button class="btn" type="submit" id="quoteCreate">Tạo bản nháp báo giá</button><button class="btn secondary" type="button" id="quoteReset">Xóa biểu mẫu</button><span class="cms-status" id="quoteFormStatus" role="status" aria-live="polite"></span></div>

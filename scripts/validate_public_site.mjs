@@ -22,8 +22,9 @@ assert.ok(await exists(join(root, "index.html")), "Vietnamese homepage must exis
 assert.ok(await exists(join(root, "en", "index.html")), "English homepage must exist");
 assert.ok(await exists(join(root, "assets", "css", "site.css")), "Generated CSS must exist");
 assert.ok(await exists(join(root, "assets", "js", "site.js")), "Generated JavaScript must exist");
+assert.ok(await exists(join(root, "portal.html")), "Customer portal page must be generated");
 
-const files = (await walk(root)).filter(path => path.endsWith(".html") && !path.endsWith("404.html"));
+const files = (await walk(root)).filter(path => path.endsWith(".html") && !path.endsWith("404.html") && relative(root, path).split(sep).join("/") !== "portal.html");
 assert.ok(files.length >= 30, "Expected a complete bilingual set of public pages");
 const errors = [];
 const canonicalPaths = new Set();
@@ -83,6 +84,13 @@ for (const file of files) {
     if (!(await exists(targetFile))) errors.push(name + ": broken internal link or asset " + href);
   }
 }
+
+const portal = await readFile(join(root, "portal.html"), "utf8");
+assert.ok(portal.includes('name="robots" content="noindex,nofollow"'), "Customer portal must not be indexed");
+assert.ok(portal.includes('id="loginForm"') && portal.includes('id="quoteList"'), "Customer portal must provide login and quote views");
+assert.ok(portal.includes('name="hq-api-base"'), "Customer portal must receive the configured API base");
+assert.ok(!portal.includes("__HQ_API_BASE__"), "Customer portal API base placeholder must be replaced during build");
+assert.ok(!portal.includes("innerHTML"), "Customer portal must render API content without raw HTML injection");
 
 const notFound = await readFile(join(root, "404.html"), "utf8");
 assert.ok(notFound.includes('name="robots" content="noindex,follow"'), "404 page must not be indexed");

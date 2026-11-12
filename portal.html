@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex,nofollow">
+  <meta name="theme-color" content="#0B1F3A">
+  <meta name="description" content="Cổng khách hàng HoiQuanWeb.">
+  <meta name="hq-api-base" content="__HQ_API_BASE__">
+  <title>Cổng khách hàng | HoiQuanWeb</title>
+  <style>
+    :root{font-family:Inter,system-ui,-apple-system,"Segoe UI",sans-serif;color:#10233f;background:#f4f7fb;line-height:1.55;--navy:#0b1f3a;--blue:#2864d7;--cyan:#25b8d5;--line:#dce5f0;--muted:#64748b}
+    *{box-sizing:border-box}body{margin:0;min-height:100vh;background:radial-gradient(circle at 85% 5%,#dff5fb 0,transparent 28%),#f4f7fb}
+    a{color:var(--blue)}button,input{font:inherit}.shell{width:min(1040px,calc(100% - 32px));margin:32px auto 64px}
+    .top{display:flex;justify-content:space-between;align-items:center;gap:16px;margin-bottom:28px}.brand{display:flex;align-items:center;gap:12px;text-decoration:none;color:var(--navy);font-weight:850;font-size:20px}.mark{width:40px;height:40px;border-radius:12px;background:linear-gradient(135deg,var(--blue),var(--cyan));display:grid;place-items:center;color:#fff;font-size:17px}
+    .top-actions{display:flex;align-items:center;gap:10px}.lang,.secondary{border:1px solid var(--line);background:#fff;color:var(--navy);border-radius:10px;padding:10px 14px;font-weight:750;cursor:pointer}
+    .hero{margin-bottom:22px}.eyebrow{color:var(--blue);font-size:12px;font-weight:850;letter-spacing:.12em;text-transform:uppercase}.hero h1{font-size:clamp(28px,4vw,40px);letter-spacing:-.04em;line-height:1.1;margin:8px 0}.hero p{color:var(--muted);max-width:680px;margin:8px 0}
+    .panel{background:#fff;border:1px solid var(--line);border-radius:18px;padding:clamp(18px,3vw,28px);box-shadow:0 14px 45px #18385d0c;margin:18px 0}
+    .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}.field{display:grid;gap:7px}.field.full{grid-column:1/-1}.field label{font-size:13px;font-weight:800}.field input{width:100%;border:1px solid #cbd7e6;border-radius:10px;padding:12px 13px;background:#fff;color:var(--navy);min-width:0}.field input:focus{outline:3px solid #2864d722;border-color:var(--blue)}
+    .primary{border:0;border-radius:10px;padding:12px 18px;background:linear-gradient(110deg,var(--blue),#168dbd);color:#fff;font-weight:850;cursor:pointer}.primary:disabled,.secondary:disabled{opacity:.55;cursor:wait}
+    .form-actions{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:18px}.status{min-height:24px;color:var(--muted);font-size:13px}.status.error{color:#b42318}.hint{font-size:12px;color:var(--muted);margin-top:12px}
+    .section-head{display:flex;justify-content:space-between;align-items:center;gap:14px;margin-bottom:16px}.section-head h2{margin:0;font-size:22px}.quote-list{display:grid;gap:12px}.quote-card{border:1px solid var(--line);border-radius:14px;padding:16px;background:#fff}.quote-head{display:flex;justify-content:space-between;align-items:flex-start;gap:14px}.quote-number{font-weight:850;color:var(--navy)}.quote-meta{font-size:13px;color:var(--muted);margin-top:4px}.quote-total{font-size:18px;font-weight:850;white-space:nowrap}.pill{display:inline-block;border-radius:999px;padding:4px 9px;background:#edf3ff;color:#2855a6;font-size:12px;font-weight:800;margin-top:8px}.quote-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}.detail{margin-top:14px;padding:14px;border-radius:10px;background:#f6f9fd;border:1px solid var(--line)}.detail-row{display:flex;justify-content:space-between;gap:12px;font-size:13px;padding:6px 0;border-bottom:1px solid #e5ebf3}.detail-row:last-child{border-bottom:0}.detail-total{font-weight:850}.empty{padding:26px;text-align:center;color:var(--muted);border:1px dashed #cbd7e6;border-radius:14px}
+    [hidden]{display:none!important}footer{color:var(--muted);font-size:12px;text-align:center;margin-top:28px}
+    @media(max-width:640px){.shell{width:calc(100% - 20px);margin:18px auto 40px}.top{align-items:flex-start}.brand{font-size:17px}.form-grid{grid-template-columns:1fr}.field.full{grid-column:auto}.quote-head{display:block}.quote-total{margin-top:10px}.section-head{align-items:flex-start;flex-direction:column}}
+  </style>
+</head>
+<body>
+  <main class="shell">
+    <header class="top">
+      <a class="brand" href="./"><span class="mark">HQ</span><span>HoiQuanWeb</span></a>
+      <div class="top-actions"><button class="lang" type="button" id="languageButton" aria-label="Switch language">EN</button><a class="secondary" href="./" data-i18n="back">Về website</a></div>
+    </header>
+    <section class="hero">
+      <span class="eyebrow" data-i18n="eyebrow">CUSTOMER PORTAL</span>
+      <h1 data-i18n="title">Cổng khách hàng</h1>
+      <p data-i18n="intro">Đăng nhập để xem báo giá được chia sẻ với tài khoản của bạn và xác nhận khi bạn có quyền phù hợp.</p>
+    </section>
+    <section class="panel" id="loginPanel">
+      <h2 data-i18n="loginTitle">Đăng nhập tài khoản</h2>
+      <form id="loginForm">
+        <div class="form-grid">
+          <div class="field full"><label for="apiBase" data-i18n="apiLabel">API base URL</label><input id="apiBase" type="url" placeholder="https://api.example.com" required autocomplete="url"></div>
+          <div class="field"><label for="email" data-i18n="email">Email</label><input id="email" type="email" required autocomplete="username"></div>
+          <div class="field"><label for="password" data-i18n="password">Mật khẩu</label><input id="password" type="password" required autocomplete="current-password"></div>
+        </div>
+        <div class="form-actions"><button class="primary" id="loginButton" type="submit" data-i18n="login">Đăng nhập</button><span class="status" id="loginStatus" role="status" aria-live="polite"></span></div>
+      </form>
+      <p class="hint" data-i18n="loginHint">Sử dụng tài khoản đã được cấp. Kết nối cần API và tên miền được cấu hình phù hợp.</p>
+    </section>
+    <section class="panel" id="portalPanel" hidden>
+      <div class="section-head"><div><span class="eyebrow" data-i18n="account">YOUR ACCOUNT</span><h2 id="welcome"></h2><p class="quote-meta" id="accountEmail"></p></div><button class="secondary" type="button" id="logoutButton" data-i18n="logout">Đăng xuất</button></div>
+      <div class="section-head"><div><h2 data-i18n="quotesTitle">Báo giá của bạn</h2><p class="quote-meta" data-i18n="quotesIntro">Chỉ hiển thị báo giá thuộc quyền truy cập của tài khoản hiện tại.</p></div><button class="secondary" type="button" id="refreshButton" data-i18n="refresh">Làm mới</button></div>
+      <div class="quote-list" id="quoteList"><div class="empty" data-i18n="loading">Đang tải dữ liệu…</div></div>
+      <p class="status" id="portalStatus" role="status" aria-live="polite"></p>
+    </section>
+    <footer data-i18n="footer">Thông tin báo giá chỉ dành cho tài khoản đã được xác thực. Không chia sẻ mật khẩu hoặc mã phiên.</footer>
+  </main>
+<script>
+(() => {
+  const $ = (selector, root=document) => root.querySelector(selector);
+  const translations = {
+    vi:{back:"Về website",eyebrow:"CUSTOMER PORTAL",title:"Cổng khách hàng",intro:"Đăng nhập để xem báo giá được chia sẻ với tài khoản của bạn và xác nhận khi bạn có quyền phù hợp.",loginTitle:"Đăng nhập tài khoản",apiLabel:"API base URL",email:"Email",password:"Mật khẩu",login:"Đăng nhập",loginHint:"Sử dụng tài khoản đã được cấp. Kết nối cần API và tên miền được cấu hình phù hợp.",account:"TÀI KHOẢN CỦA BẠN",logout:"Đăng xuất",quotesTitle:"Báo giá của bạn",quotesIntro:"Chỉ hiển thị báo giá thuộc quyền truy cập của tài khoản hiện tại.",refresh:"Làm mới",loading:"Đang tải dữ liệu…",footer:"Thông tin báo giá chỉ dành cho tài khoản đã được xác thực. Không chia sẻ mật khẩu hoặc mã phiên.",empty:"Chưa có báo giá được chia sẻ với tài khoản này.",details:"Chi tiết",accept:"Xác nhận báo giá",acceptConfirm:"Bạn xác nhận chấp nhận báo giá này?",status:{draft:"Bản nháp",sent:"Đã gửi",accepted:"Đã chấp nhận",rejected:"Từ chối",expired:"Hết hạn",cancelled:"Đã hủy"},validUntil:"Hết hạn",noExpiry:"Không giới hạn",subtotal:"Tạm tính",discount:"Giảm giá",total:"Tổng cộng",signedIn:"Đăng nhập thành công.",loaded:"Đã tải báo giá.",signedOut:"Đã đăng xuất.",loginError:"Không thể đăng nhập: ",loadError:"Không thể tải dữ liệu: ",acceptError:"Không thể xác nhận: ",acceptSuccess:"Đã xác nhận báo giá.",notAllowed:"Tài khoản hiện tại không có quyền xác nhận báo giá này.",moneyUnit:"đơn vị tiền tệ"},
+    en:{back:"Back to website",eyebrow:"CUSTOMER PORTAL",title:"Customer portal",intro:"Sign in to view quotes shared with your account and accept those you are authorized to approve.",loginTitle:"Sign in to your account",apiLabel:"API base URL",email:"Email",password:"Password",login:"Sign in",loginHint:"Use an account that has been provisioned for access. The API and domain must be configured appropriately.",account:"YOUR ACCOUNT",logout:"Sign out",quotesTitle:"Your quotes",quotesIntro:"Only quotes accessible to the current account are shown.",refresh:"Refresh",loading:"Loading…",footer:"Quote information is available only to authenticated accounts. Never share your password or session token.",empty:"No quotes have been shared with this account yet.",details:"Details",accept:"Accept quote",acceptConfirm:"Do you confirm acceptance of this quote?",status:{draft:"Draft",sent:"Sent",accepted:"Accepted",rejected:"Rejected",expired:"Expired",cancelled:"Cancelled"},validUntil:"Valid until",noExpiry:"No expiry",subtotal:"Subtotal",discount:"Discount",total:"Total",signedIn:"Signed in successfully.",loaded:"Quotes loaded.",signedOut:"Signed out.",loginError:"Unable to sign in: ",loadError:"Unable to load data: ",acceptError:"Unable to accept: ",acceptSuccess:"Quote accepted.",notAllowed:"This account is not authorized to accept this quote.",moneyUnit:"currency units"}
+  };
+  let language="vi", apiBase="", signedIn=false;
+  const t=(key)=>translations[language][key]||key;
+  function applyLanguage(){document.documentElement.lang=language;document.querySelectorAll("[data-i18n]").forEach(node=>{const key=node.dataset.i18n;if(typeof t(key)==="string")node.textContent=t(key);});$("#languageButton").textContent=language==="vi"?"EN":"VI";}
+  function status(selector,text,error=false){const node=$(selector);node.textContent=text;node.classList.toggle("error",error);}
+  async function request(path,options={}){
+    const response=await fetch(apiBase+path,{...options,credentials:"include",headers:{...(options.headers||{}),...(options.body?{"content-type":"application/json"}:{})}});
+    const body=await response.json().catch(()=>({}));
+    if(!response.ok)throw new Error(body.error?.message||body.message||body.error||("HTTP "+response.status));
+    return body;
+  }
+  function money(value,currency){return Number(value||0).toLocaleString(language==="vi"?"vi-VN":"en-US")+" "+currency;}
+  function detailRow(label,value,emphasis=false){const row=document.createElement("div");row.className="detail-row"+(emphasis?" detail-total":"");const left=document.createElement("span");left.textContent=label;const right=document.createElement("strong");right.textContent=value;row.append(left,right);return row;}
+  async function showQuoteDetail(card,quote){
+    const old=card.querySelector(".detail");if(old){old.remove();return;}
+    const box=document.createElement("div");box.className="detail";const loading=document.createElement("p");loading.textContent=t("loading");box.appendChild(loading);card.appendChild(box);
+    try{
+      const result=await request("/api/v1/me/quotes/"+encodeURIComponent(quote.id));const data=result.data;box.replaceChildren();
+      for(const item of data.items||[])box.appendChild(detailRow(item.description,item.quantity+" × "+money(item.unit_price_minor,data.currency)+" = "+money(item.line_total_minor,data.currency)));
+      box.appendChild(detailRow(t("subtotal"),money(data.subtotal_minor,data.currency)));
+      box.appendChild(detailRow(t("discount"),money(data.discount_minor,data.currency)));
+      box.appendChild(detailRow(t("total"),money(data.total_minor,data.currency),true));
+    }catch(error){box.replaceChildren();const failure=document.createElement("p");failure.textContent=t("loadError")+error.message;box.appendChild(failure);}
+  }
+  async function acceptQuote(card,quote,button){
+    if(!confirm(t("acceptConfirm")))return;button.disabled=true;
+    try{await request("/api/v1/me/quotes/"+encodeURIComponent(quote.id)+"/accept",{method:"POST"});status("#portalStatus",t("acceptSuccess"));await loadQuotes();}
+    catch(error){status("#portalStatus",error.message.includes("quyền")||error.message.toLowerCase().includes("authorized")?t("notAllowed"):t("acceptError")+error.message,true);}
+    finally{button.disabled=false;}
+  }
+  async function loadQuotes(){
+    $("#refreshButton").disabled=true;status("#portalStatus",t("loading"));
+    try{
+      const result=await request("/api/v1/me/quotes");const quotes=result.data||[];const list=$("#quoteList");list.replaceChildren();
+      if(!quotes.length){const empty=document.createElement("div");empty.className="empty";empty.textContent=t("empty");list.appendChild(empty);}
+      for(const quote of quotes){
+        const card=document.createElement("article");card.className="quote-card";
+        const head=document.createElement("div");head.className="quote-head";
+        const info=document.createElement("div");const number=document.createElement("div");number.className="quote-number";number.textContent=quote.quote_number;const meta=document.createElement("div");meta.className="quote-meta";meta.textContent=t("validUntil")+": "+(quote.valid_until||t("noExpiry"));const pill=document.createElement("span");pill.className="pill";pill.textContent=translations[language].status[quote.status]||quote.status;info.append(number,meta,pill);
+        const total=document.createElement("div");total.className="quote-total";total.textContent=money(quote.total_minor,quote.currency);head.append(info,total);card.appendChild(head);
+        const actions=document.createElement("div");actions.className="quote-actions";
+        const detail=document.createElement("button");detail.type="button";detail.className="secondary";detail.textContent=t("details");detail.addEventListener("click",()=>showQuoteDetail(card,quote));actions.appendChild(detail);
+        const dateOnly=/^\d{4}-\d{2}-\d{2}$/.test(quote.valid_until||"");const expired=!!quote.valid_until&&(dateOnly?quote.valid_until<new Date().toISOString().slice(0,10):!Number.isFinite(Date.parse(quote.valid_until))||Date.parse(quote.valid_until)<Date.now());const displayStatus=quote.status==="sent"&&expired?"expired":quote.status;pill.textContent=translations[language].status[displayStatus]||displayStatus;if(quote.status==="sent"&&!expired&&["owner","billing"].includes(quote.membership_role)){const accept=document.createElement("button");accept.type="button";accept.className="primary";accept.textContent=t("accept");accept.addEventListener("click",()=>acceptQuote(card,quote,accept));actions.appendChild(accept);}
+        card.appendChild(actions);list.appendChild(card);
+      }
+      status("#portalStatus",t("loaded"));
+    }catch(error){status("#portalStatus",t("loadError")+error.message,true);}
+    finally{$("#refreshButton").disabled=false;}
+  }
+  async function loadPortal(){
+    const me=await request("/api/v1/me");$("#welcome").textContent=me.data.name||me.data.email;$("#accountEmail").textContent=me.data.email||"";
+    await request("/api/v1/me/customers");$("#loginPanel").hidden=true;$("#portalPanel").hidden=false;await loadQuotes();
+  }
+  $("#loginForm").addEventListener("submit",async event=>{
+    event.preventDefault();apiBase=$("#apiBase").value.trim().replace(/\/+$/,"");$("#loginButton").disabled=true;status("#loginStatus",t("loading"));
+    try{
+      const response=await fetch(apiBase+"/api/v1/auth/sign-in/email",{method:"POST",credentials:"include",headers:{"content-type":"application/json"},body:JSON.stringify({email:$("#email").value.trim(),password:$("#password").value})});
+      const body=await response.json().catch(()=>({}));if(!response.ok)throw new Error(body.message||body.error?.message||("HTTP "+response.status));
+      $("#password").value="";signedIn=true;await loadPortal();status("#portalStatus",t("signedIn"));
+    }catch(error){signedIn=false;status("#loginStatus",t("loginError")+error.message,true);}
+    finally{$("#loginButton").disabled=false;}
+  });
+  $("#refreshButton").addEventListener("click",loadQuotes);
+  $("#logoutButton").addEventListener("click",async()=>{try{await request("/api/v1/auth/sign-out",{method:"POST",body:"{}"});}catch{}signedIn=false;$("#portalPanel").hidden=true;$("#loginPanel").hidden=false;$("#password").value="";status("#loginStatus",t("signedOut"));});
+  $("#languageButton").addEventListener("click",()=>{language=language==="vi"?"en":"vi";applyLanguage();if(signedIn)loadQuotes();});
+  const configuredApiBase=document.querySelector('meta[name="hq-api-base"]')?.content?.trim();
+  if(configuredApiBase){apiBase=configuredApiBase.replace(/\/+$/,"");$("#apiBase").value=apiBase;$("#apiBase").readOnly=true;$("#apiBase").setAttribute("aria-readonly","true");}
+  applyLanguage();
+})();
+</script>
+</body>
+</html>

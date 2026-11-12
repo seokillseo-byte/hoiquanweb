@@ -93,6 +93,145 @@ async function loadCmsPage(){
  }catch{/* Keep the generated static page as the safe fallback. */}
 }
 
+function blogCanonical(slug){
+ const link=document.querySelector('link[rel="canonical"]');
+ if(!link)return;
+ const url=new URL(window.location.href);
+ url.search="";
+ url.hash="";
+ if(slug)url.searchParams.set("slug",slug);
+ link.href=url.href;
+ const og=document.querySelector('meta[property="og:url"]');
+ if(og)og.content=url.href;
+}
+function blogMeta(data){
+ const title=cmsText(data?.seo?.title)||cmsText(data?.title);
+ const description=cmsText(data?.seo?.description)||cmsText(data?.excerpt);
+ if(title)document.title=title+" | HoiQuanWeb";
+ if(description){
+  const meta=document.querySelector('meta[name="description"]');if(meta)meta.content=description;
+  const og=document.querySelector('meta[property="og:description"]');if(og)og.content=description;
+ }
+ const ogTitle=document.querySelector('meta[property="og:title"]');if(ogTitle&&title)ogTitle.content=title;
+ blogCanonical(data?.slug);
+ const robots=data?.seo?.robots;
+ if(robots==="noindex")document.querySelector('meta[name="robots"]')?.setAttribute("content","noindex,follow");
+}
+function blogDate(value,lang){
+ const date=new Date(value);
+ return Number.isNaN(date.getTime())?"":new Intl.DateTimeFormat(lang==="vi"?"vi-VN":"en-US",{year:"numeric",month:"long",day:"numeric"}).format(date);
+}
+async function loadBlog(){
+ const root=document.querySelector("[data-blog-list]");
+ if(!root)return;
+ const lang=root.dataset.language==="en"?"en":"vi";
+ const labels=lang==="vi"?{loading:"Đang tải bài viết…",empty:"Chưa có bài viết được xuất bản.",error:"Không tải được bài viết. Vui lòng thử lại.",category:"Tất cả danh mục",more:"Tải thêm",search:"Tìm kiếm",read:"Đọc bài viết",author:"Tác giả"}:{loading:"Loading articles…",empty:"No published articles yet.",error:"Could not load articles. Please try again.",category:"All categories",more:"Load more",search:"Search",read:"Read article",author:"By"};
+ const form=root.querySelector("[data-blog-filter]");
+ const results=root.querySelector("[data-blog-results]");
+ const status=root.querySelector("[data-blog-status]");
+ const more=root.querySelector("[data-blog-more]");
+ const category=form.elements.category;
+ let offset=0,loading=false,hasMore=true;
+ function statusText(value,error=false){status.textContent=value;status.classList.toggle("is-error",error);}
+ function card(item){
+  const article=cmsElement("article","","blog-card");
+  const meta=cmsElement("div","","blog-card-meta");
+  if(item.category)meta.appendChild(cmsElement("span",cmsText(item.category),"blog-category"));
+  if(item.published_at)meta.appendChild(cmsElement("time",blogDate(item.published_at,lang),"blog-date"));
+  article.appendChild(meta);
+  article.appendChild(cmsElement("h2",cmsText(item.title)));
+  if(item.excerpt)article.appendChild(cmsElement("p",cmsText(item.excerpt),"blog-excerpt"));
+  if(item.author_name)article.appendChild(cmsElement("p",labels.author+" "+cmsText(item.author_name),"blog-author"));
+  if(Array.isArray(item.tags)&&item.tags.length){
+   const tags=cmsElement("ul","","blog-tags");
+   for(const tag of item.tags.slice(0,6))tags.appendChild(cmsElement("li",cmsText(tag)));
+   article.appendChild(tags);
+  }
+  const link=cmsElement("a",labels.read,"button button-outline");
+  link.href=root.dataset.detailPath+"?slug="+encodeURIComponent(item.slug);
+  article.appendChild(link);
+  return article;
+ }
+ async function load(reset=true){
+  if(loading)return;
+  if(reset){offset=0;hasMore=true;results.replaceChildren();}
+  if(!hasMore&&!reset)return;
+  loading=true;more.disabled=true;statusText(labels.loading);
+  try{
+   const params=new URLSearchParams({limit:"20",offset:String(offset)});
+   const query=form.elements.q.value.trim();
+   if(query)params.set("q",query);
+   if(category.value)params.set("category",category.value);
+   const response=await fetch(cmsApiBase+"/api/v1/public/posts?"+params.toString(),{headers:{accept:"application/json"},credentials:"omit"});
+   if(!response.ok)throw new Error("HTTP "+response.status);
+   const data=await response.json(),items=Array.isArray(data.data)?data.data:[];
+   if(!items.length&&reset)results.replaceChildren(cmsElement("p",labels.empty,"blog-empty"));
+   for(const item of items)results.appendChild(card(item));
+   offset+=items.length;hasMore=items.length===20;more.hidden=!hasMore;
+   statusText(items.length?String(offset)+(lang==="vi"?" bài viết đã tải.":" articles loaded."):labels.empty);
+  }catch{if(reset)results.replaceChildren(cmsElement("p",labels.error,"blog-empty"));statusText(labels.error,true);}
+  finally{loading=false;more.disabled=false;more.textContent=labels.more;}
+ }
+ async function loadCategories(){
+  try{
+   const response=await fetch(cmsApiBase+"/api/v1/public/post-categories",{headers:{accept:"application/json"},credentials:"omit"});
+   if(!response.ok)return;
+   const data=await response.json();
+   for(const item of data.data||[]){
+    const option=document.createElement("option");option.value=item.category;
+    option.textContent=item.category+" ("+item.post_count+")";category.appendChild(option);
+   }
+  }catch{/* Category filter remains usable with the all-categories option. */}
+ }
+ if(!cmsApiBase){statusText(lang==="vi"?"Blog sẽ hiển thị khi CMS được kết nối.":"The blog will appear when the CMS is connected.");more.hidden=true;return;}
+ form.addEventListener("submit",event=>{event.preventDefault();load(true);});
+ category.addEventListener("change",()=>load(true));
+ more.addEventListener("click",()=>load(false));
+ await loadCategories();await load(true);
+}
+async function loadBlogPost(){
+ const main=document.querySelector("[data-blog-post]");
+ if(!main)return;
+ const lang=main.dataset.language==="en"?"en":"vi";
+ const slug=new URLSearchParams(window.location.search).get("slug")||"";
+ const labels=lang==="vi"?{loading:"Đang tải bài viết…",missing:"Không tìm thấy bài viết hoặc bài viết chưa được xuất bản.",back:"← Quay lại kiến thức",author:"Tác giả"}:{loading:"Loading article…",missing:"Article not found or not published.",back:"← Back to insights",author:"By"};
+ const backPath=main.dataset.blogPath;
+ if(!slug){main.replaceChildren(cmsElement("p",labels.missing,"blog-empty"));return;}
+ main.replaceChildren(cmsElement("p",labels.loading,"blog-status"));
+ if(!cmsApiBase){main.replaceChildren(cmsElement("p",lang==="vi"?"Nội dung bài viết chưa được kết nối.":"Article content is not connected yet.","blog-empty"));return;}
+ try{
+  const response=await fetch(cmsApiBase+"/api/v1/public/posts/"+encodeURIComponent(slug),{headers:{accept:"application/json"},credentials:"omit"});
+  if(response.status===404){main.replaceChildren(cmsElement("p",labels.missing,"blog-empty"));return;}
+  if(!response.ok)throw new Error("HTTP "+response.status);
+  const result=await response.json(),post=result?.data;
+  if(!post)throw new Error("Missing article data");
+  blogMeta(post);
+  const article=cmsElement("article","","blog-article");
+  const header=cmsElement("header","","blog-article-header");
+  const meta=cmsElement("div","","blog-card-meta");
+  if(post.category)meta.appendChild(cmsElement("span",cmsText(post.category),"blog-category"));
+  if(post.published_at)meta.appendChild(cmsElement("time",blogDate(post.published_at,lang),"blog-date"));
+  header.appendChild(meta);
+  header.appendChild(cmsElement("h1",cmsText(post.title)));
+  if(post.excerpt)header.appendChild(cmsElement("p",cmsText(post.excerpt),"blog-excerpt"));
+  if(post.author_name)header.appendChild(cmsElement("p",labels.author+" "+cmsText(post.author_name),"blog-author"));
+  article.appendChild(header);
+  const content=cmsElement("div","","cms-rendered blog-article-content");
+  if(!renderCmsBlocks(content,post.body)){content.appendChild(cmsElement("p",lang==="vi"?"Nội dung đang được cập nhật.":"Content is being updated."));}
+  article.appendChild(content);
+  if(Array.isArray(post.tags)&&post.tags.length){
+   const tags=cmsElement("ul","","blog-tags blog-article-tags");
+   for(const tag of post.tags)tags.appendChild(cmsElement("li",cmsText(tag)));
+   article.appendChild(tags);
+  }
+  const back=cmsElement("a",labels.back,"blog-back");back.href=backPath;article.appendChild(back);
+  main.replaceChildren(article);
+  const canonical=document.querySelector('link[rel="canonical"]');
+  if(canonical){const url=new URL(backPath,window.location.origin);url.searchParams.set("slug",post.slug);canonical.href=url.href;}
+  const schema={"@context":"https://schema.org","@type":"Article","headline":post.title,"description":post.excerpt||"","datePublished":post.published_at,"author":post.author_name?{"@type":"Person","name":post.author_name}:{"@type":"Organization","name":"HoiQuanWeb"},"mainEntityOfPage":window.location.href};
+  const script=document.querySelector('script[type="application/ld+json"]');if(script)script.textContent=JSON.stringify(schema);
+ }catch{main.replaceChildren(cmsElement("p",lang==="vi"?"Không tải được bài viết. Vui lòng thử lại sau.":"Could not load this article. Please try again later.","blog-empty"));}
+}
 async function loadTemplateCatalog(){
  const catalogs=[...document.querySelectorAll("[data-template-catalog]")];
  for(const root of catalogs){
@@ -147,5 +286,6 @@ async function loadTemplateCatalog(){
  }
 }
 void loadTemplateCatalog();
-
+void loadBlog();
+void loadBlogPost();
 void loadCmsPage();

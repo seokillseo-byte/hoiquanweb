@@ -36,6 +36,8 @@ jobs:
       - name: Configure Pages
         uses: actions/configure-pages@v5
       - name: Generate bilingual public website
+        env:
+          HQ_API_BASE: ${{ vars.HQ_API_BASE }}
         run: node scripts/build_public_site.mjs
       - name: Assemble public website files
         run: |

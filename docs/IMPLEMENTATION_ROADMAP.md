@@ -9,7 +9,7 @@
 - Public website đã có generator tĩnh song ngữ Việt/Anh với 34 trang nội dung, metadata theo trang, hreflang, canonical, sitemap và biểu mẫu tư vấn. CMS pages/posts/services có admin UI + API, draft-first workflow và revision history. Public renderer có thể đọc page đã xuất bản để ghi đè route tĩnh cùng slug khi HQ_API_BASE được cấu hình; biến này chưa được cấu hình và chưa xác minh runtime với Worker/D1.
 - Có Worker scaffold và D1 migration cho lead, lead events và rate limiting.
 - `backend/wrangler.toml` vẫn chứa database ID placeholder; API base trên frontend hiện để trống.
-- Better Auth và role checks có integration tests; CMS API/UI cho pages/posts/services có kiểm thử. D1 migrations chưa deploy; public CMS rendering, media library, template marketplace có dữ liệu thực, customer portal đầy đủ, đơn hàng/dự án và các tích hợp production chưa hoàn thiện.
+- Better Auth và role checks có integration tests; CMS API/UI cho pages/posts/services có kiểm thử. D1 migrations chưa deploy; public CMS rendering, media library và template package/provisioning chưa hoàn thiện. Customer portal đã có báo giá, đơn hàng, dự án/milestone/bình luận và ticket hỗ trợ ở mức nền tảng; CRM order/project/ticket admin UI và membership onboarding đã có. Các tích hợp production, file riêng tư và thanh toán chưa hoàn thiện.
 - GitHub Pages chỉ deploy frontend tĩnh. Backend Cloudflare và database cần cấu hình/deploy riêng.
 - Vì vậy Phase 2 trước đây không được coi là production-ready; roadmap này thay thế thứ tự ưu tiên cũ.
 
@@ -89,19 +89,21 @@ Mục tiêu: dựng nền tảng có thể mở rộng, không chỉ thêm HTML 
 - File riêng tư chỉ tải qua cơ chế xác thực/ủy quyền; URL khó đoán không thay thế authorization.
 
 **Acceptance gates**
-- [x] Customer portal UI song ngữ hỗ trợ sign-in/sign-out, danh sách và chi tiết báo giá, xác nhận báo giá theo role owner/billing.
+- [x] Customer portal UI hỗ trợ sign-in/sign-out, danh sách/chi tiết báo giá, xác nhận theo owner/billing, đơn hàng, dự án/milestone/bình luận và ticket hỗ trợ.
+- [x] Customer membership được nhân viên liên kết từ tài khoản Better Auth đã đăng ký; self-signup không tự cấp quyền customer.
 - [x] Quote detail endpoint chỉ trả dữ liệu thuộc customer membership hiện tại, gồm line items; CI kiểm tra không đọc được quote của customer khác.
 - [x] Quote acceptance chỉ dành cho owner/billing, chỉ nhận quote đang sent và chưa hết hạn; kiểm tra member bị từ chối, expired/repeated acceptance và actor/timestamp.
 - [x] Quote acceptance ghi `quote.accepted` audit event cùng transaction batch với cập nhật trạng thái.
 - [ ] Automated authorization matrix đầy đủ cho admin/staff/customer.
-- [ ] Cross-customer isolation test cho toàn bộ endpoint dữ liệu riêng tư (không chỉ quotes).
+- [x] Cross-customer isolation test cho orders, projects, project comments, tickets và ticket messages; quote isolation đã có test riêng.
+- [ ] Hoàn thiện authorization matrix cho mọi endpoint riêng tư, gồm session expiry/recovery và file access.
 - [ ] Audit log cho milestone changes, permissions và các thao tác nhạy cảm khác.
 - [ ] Test session expiry, recovery, brute-force/rate limit, upload/download và backup/restore.
 - [ ] Kiểm tra end-to-end trên môi trường staging; không chấp nhận chỉ vì UI render được.
 
 ## Phase 5 — CRM và vận hành kinh doanh
 
-**Đã merge vào `main`:** migration `0003_crm_foundation.sql` bổ sung bảng khách hàng CRM, timeline hoạt động, báo giá, dòng báo giá và audit events; validator kiểm tra schema/foreign keys/ràng buộc tính tổng. Admin/staff có API quản lý khách hàng (list/create/detail/update status/profile), activity timeline (list/create), lead conversion và quote workflow (create/list/detail/send); customer xem quote/line items theo membership và owner/billing xác nhận. Admin UI có CRM workspace để thêm khách hàng, đổi trạng thái vòng đời, xem timeline, ghi nhận note/call/email/meeting và chuyển lead thành khách hàng, đồng thời quản lý báo giá. Lead conversion giữ source attribution, ghi activity/audit và idempotent. Quote totals được tính server-side; customer/activity/quote mutations có audit events và integration tests. Lead assignment, CRM dashboard, email delivery tự động và các workflow đơn hàng/dự án vẫn chưa hoàn thiện hoặc deploy production.
+**Đã merge vào `main`:** migration `0003_crm_foundation.sql` bổ sung bảng khách hàng CRM, timeline hoạt động, báo giá, dòng báo giá và audit events; validator kiểm tra schema/foreign keys/ràng buộc tính tổng. Admin/staff có API quản lý khách hàng (list/create/detail/update status/profile), activity timeline (list/create), lead conversion và quote workflow (create/list/detail/send); customer xem quote/line items theo membership và owner/billing xác nhận. Admin UI có CRM workspace để thêm khách hàng, đổi trạng thái vòng đời, xem timeline, ghi nhận note/call/email/meeting và chuyển lead thành khách hàng, đồng thời quản lý báo giá. Lead conversion giữ source attribution, ghi activity/audit và idempotent. Quote totals được tính server-side; customer/activity/quote mutations có audit events và integration tests. Lead assignment, CRM dashboard và email delivery tự động chưa hoàn thiện; order/project/milestone/ticket workflow đã có API/UI nền tảng nhưng chưa deploy production.
 
 - Lead pipeline, nguồn lead, lịch sử liên hệ, assignment, khách hàng, báo giá theo hạng mục, đơn hàng, hợp đồng/tài liệu, dự án, tasks, milestone và ticket hỗ trợ.
 - Thông báo email khi provider và sender được cấu hình; lỗi gửi thông báo không làm mất giao dịch đã lưu.
@@ -112,7 +114,8 @@ Mục tiêu: dựng nền tảng có thể mở rộng, không chỉ thêm HTML 
 - [x] Migration nền CRM có customer/activity/quote/quote-item/audit schema và ràng buộc dữ liệu cơ bản.
 - [x] Backend tính subtotal/discount/total, kiểm tra line items và chỉ cho phép chuyển draft → sent khi quote hợp lệ.
 - [x] Audit events cho quote.created, quote.sent và quote.accepted; CI xác minh quyền và trạng thái.
-- [ ] Idempotency cho các hành động tạo quote/order/duyệt/billing.
+- [x] Idempotency khi tạo order từ cùng accepted quote.
+- [ ] Idempotency đầy đủ cho quote creation, billing, webhook và các workflow tài chính.
 - [x] Admin UI tạo bản nháp, xem danh sách/chi tiết và chuyển báo giá sang trạng thái đã gửi.
 - [x] CRM customer workspace: tạo/list khách hàng, cập nhật trạng thái active/inactive/archived, ghi nhận và xem activity timeline.
 - [x] Lead conversion vào CRM, giữ source attribution, ghi activity/audit và chống tạo khách hàng trùng khi retry.

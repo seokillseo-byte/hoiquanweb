@@ -184,7 +184,9 @@ async function adminContent(request, env, url) {
   const config = CMS_RESOURCES[resourceName];
   if (!config || parts.length > 6) return json({ error: { code: "NOT_FOUND", message: "Không tìm thấy tài nguyên." } }, 404);
 
-  const resourceId = parts[4] ? decodeURIComponent(parts[4]) : "";
+  let resourceId = "";
+  try { resourceId = parts[4] ? decodeURIComponent(parts[4]) : ""; }
+  catch { return json({ error: { code: "NOT_FOUND", message: "Không tìm thấy nội dung." } }, 404); }
   const action = parts[5] || "";
   if (resourceId && (!resourceId || resourceId.length > 80 || resourceId.includes("/"))) {
     return json({ error: { code: "NOT_FOUND", message: "Không tìm thấy nội dung." } }, 404);

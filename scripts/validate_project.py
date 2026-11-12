@@ -65,7 +65,7 @@ portal_parser = MarkupCheck()
 portal_parser.feed(portal_html)
 if 'name="robots" content="noindex,nofollow"' not in portal_html:
     fail("customer portal must be marked noindex")
-for required_portal_id in ["loginForm", "apiBase", "email", "password", "portalPanel", "ordersList", "projectsList", "ticketsList", "ticketForm"]:
+for required_portal_id in ["loginForm", "apiBase", "email", "password", "portalPanel", "ordersList", "projectsList", "ticketsList", "ticketForm", "notificationsSection", "notificationsList", "notificationCount", "notificationRefresh", "notificationReadAll"]:
     if required_portal_id not in portal_parser.ids:
         fail("required customer portal UI ID missing: " + required_portal_id)
 admin_path = ROOT / "admin.html"
@@ -76,7 +76,7 @@ admin_parser = MarkupCheck()
 admin_parser.feed(admin_html)
 if 'name="robots" content="noindex,nofollow"' not in admin_html:
     fail("admin page must be marked noindex")
-for required_admin_id in ["connectForm", "apiBase", "adminEmail", "adminPassword", "refreshButton", "leadRows", "memberForm", "memberList", "memberRefresh", "deliveryPanel", "adminOrders", "adminProjects", "adminTickets", "orderCreateForm", "projectCreateForm", "mediaPanel", "mediaUploadForm", "mediaFile", "mediaAlt", "mediaRows"]:
+for required_admin_id in ["connectForm", "apiBase", "adminEmail", "adminPassword", "refreshButton", "leadRows", "memberForm", "memberList", "memberRefresh", "deliveryPanel", "adminOrders", "adminProjects", "adminTickets", "orderCreateForm", "projectCreateForm", "mediaPanel", "mediaUploadForm", "mediaFile", "mediaAlt", "mediaRows", "adminNotificationsCard", "adminNotifications", "adminNotificationCount", "adminNotificationRefresh", "adminNotificationReadAll"]:
     if required_admin_id not in admin_parser.ids:
         fail("required admin UI ID missing: " + required_admin_id)
 for fragment in admin_parser.fragments:
@@ -86,6 +86,8 @@ if "/api/v1/admin/media/" not in admin_html or 'credentials:"include"' not in ad
     fail("admin media library must use the authenticated media preview route")
 if 'accept="image/png,image/jpeg,image/gif,image/webp"' not in admin_html:
     fail("admin media upload must restrict the browser picker to supported image types")
+if "/api/v1/me/notifications" not in admin_html or "/api/v1/me/notifications" not in portal_html:
+    fail("admin and customer portal must use the authenticated in-app notification API")
 if not parser.scripts or not any("briefForm" in chunk for script_type, chunk in parser.scripts if script_type in ("", "text/javascript", "application/javascript", "module")):
     fail("inline form handler not found")
 for fragment in parser.fragments:

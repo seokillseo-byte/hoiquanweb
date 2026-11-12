@@ -74,6 +74,7 @@ async function adminLeads(request, env, url) {
       statements.push(env.DB.prepare("INSERT INTO lead_events (id,lead_id,event_type,details,created_at) VALUES (?, ?, ?, ?, ?)").bind(crypto.randomUUID(), id, eventType, details, updatedAt));
       statements.push(env.DB.prepare("INSERT INTO crm_audit_events (id, actor_id, action, resource_type, resource_id, metadata_json, created_at) VALUES (?, ?, ?, 'lead', ?, ?, ?)").bind(crypto.randomUUID(), principal.user.id, assignedTo ? "lead.assigned" : "lead.unassigned", id, details, updatedAt));
     }
+    // Commit the lead mutation and every history/audit record atomically in one D1 batch.
     const results = await env.DB.batch(statements);
     if (!results?.[0]?.meta?.changes) return json({ error: { code: "LEAD_UPDATE_CONFLICT", message: "Lead vừa được cập nhật bởi người khác. Vui lòng tải lại." } }, 409);
     return json({ ok: true, id, status, assigned_to: assignedTo, updatedAt });

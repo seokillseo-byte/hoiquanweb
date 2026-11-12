@@ -65,7 +65,7 @@ function decodeSlug(path, prefix) {
 function contentRecord(row, kind) {
   if (!row) return null;
   const result = { ...row };
-  for (const key of ["content_json", "body_json", "seo_json", "compatibility_json", "description_json"]) {
+  for (const key of ["content_json", "body_json", "seo_json", "compatibility_json", "description_json", "tags_json"]) {
     if (Object.prototype.hasOwnProperty.call(result, key)) {
       const outputKey = key.replace(/_json$/, "").replace("body", "body");
       result[outputKey] = parseJsonField(result[key]);
@@ -837,12 +837,26 @@ async function publicContent(request, env, url) {
     return json({ data: (result.results || []).map(row => contentRecord(row, "service")) });
   }
   if (path === "/api/v1/public/templates" && request.method === "GET") {
-    const type = url.searchParams.get("type");
+    const type = clean(url.searchParams.get("type"), 20);
+    const category = clean(url.searchParams.get("category"), 80);
+    const query = clean(url.searchParams.get("q"), 100);
     if (type && !["wordpress", "html_css"].includes(type)) return json({ error: { code: "VALIDATION_ERROR", message: "Loại template không hợp lệ." } }, 400);
-    const query = "SELECT slug, name, template_type, summary, preview_url, price_minor, currency, license_key, compatibility_json, published_at FROM cms_templates WHERE status = 'published' AND published_at IS NOT NULL" + (type ? " AND template_type = ?" : "") + " ORDER BY published_at DESC, slug ASC LIMIT 100";
-    const statement = env.DB.prepare(query);
-    const result = type ? await statement.bind(type).all() : await statement.all();
-    return json({ data: (result.results || []).map(row => contentRecord(row, "template")) });
+    const limit = Math.max(1, Math.min(50, Number.parseInt(url.searchParams.get("limit") || "20", 10) || 20));
+    const offset = Math.max(0, Math.min(10000, Number.parseInt(url.searchParams.get("offset") || "0", 10) || 0));
+    const where = ["status = 'published'", "published_at IS NOT NULL"], values = [];
+    if (type) { where.push("template_type = ?"); values.push(type); }
+    if (category) { where.push("category = ?"); values.push(category); }
+    if (query) { where.push("(name LIKE ? OR summary LIKE ? OR slug LIKE ?)"); values.push("%" + query + "%", "%" + query + "%", "%" + query + "%"); }
+    const sql = "SELECT slug, name, template_type, category, tags_json, summary, description, thumbnail_url, preview_url, version, price_minor, currency, license_key, compatibility_json, published_at FROM cms_templates WHERE " + where.join(" AND ") + " ORDER BY published_at DESC, slug ASC LIMIT ? OFFSET ?";
+    const result = await env.DB.prepare(sql).bind(...values, limit, offset).all();
+    return json({ data: (result.results || []).map(row => contentRecord(row, "template")), meta: { limit, offset } });
+  }
+  if (path.startsWith("/api/v1/public/templates/") && request.method === "GET") {
+    const slug = decodeSlug(path, "/api/v1/public/templates/");
+    if (!slug) return json({ error: { code: "NOT_FOUND", message: "Không tìm thấy template." } }, 404);
+    const row = await env.DB.prepare("SELECT slug, name, template_type, category, tags_json, summary, description, thumbnail_url, preview_url, version, price_minor, currency, license_key, compatibility_json, published_at FROM cms_templates WHERE slug = ? AND status = 'published' AND published_at IS NOT NULL LIMIT 1").bind(slug).first();
+    if (!row) return json({ error: { code: "NOT_FOUND", message: "Không tìm thấy template." } }, 404);
+    return json({ data: contentRecord(row, "template") });
   }
   return null;
 }

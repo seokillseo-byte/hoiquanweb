@@ -672,6 +672,70 @@ test("CMS content API requires an authenticated admin; drafts stay private and e
 });
 
 
+test("CMS posts persist taxonomy, publish into public blog feeds and keep drafts private", async () => {
+  const admin = await createSignedInUser("Blog Admin");
+  const customer = await createSignedInUser("Blog Customer");
+  const create = await server.fetch(origin + "/api/v1/admin/posts", {
+    method: "POST",
+    headers: { origin, cookie: admin.cookie, "content-type": "application/json" },
+    body: JSON.stringify({
+      slug: "taxonomy-blog-post",
+      title: "Taxonomy Blog Post",
+      excerpt: "A published post with a category and tags.",
+      author_name: "Editorial Team",
+      category: "SEO",
+      tags: ["Technical SEO", "Technical SEO", "Content"],
+      body: { blocks: [{ type: "paragraph", text: "Editorial content." }] },
+      seo: { title: "Taxonomy Blog Post SEO" }
+    })
+  });
+  assert.equal(create.status, 201, await create.clone().text());
+  const created = (await create.json()).data;
+  assert.equal(created.category, "SEO");
+  assert.deepEqual(created.tags, ["technical seo", "content"]);
+  assert.equal(created.status, "draft");
+
+  const invalidTags = await server.fetch(origin + "/api/v1/admin/posts", {
+    method: "POST",
+    headers: { origin, cookie: admin.cookie, "content-type": "application/json" },
+    body: JSON.stringify({ slug: "invalid-tags-post", title: "Invalid Tags", tags: "not-an-array", body: {} })
+  });
+  assert.equal(invalidTags.status, 400);
+
+  const hidden = await server.fetch(origin + "/api/v1/public/posts?category=SEO", { headers: { origin } });
+  assert.equal(hidden.status, 200);
+  assert.ok(!(await hidden.json()).data.some(post => post.slug === "taxonomy-blog-post"));
+
+  const customerEdit = await server.fetch(origin + "/api/v1/admin/posts/" + created.id, {
+    method: "PATCH",
+    headers: { origin, cookie: customer.cookie, "content-type": "application/json" },
+    body: JSON.stringify({ category: "Private" })
+  });
+  assert.equal(customerEdit.status, 403);
+
+  const publish = await server.fetch(origin + "/api/v1/admin/posts/" + created.id + "/publish", {
+    method: "POST", headers: { origin, cookie: admin.cookie }
+  });
+  assert.equal(publish.status, 200, await publish.clone().text());
+
+  const categories = await server.fetch(origin + "/api/v1/public/post-categories", { headers: { origin } });
+  assert.equal(categories.status, 200);
+  assert.ok((await categories.json()).data.some(item => item.category === "SEO"));
+
+  const filtered = await server.fetch(origin + "/api/v1/public/posts?category=SEO&tag=technical%20seo", { headers: { origin } });
+  assert.equal(filtered.status, 200);
+  const post = (await filtered.json()).data.find(item => item.slug === "taxonomy-blog-post");
+  assert.ok(post);
+  assert.deepEqual(post.tags, ["technical seo", "content"]);
+  assert.equal("tags_json" in post, false);
+
+  const detail = await server.fetch(origin + "/api/v1/public/posts/taxonomy-blog-post", { headers: { origin } });
+  assert.equal(detail.status, 200);
+  const detailPost = (await detail.json()).data;
+  assert.equal(detailPost.category, "SEO");
+  assert.deepEqual(detailPost.tags, ["technical seo", "content"]);
+});
+
 test("template catalog requires admin/staff access and verified previews/licenses before publication", async () => {
   const admin = await createSignedInUser("Template Admin");
   const ordinary = await createSignedInUser("Template Ordinary User");

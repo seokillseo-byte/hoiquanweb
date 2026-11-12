@@ -97,6 +97,7 @@ for (const path of sitemapUrls) {
 
 const robots = await readFile(join(root, "robots.txt"), "utf8");
 assert.ok(robots.includes("Sitemap: https://hoiquanweb.io.vn/sitemap.xml"), "Robots file must reference the sitemap");
+assert.ok(robots.includes("Disallow: " + basePath + "/admin.html"), "Robots file must disallow the admin page at the configured base path");
 
 const css = await readFile(join(root, "assets", "css", "site.css"), "utf8");
 const js = await readFile(join(root, "assets", "js", "site.js"), "utf8");

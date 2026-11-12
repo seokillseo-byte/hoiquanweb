@@ -159,3 +159,16 @@ Không công bố hệ thống là production-ready cho đến khi có domain v�
 - [ ] Chưa được phép dùng dữ liệu khách hàng thật hoặc tuyên bố auth production-ready.
 
 **Bước tiếp theo:** chuẩn bị Cloudflare staging Worker + D1 riêng biệt, cấu hình origin/secret bằng dashboard hoặc CLI riêng tư, chạy migrations và browser E2E theo checklist. Các bước tạo tài nguyên, cấu hình secrets và deploy cần quyền/tài khoản Cloudflare của chủ dự án; không thể giả định các quyền đó đã được cấp. Không deploy production và không merge PR tự động.
+
+
+## Customer portal and delivery workflow
+
+- [x] Customer APIs for orders, projects, milestones, customer-visible comments and support tickets.
+- [x] Convert accepted quote to one order with unique quote linkage and idempotent retries.
+- [x] Customer membership isolation for all order/project/ticket reads and writes; integration tests cover cross-customer access denial.
+- [x] Staff/admin project, milestone and ticket management APIs with audit events.
+- [x] Static customer portal UI extended to quotes, orders, project milestones/comments and support tickets.
+- [x] Customer portal marked noindex; runtime script and schema validation added to repository checks.
+- [x] Admin UI for order creation from accepted quotes, project creation/status/milestones, ticket queue/status/priority and staff replies.
+- [ ] Customer onboarding/linking workflow and safe admin role provisioning.
+- [ ] Secure private file attachments, notification delivery, invoicing/payment and production deployment.

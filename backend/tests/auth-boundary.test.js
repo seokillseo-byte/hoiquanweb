@@ -44,10 +44,11 @@ test("legacy lead administration no longer accepts the shared ADMIN_TOKEN", asyn
   assert.equal(body.error.code, "SERVICE_UNAVAILABLE");
 });
 
-test("unimplemented customer portal routes remain unavailable", async () => {
-  for (const path of ["/api/v1/me/projects"]) {
+test("customer portal routes fail closed when identity storage is unavailable", async () => {
+  for (const path of ["/api/v1/me/projects", "/api/v1/me/orders", "/api/v1/me/tickets"]) {
     const response = await request(path);
-    assert.equal(response.status, 404, `${path} must not imply a working protected API`);
+    assert.equal(response.status, 503, `${path} must require a valid authenticated identity`);
+    assert.equal((await response.json()).error.code, "SERVICE_UNAVAILABLE");
   }
 });
 

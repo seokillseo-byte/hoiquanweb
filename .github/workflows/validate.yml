@@ -1,7 +1,7 @@
 name: Validate website and API
 on:
   push:
-    branches: [main, feat/better-auth-worker-d1-integration, feat/hoiquanweb-public-site-v1]
+    branches: [main, feat/better-auth-worker-d1-integration, feat/hoiquanweb-public-site-v1, feat/customer-project-portal]
   pull_request:
     branches: [main, feat/better-auth-worker-d1-integration]
   workflow_dispatch:

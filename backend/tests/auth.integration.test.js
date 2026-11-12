@@ -699,3 +699,124 @@ test("template catalog requires admin/staff access and verified previews/license
   assert.equal(revisionActions.length, 4);
   for (const action of ["created", "updated", "published"]) assert.ok(revisionActions.includes(action));
 });
+
+
+test("customer portal scopes orders, projects, milestones, comments and support tickets by membership", async () => {
+  const userA = await createSignedInUser("Project Customer A");
+  const userB = await createSignedInUser("Project Customer B");
+  const admin = await createSignedInUser("Project Admin");
+  const ordinary = await createSignedInUser("Project Ordinary User");
+  const seed = await authRequest("/_test/seed-identity", { userA: userA.id, userB: userB.id, adminUser: admin.id });
+  assert.equal(seed.status, 200, await seed.clone().text());
+
+  async function getFor(path, cookie) {
+    return server.fetch(origin + path, { headers: { origin, cookie } });
+  }
+  const forbiddenAdmin = await getFor("/api/v1/admin/projects", ordinary.cookie);
+  assert.equal(forbiddenAdmin.status, 403, "ordinary users must not manage projects");
+
+  const orderBeforeAcceptance = await server.fetch(origin + "/api/v1/admin/orders", {
+    method: "POST", headers: { origin, cookie: admin.cookie, "content-type": "application/json" },
+    body: JSON.stringify({ quote_id: "test-quote-a" })
+  });
+  assert.equal(orderBeforeAcceptance.status, 409, "only accepted quotes may become orders");
+
+  const accepted = await server.fetch(origin + "/api/v1/me/quotes/test-quote-a/accept", {
+    method: "POST", headers: { origin, cookie: userA.cookie }
+  });
+  assert.equal(accepted.status, 200, await accepted.clone().text());
+  const orderResponse = await server.fetch(origin + "/api/v1/admin/orders", {
+    method: "POST", headers: { origin, cookie: admin.cookie, "content-type": "application/json" },
+    body: JSON.stringify({ quote_id: "test-quote-a" })
+  });
+  assert.equal(orderResponse.status, 201, await orderResponse.clone().text());
+  const order = (await orderResponse.json()).data;
+  assert.equal(order.customer_id, "test-customer-a");
+  const repeatedOrder = await server.fetch(origin + "/api/v1/admin/orders", {
+    method: "POST", headers: { origin, cookie: admin.cookie, "content-type": "application/json" },
+    body: JSON.stringify({ quote_id: "test-quote-a" })
+  });
+  assert.equal(repeatedOrder.status, 200, "order creation from the same quote must be idempotent");
+  assert.equal((await repeatedOrder.json()).data.id, order.id);
+
+  const createProject = await server.fetch(origin + "/api/v1/admin/projects", {
+    method: "POST", headers: { origin, cookie: admin.cookie, "content-type": "application/json" },
+    body: JSON.stringify({
+      customer_id: "test-customer-a", order_id: order.id, name: "Company Website Delivery",
+      description: "Customer-visible project summary.", start_date: "2026-11-01", due_date: "2026-12-15",
+      milestones: [
+        { title: "Discovery and requirements", due_date: "2026-11-10", sort_order: 0 },
+        { title: "Design review", due_date: "2026-11-20", sort_order: 1 }
+      ]
+    })
+  });
+  assert.equal(createProject.status, 201, await createProject.clone().text());
+  const project = (await createProject.json()).data;
+  assert.equal(project.milestones.length, 2);
+
+  const projectsA = await getFor("/api/v1/me/projects", userA.cookie);
+  assert.equal(projectsA.status, 200);
+  assert.deepEqual((await projectsA.json()).data.map(item => item.id), [project.id]);
+  const projectsB = await getFor("/api/v1/me/projects", userB.cookie);
+  assert.equal(projectsB.status, 200);
+  assert.deepEqual((await projectsB.json()).data, []);
+  const crossProject = await getFor("/api/v1/me/projects/" + project.id, userB.cookie);
+  assert.equal(crossProject.status, 404, "a customer must not read another customer's project");
+  const detail = await getFor("/api/v1/me/projects/" + project.id, userA.cookie);
+  assert.equal(detail.status, 200);
+  assert.equal((await detail.json()).data.milestones.length, 2);
+
+  const comment = await server.fetch(origin + "/api/v1/me/projects/" + project.id + "/comments", {
+    method: "POST", headers: { origin, cookie: userA.cookie, "content-type": "application/json" },
+    body: JSON.stringify({ body: "Please confirm the design review schedule." })
+  });
+  assert.equal(comment.status, 201, await comment.clone().text());
+  const comments = await getFor("/api/v1/me/projects/" + project.id + "/comments", userA.cookie);
+  assert.equal(comments.status, 200);
+  assert.equal((await comments.json()).data[0].body, "Please confirm the design review schedule.");
+  const crossComments = await getFor("/api/v1/me/projects/" + project.id + "/comments", userB.cookie);
+  assert.equal(crossComments.status, 404);
+
+  const unauthorizedTicket = await server.fetch(origin + "/api/v1/me/tickets", {
+    method: "POST", headers: { origin, cookie: ordinary.cookie, "content-type": "application/json" },
+    body: JSON.stringify({ customer_id: "test-customer-a", subject: "No membership", description: "Should be rejected." })
+  });
+  assert.equal(unauthorizedTicket.status, 404, "ticket creation must verify membership for the supplied customer");
+
+  const createTicket = await server.fetch(origin + "/api/v1/me/tickets", {
+    method: "POST", headers: { origin, cookie: userA.cookie, "content-type": "application/json" },
+    body: JSON.stringify({ customer_id: "test-customer-a", subject: "Website staging issue", description: "The staging page does not load." })
+  });
+  assert.equal(createTicket.status, 201, await createTicket.clone().text());
+  const ticket = (await createTicket.json()).data;
+  const ticketsA = await getFor("/api/v1/me/tickets", userA.cookie);
+  assert.equal((await ticketsA.json()).data[0].id, ticket.id);
+  const ticketsB = await getFor("/api/v1/me/tickets", userB.cookie);
+  assert.deepEqual((await ticketsB.json()).data, []);
+
+  const customerReply = await server.fetch(origin + "/api/v1/me/tickets/" + ticket.id + "/messages", {
+    method: "POST", headers: { origin, cookie: userA.cookie, "content-type": "application/json" },
+    body: JSON.stringify({ body: "I can provide a browser recording if needed." })
+  });
+  assert.equal(customerReply.status, 201, await customerReply.clone().text());
+  const staffReply = await server.fetch(origin + "/api/v1/admin/tickets/" + ticket.id + "/messages", {
+    method: "POST", headers: { origin, cookie: admin.cookie, "content-type": "application/json" },
+    body: JSON.stringify({ body: "Thank you. We are checking the staging environment." })
+  });
+  assert.equal(staffReply.status, 201, await staffReply.clone().text());
+  const messages = await getFor("/api/v1/me/tickets/" + ticket.id + "/messages", userA.cookie);
+  assert.equal((await messages.json()).data.length, 3, "ticket creation and both replies must be visible to the authorized customer");
+  const crossTicketMessages = await getFor("/api/v1/me/tickets/" + ticket.id + "/messages", userB.cookie);
+  assert.equal(crossTicketMessages.status, 404);
+
+  const resolveTicket = await server.fetch(origin + "/api/v1/admin/tickets/" + ticket.id, {
+    method: "PATCH", headers: { origin, cookie: admin.cookie, "content-type": "application/json" },
+    body: JSON.stringify({ status: "resolved", priority: "normal" })
+  });
+  assert.equal(resolveTicket.status, 200, await resolveTicket.clone().text());
+  const closedReply = await server.fetch(origin + "/api/v1/me/tickets/" + ticket.id + "/messages", {
+    method: "POST", headers: { origin, cookie: userA.cookie, "content-type": "application/json" },
+    body: JSON.stringify({ body: "Another reply after resolution." })
+  });
+  assert.equal(closedReply.status, 409, "resolved tickets must not accept new customer replies");
+});

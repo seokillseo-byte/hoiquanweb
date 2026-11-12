@@ -57,6 +57,17 @@ if 'name="hq-api-base"' not in html:
     fail("API base configuration meta tag is missing")
 if not (ROOT / "privacy.html").exists():
     fail("privacy.html is missing")
+portal_path = ROOT / "portal.html"
+if not portal_path.exists():
+    fail("portal.html is missing")
+portal_html = portal_path.read_text(encoding="utf-8")
+portal_parser = MarkupCheck()
+portal_parser.feed(portal_html)
+if 'name="robots" content="noindex,nofollow"' not in portal_html:
+    fail("customer portal must be marked noindex")
+for required_portal_id in ["loginForm", "apiBase", "email", "password", "portalPanel", "ordersList", "projectsList", "ticketsList", "ticketForm"]:
+    if required_portal_id not in portal_parser.ids:
+        fail("required customer portal UI ID missing: " + required_portal_id)
 admin_path = ROOT / "admin.html"
 if not admin_path.exists():
     fail("admin.html is missing")
@@ -65,7 +76,7 @@ admin_parser = MarkupCheck()
 admin_parser.feed(admin_html)
 if 'name="robots" content="noindex,nofollow"' not in admin_html:
     fail("admin page must be marked noindex")
-for required_admin_id in ["connectForm", "apiBase", "adminEmail", "adminPassword", "refreshButton", "leadRows"]:
+for required_admin_id in ["connectForm", "apiBase", "adminEmail", "adminPassword", "refreshButton", "leadRows", "deliveryPanel", "adminOrders", "adminProjects", "adminTickets", "orderCreateForm", "projectCreateForm"]:
     if required_admin_id not in admin_parser.ids:
         fail("required admin UI ID missing: " + required_admin_id)
 for fragment in admin_parser.fragments:
@@ -112,6 +123,7 @@ try:
     )
     validate_script_blocks(parser, "index.html")
     validate_script_blocks(admin_parser, "admin.html")
+    validate_script_blocks(portal_parser, "portal.html")
 except FileNotFoundError:
     fail("Node.js is required to validate JavaScript syntax")
 except subprocess.CalledProcessError as exc:
@@ -126,7 +138,7 @@ try:
     for migration in migration_files:
         db.executescript(migration.read_text(encoding="utf-8"))
     tables = {row[0] for row in db.execute("SELECT name FROM sqlite_master WHERE type='table'")}
-    expected = {"leads", "lead_events", "rate_limits", "cms_pages", "cms_posts", "cms_services", "cms_templates", "cms_revisions", "crm_customers", "crm_activities", "crm_quotes", "crm_quote_items", "crm_audit_events"}
+    expected = {"leads", "lead_events", "rate_limits", "cms_pages", "cms_posts", "cms_services", "cms_templates", "cms_revisions", "crm_customers", "crm_activities", "crm_quotes", "crm_quote_items", "crm_audit_events", "crm_orders", "crm_projects", "crm_project_milestones", "crm_project_comments", "crm_tickets", "crm_ticket_messages"}
     if not expected.issubset(tables):
         fail("database migrations did not create all required tables: " + ", ".join(sorted(expected - tables)))
     # Publicly readable content must have an explicit status and publication timestamp.
@@ -143,7 +155,7 @@ try:
     customer_indexes = {row[1] for row in db.execute("PRAGMA index_list(crm_customers)")}
     if "idx_crm_customers_lead_unique" not in customer_indexes:
         fail("CRM customer-to-lead deduplication index is missing")
-    for table, expected_fk in [("crm_activities", "crm_customers"), ("crm_quotes", "crm_customers"), ("crm_quote_items", "crm_quotes")]:
+    for table, expected_fk in [("crm_activities", "crm_customers"), ("crm_quotes", "crm_customers"), ("crm_quote_items", "crm_quotes"), ("crm_orders", "crm_customers"), ("crm_projects", "crm_customers"), ("crm_project_milestones", "crm_projects"), ("crm_project_comments", "crm_projects"), ("crm_tickets", "crm_customers"), ("crm_ticket_messages", "crm_tickets")]:
         foreign_tables = {row[2] for row in db.execute(f"PRAGMA foreign_key_list({table})")}
         if expected_fk not in foreign_tables:
             fail(f"CRM foreign key missing on {table}")

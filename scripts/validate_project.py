@@ -144,7 +144,7 @@ try:
     for migration in migration_files:
         db.executescript(migration.read_text(encoding="utf-8"))
     tables = {row[0] for row in db.execute("SELECT name FROM sqlite_master WHERE type='table'")}
-    expected = {"leads", "lead_events", "rate_limits", "cms_pages", "cms_posts", "cms_services", "cms_templates", "cms_revisions", "crm_customers", "crm_activities", "crm_quotes", "crm_quote_items", "crm_audit_events", "crm_orders", "crm_projects", "crm_project_milestones", "crm_project_comments", "crm_tickets", "crm_ticket_messages", "crm_project_files", "crm_notifications"}
+    expected = {"leads", "lead_events", "rate_limits", "cms_pages", "cms_posts", "cms_services", "cms_templates", "cms_revisions", "crm_customers", "crm_activities", "crm_quotes", "crm_quote_items", "crm_audit_events", "crm_orders", "crm_projects", "crm_project_milestones", "crm_project_comments", "crm_tickets", "crm_ticket_messages", "crm_project_files", "crm_notifications", "crm_email_outbox"}
     if not expected.issubset(tables):
         fail("database migrations did not create all required tables: " + ", ".join(sorted(expected - tables)))
     lead_columns = {row[1] for row in db.execute("PRAGMA table_info(leads)")}
@@ -177,6 +177,15 @@ try:
     notification_indexes = {row[1] for row in db.execute("PRAGMA index_list(crm_notifications)")}
     if not {"idx_crm_notifications_user_created", "idx_crm_notifications_user_unread"}.issubset(notification_indexes):
         fail("CRM notification inbox indexes are missing")
+    email_outbox_columns = {row[1] for row in db.execute("PRAGMA table_info(crm_email_outbox)")}
+    if not {"event_key", "lead_id", "status", "attempts", "next_attempt_at", "lease_until", "provider_message_id", "last_error_code", "sent_at"}.issubset(email_outbox_columns):
+        fail("CRM email outbox delivery state columns are missing")
+    email_outbox_indexes = {row[1] for row in db.execute("PRAGMA index_list(crm_email_outbox)")}
+    if "idx_crm_email_outbox_due" not in email_outbox_indexes:
+        fail("CRM email outbox retry index is missing")
+    email_outbox_sql = db.execute("SELECT sql FROM sqlite_master WHERE type='table' AND name='crm_email_outbox'").fetchone()[0]
+    if "UNIQUE" not in email_outbox_sql or "REFERENCES leads(id)" not in email_outbox_sql:
+        fail("CRM email outbox event deduplication or lead foreign key is missing")
     file_fk_tables = {row[2] for row in db.execute("PRAGMA foreign_key_list(crm_project_files)")}
     if not {"crm_projects", "crm_customers"}.issubset(file_fk_tables):
         fail("private project file customer/project foreign keys are missing")

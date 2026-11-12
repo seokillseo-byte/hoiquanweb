@@ -218,6 +218,15 @@ try:
         "INSERT INTO crm_customers (id,lead_id,display_name,contact_email,created_at,updated_at) VALUES (?,?,?,?,?,?)",
         ("customer-test-1","lead-test-1","Test Customer","customer@example.test",now,now),
     )
+    db.execute(
+        "INSERT INTO crm_email_outbox (id,event_key,lead_id,status,attempts,next_attempt_at,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?)",
+        ("email-outbox-test-1","lead.created/lead-test-1","lead-test-1","pending",0,now,now,now),
+    )
+    expect_integrity_error(
+        "CRM email outbox event deduplication",
+        "INSERT INTO crm_email_outbox (id,event_key,lead_id,status,attempts,next_attempt_at,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?)",
+        ("email-outbox-test-2","lead.created/lead-test-1","lead-test-1","pending",0,now,now,now),
+    )
     def expect_integrity_error(label, statement, values):
         try:
             db.execute(statement, values)

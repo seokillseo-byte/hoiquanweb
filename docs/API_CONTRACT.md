@@ -25,6 +25,7 @@
 | GET | `/api/v1/public/services` | List active service offerings | Public |
 | GET | `/api/v1/public/templates` | List published templates with filters | Public |
 | GET | `/api/v1/public/templates/:slug` | Read published template metadata | Public |
+| GET | `/api/v1/public/media/:id` | Stream an explicitly published CMS image from private R2 storage | Public; published assets only |
 | POST | `/api/v1/public/leads` | Submit a lead with validation, consent and rate limits | Public, rate-limited |
 
 Public APIs must never return drafts, private media keys, customer details, internal notes, unpublished templates or staff-only fields.
@@ -80,6 +81,11 @@ Never accept a client-provided customer ID as proof of ownership. Resolve member
 | POST | `/api/v1/admin/templates/:id/publish` | Publish after preview and license verification attestations | Admin |
 | POST | `/api/v1/admin/templates/:id/archive` | Archive template | Admin |
 | GET | `/api/v1/admin/templates/:id/revisions` | Read template revision metadata | Admin or staff |
+| GET/POST | `/api/v1/admin/media` | List CMS media or upload a draft image to private R2 | Admin or staff |
+| GET/PATCH | `/api/v1/admin/media/:id` | Read metadata or update alt text | Admin or staff |
+| GET | `/api/v1/admin/media/:id/file` | Preview any CMS media asset before publication | Admin or staff |
+| POST | `/api/v1/admin/media/:id/publish` | Publish a validated CMS image for public delivery | Admin |
+| POST | `/api/v1/admin/media/:id/archive` | Revoke public delivery of a CMS image | Admin |
 | GET/PATCH | `/api/v1/admin/leads` | Review, update status and assign/unassign staff | Admin or staff |
 | GET | `/api/v1/admin/staff` | List assignable admin/staff accounts | Admin or staff |
 | GET | `/api/v1/admin/leads/:id/events` | Read lead history including assignment/status events | Admin or staff |
@@ -162,3 +168,8 @@ The static `portal.html` customer workspace is marked `noindex,nofollow`; it inc
 | GET/POST | `/api/v1/admin/customers/:id/members` | List linked identities; link a registered account by email with owner/member/billing role | Admin or staff |
 
 The endpoint resolves an existing Better Auth user by normalized email and upserts the membership. It never creates an identity or grants membership during public sign-up. Unknown emails return 404; invalid membership roles return 400. The operation is recorded in the CRM audit log. Customer portal access continues to depend on membership, not on the supplied customer ID.
+
+
+### CMS media library
+
+CMS media uploads use multipart/form-data with a single file and optional alt_text. The Worker accepts PNG, JPEG, GIF and WebP only, enforces a 5 MiB file limit and checks file signatures against the declared MIME type. Object keys are generated server-side and remain private in R2. Uploads are draft by default. Admin publication changes the D1 state; only published assets can be streamed through the public media endpoint. Admin/staff can preview drafts through the authenticated admin file route. Archiving immediately revokes public delivery but retains the R2 object for controlled retention/deletion. The CMS media library is for public website imagery; customer project attachments remain a separate private-file workflow and are not implemented by this API.

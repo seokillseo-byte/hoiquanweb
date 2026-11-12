@@ -598,12 +598,12 @@ async function adminDashboardRoutes(request, env, url) {
     leadStatuses, recentLeads, recentActivity
   ] = await Promise.all([
     env.DB.prepare("SELECT COUNT(*) AS count FROM leads").first(),
-    env.DB.prepare("SELECT COUNT(*) AS count FROM leads WHERE created_at >= datetime('now','-7 days')").first(),
+    env.DB.prepare("SELECT COUNT(*) AS count FROM leads WHERE julianday(created_at) >= julianday('now','-7 days')").first(),
     env.DB.prepare("SELECT COUNT(*) AS count FROM crm_customers WHERE status = 'active'").first(),
     env.DB.prepare("SELECT COUNT(*) AS count FROM crm_quotes WHERE status = 'draft'").first(),
     env.DB.prepare("SELECT COUNT(*) AS count FROM crm_quotes WHERE status = 'sent'").first(),
     env.DB.prepare("SELECT COUNT(*) AS count FROM crm_quotes WHERE status = 'accepted'").first(),
-    env.DB.prepare("SELECT COUNT(*) AS count FROM crm_orders WHERE status NOT IN ('cancelled','refunded')").first(),
+    env.DB.prepare("SELECT COUNT(*) AS count FROM crm_orders WHERE status NOT IN ('cancelled','completed')").first(),
     env.DB.prepare("SELECT COUNT(*) AS count FROM crm_projects WHERE status IN ('planning','in_progress','review','on_hold')").first(),
     env.DB.prepare("SELECT COUNT(*) AS count FROM crm_projects WHERE due_date IS NOT NULL AND due_date < date('now') AND status NOT IN ('completed','cancelled')").first(),
     env.DB.prepare("SELECT COUNT(*) AS count FROM crm_tickets WHERE status IN ('open','in_progress','waiting_customer')").first(),

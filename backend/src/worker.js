@@ -404,7 +404,7 @@ async function identityRoutes(request, env, url) {
     }
     return json({ error: { code: "METHOD_NOT_ALLOWED", message: "Phương thức không được hỗ trợ." } }, 405);
   }
-  const customerMatch = url.pathname.match(/^\/api\/v1\/admin\/customers\/([^/]+)(?:\/(activities|members))?$/);
+  const customerMatch = url.pathname.match(/^\/api\/v1\/admin\/customers\/([^/]+)(?:\/(activities|members)(?:\/([^/]+))?)?$/);
   if (customerMatch) {
     const principal = await authenticatedPrincipal(request, env);
     if (principal.error) return principal.error;
@@ -419,6 +419,29 @@ async function identityRoutes(request, env, url) {
     const customer = await env.DB.prepare("SELECT id, display_name, organization_name, contact_email, phone, status, notes, created_at, updated_at FROM crm_customers WHERE id = ? LIMIT 1").bind(customerId).first();
     if (!customer) return json({ error: { code: "NOT_FOUND", message: "Không tìm thấy khách hàng." } }, 404);
     if (customerMatch[2] === "members") {
+      if (customerMatch[3] && request.method === "DELETE") {
+        let memberUserId;
+        try { memberUserId = decodeURIComponent(customerMatch[3]); }
+        catch { return json({ error: { code: "NOT_FOUND", message: "Không tìm thấy thành viên." } }, 404); }
+        if (!memberUserId || memberUserId.length > 128 || memberUserId.includes("/")) {
+          return json({ error: { code: "NOT_FOUND", message: "Không tìm thấy thành viên." } }, 404);
+        }
+        const membership = await env.DB.prepare("SELECT membership_role FROM crm_customer_members WHERE customer_id = ? AND user_id = ? LIMIT 1").bind(customerId, memberUserId).first();
+        if (!membership) return json({ error: { code: "NOT_FOUND", message: "Không tìm thấy thành viên của khách hàng." } }, 404);
+        if (membership.membership_role === "owner") {
+          const owners = await env.DB.prepare("SELECT COUNT(*) AS count FROM crm_customer_members WHERE customer_id = ? AND membership_role = 'owner'").bind(customerId).first();
+          if ((owners?.count || 0) <= 1) return json({ error: { code: "LAST_CUSTOMER_OWNER", message: "Khách hàng phải luôn có ít nhất một chủ sở hữu." } }, 409);
+        }
+        const now = new Date().toISOString();
+        const metadata = JSON.stringify({ user_id: memberUserId, membership_role: membership.membership_role });
+        const results = await env.DB.batch([
+          env.DB.prepare("INSERT INTO crm_audit_events (id, actor_id, action, resource_type, resource_id, metadata_json, created_at) SELECT ?, ?, 'customer.member.unlinked', 'customer', ?, ?, ? WHERE EXISTS (SELECT 1 FROM crm_customer_members WHERE customer_id = ? AND user_id = ? AND (membership_role != 'owner' OR (SELECT COUNT(*) FROM crm_customer_members WHERE customer_id = ? AND membership_role = 'owner') > 1))").bind(crypto.randomUUID(), principal.user.id, customerId, metadata, now, customerId, memberUserId, customerId),
+          env.DB.prepare("DELETE FROM crm_customer_members WHERE customer_id = ? AND user_id = ? AND (membership_role != 'owner' OR (SELECT COUNT(*) FROM crm_customer_members WHERE customer_id = ? AND membership_role = 'owner') > 1)").bind(customerId, memberUserId, customerId)
+        ]);
+        if (!results?.[1]?.meta?.changes) return json({ error: { code: "MEMBERSHIP_CONFLICT", message: "Quyền thành viên vừa thay đổi. Vui lòng tải lại." } }, 409);
+        return json({ data: { customer_id: customerId, user_id: memberUserId, revoked: true } });
+      }
+      if (customerMatch[3]) return json({ error: { code: "METHOD_NOT_ALLOWED", message: "Phương thức không được hỗ trợ." } }, 405);
       if (request.method === "GET") {
         const result = await env.DB.prepare("SELECT m.user_id, u.email, u.name, m.membership_role, m.created_at FROM crm_customer_members m INNER JOIN user u ON u.id = m.user_id WHERE m.customer_id = ? ORDER BY m.created_at ASC").bind(customerId).all();
         return json({ data: result.results || [] });
@@ -864,9 +887,15 @@ async function adminProjectRoutes(request, env, url) {
       const status = clean(body.status ?? project.status, 20), startDate = body.start_date === undefined ? project.start_date : body.start_date == null || body.start_date === "" ? null : clean(body.start_date, 10), dueDate = body.due_date === undefined ? project.due_date : body.due_date == null || body.due_date === "" ? null : clean(body.due_date, 10);
       if (name.length < 2 || !["planning","in_progress","review","completed","on_hold","cancelled"].includes(status) || !validDateOnly(startDate) || !validDateOnly(dueDate) || (startDate && dueDate && dueDate < startDate)) return json({ error: { code: "VALIDATION_ERROR", message: "Thông tin hoặc trạng thái dự án không hợp lệ." } }, 400);
       const now = new Date().toISOString();
+      const changes = {};
+      for (const [field, nextValue] of Object.entries({ name, status, start_date: startDate, due_date: dueDate })) {
+        const previousValue = project[field] ?? null;
+        const normalizedNext = nextValue ?? null;
+        if (previousValue !== normalizedNext) changes[field] = { from: previousValue, to: normalizedNext };
+      }
       await env.DB.batch([
         env.DB.prepare("UPDATE crm_projects SET name = ?, description = ?, status = ?, start_date = ?, due_date = ?, updated_at = ? WHERE id = ?").bind(name, description, status, startDate, dueDate, now, projectId),
-        env.DB.prepare("INSERT INTO crm_audit_events (id, actor_id, action, resource_type, resource_id, metadata_json, created_at) VALUES (?, ?, 'project.updated', 'project', ?, ?, ?)").bind(crypto.randomUUID(), principal.user.id, projectId, JSON.stringify({ status }), now)
+        env.DB.prepare("INSERT INTO crm_audit_events (id, actor_id, action, resource_type, resource_id, metadata_json, created_at) VALUES (?, ?, 'project.updated', 'project', ?, ?, ?)").bind(crypto.randomUUID(), principal.user.id, projectId, JSON.stringify({ changes }), now)
       ]);
       const updated = await env.DB.prepare("SELECT id, customer_id, order_id, name, description, status, start_date, due_date, created_by, created_at, updated_at FROM crm_projects WHERE id = ? LIMIT 1").bind(projectId).first();
       await notifySafely(env, env.DB.prepare("SELECT customer_id FROM crm_projects WHERE id = ? LIMIT 1").bind(projectId).first().then(row => row?.customer_id ? env.DB.prepare("SELECT user_id FROM crm_customer_members WHERE customer_id = ?").bind(row.customer_id).all().then(result => (result.results || []).map(member => member.user_id)) : []), {
@@ -885,9 +914,15 @@ async function adminProjectRoutes(request, env, url) {
     const body = await readJson(request), title = clean(body.title ?? current.title, 180), description = clean(body.description ?? current.description, 5000), status = clean(body.status ?? current.status, 20), dueDate = body.due_date === undefined ? current.due_date : body.due_date == null || body.due_date === "" ? null : clean(body.due_date, 10);
     if (title.length < 2 || !["pending","in_progress","review","approved","blocked"].includes(status) || !validDateOnly(dueDate)) return json({ error: { code: "VALIDATION_ERROR", message: "Thông tin milestone không hợp lệ." } }, 400);
     const now = new Date().toISOString();
+    const changes = {};
+    for (const [field, nextValue] of Object.entries({ title, status, due_date: dueDate })) {
+      const previousValue = current[field] ?? null;
+      const normalizedNext = nextValue ?? null;
+      if (previousValue !== normalizedNext) changes[field] = { from: previousValue, to: normalizedNext };
+    }
     await env.DB.batch([
       env.DB.prepare("UPDATE crm_project_milestones SET title = ?, description = ?, status = ?, due_date = ?, updated_at = ? WHERE id = ?").bind(title, description, status, dueDate, now, milestoneId),
-      env.DB.prepare("INSERT INTO crm_audit_events (id, actor_id, action, resource_type, resource_id, metadata_json, created_at) VALUES (?, ?, 'project.milestone.updated', 'project', ?, ?, ?)").bind(crypto.randomUUID(), principal.user.id, current.project_id, JSON.stringify({ milestone_id: milestoneId, status }), now)
+      env.DB.prepare("INSERT INTO crm_audit_events (id, actor_id, action, resource_type, resource_id, metadata_json, created_at) VALUES (?, ?, 'project.milestone.updated', 'project', ?, ?, ?)").bind(crypto.randomUUID(), principal.user.id, current.project_id, JSON.stringify({ milestone_id: milestoneId, changes }), now)
     ]);
     await notifySafely(env, env.DB.prepare("SELECT customer_id FROM crm_projects WHERE id = ? LIMIT 1").bind(current.project_id).first().then(row => row?.customer_id ? env.DB.prepare("SELECT user_id FROM crm_customer_members WHERE customer_id = ?").bind(row.customer_id).all().then(result => (result.results || []).map(member => member.user_id)) : []), {
       type: "milestone_updated", title: "Tiến độ dự án có cập nhật", body: "Một mốc tiến độ trong dự án đã được cập nhật.", resource_type: "project", resource_id: current.project_id
@@ -933,9 +968,12 @@ async function adminProjectRoutes(request, env, url) {
       const body = await readJson(request), status = clean(body.status ?? ticket.status, 20), priority = clean(body.priority ?? ticket.priority, 20);
       if (!["open","in_progress","waiting_customer","resolved","closed"].includes(status) || !["low","normal","high","urgent"].includes(priority)) return json({ error: { code: "VALIDATION_ERROR", message: "Trạng thái hoặc độ ưu tiên không hợp lệ." } }, 400);
       const now = new Date().toISOString();
+      const changes = {};
+      if (ticket.status !== status) changes.status = { from: ticket.status, to: status };
+      if (ticket.priority !== priority) changes.priority = { from: ticket.priority, to: priority };
       await env.DB.batch([
         env.DB.prepare("UPDATE crm_tickets SET status = ?, priority = ?, updated_at = ? WHERE id = ?").bind(status, priority, now, ticketId),
-        env.DB.prepare("INSERT INTO crm_audit_events (id, actor_id, action, resource_type, resource_id, metadata_json, created_at) VALUES (?, ?, 'ticket.updated', 'ticket', ?, ?, ?)").bind(crypto.randomUUID(), principal.user.id, ticketId, JSON.stringify({ status, priority }), now)
+        env.DB.prepare("INSERT INTO crm_audit_events (id, actor_id, action, resource_type, resource_id, metadata_json, created_at) VALUES (?, ?, 'ticket.updated', 'ticket', ?, ?, ?)").bind(crypto.randomUUID(), principal.user.id, ticketId, JSON.stringify({ changes }), now)
       ]);
       await notifySafely(env, env.DB.prepare("SELECT customer_id FROM crm_tickets WHERE id = ? LIMIT 1").bind(ticketId).first().then(row => row?.customer_id ? env.DB.prepare("SELECT user_id FROM crm_customer_members WHERE customer_id = ?").bind(row.customer_id).all().then(result => (result.results || []).map(member => member.user_id)) : []), {
         type: "ticket_updated", title: "Yêu cầu hỗ trợ được cập nhật", body: "Trạng thái hoặc mức ưu tiên của yêu cầu đã thay đổi.", resource_type: "ticket", resource_id: ticketId
@@ -1644,6 +1682,15 @@ export default { async fetch(request, env) {
     else if (url.pathname === "/_test/customer-audit-count" && request.method === "GET" && env.TEST_MODE === "true") {
       const result = await env.DB.prepare("SELECT action, COUNT(*) AS count FROM crm_audit_events WHERE resource_type = 'customer' GROUP BY action").all();
       response = json({ data: result.results || [] });
+    }
+    else if (url.pathname === "/_test/resource-audit" && request.method === "GET" && env.TEST_MODE === "true") {
+      const resourceType = clean(url.searchParams.get("resource_type"), 80);
+      const resourceId = clean(url.searchParams.get("resource_id"), 80);
+      if (!resourceType || !resourceId) response = json({ error: "VALIDATION_ERROR" }, 400);
+      else {
+        const result = await env.DB.prepare("SELECT action, metadata_json, created_at FROM crm_audit_events WHERE resource_type = ? AND resource_id = ? ORDER BY created_at ASC, id ASC").bind(resourceType, resourceId).all();
+        response = json({ data: result.results || [] });
+      }
     }
     else if (url.pathname === "/_test/seed-identity" && request.method === "POST" && env.TEST_MODE === "true") {
       const body = await readJson(request);

@@ -585,14 +585,6 @@ async function notifySafely(env, recipientsPromise, notification) {
     console.error("Notification persistence failed", error?.message || "unknown");
   }
 }
-async function notifyStaff(env, notification) {
-  const result = await env.DB.prepare("SELECT user_id FROM app_user_roles WHERE role IN ('admin','staff')").all();
-  await createUserNotifications(env, (result.results || []).map(row => row.user_id), notification);
-}
-async function notifyCustomerMembers(env, customerId, notification) {
-  const result = await env.DB.prepare("SELECT user_id FROM crm_customer_members WHERE customer_id = ?").bind(customerId).all();
-  await createUserNotifications(env, (result.results || []).map(row => row.user_id), notification);
-}
 async function notificationRoutes(request, env, url) {
   if (!url.pathname.startsWith("/api/v1/me/notifications")) return null;
   const principal = await authenticatedPrincipal(request, env);

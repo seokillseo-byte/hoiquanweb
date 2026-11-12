@@ -169,6 +169,6 @@ Không công bố hệ thống là production-ready cho đến khi có domain v�
 - [x] Staff/admin project, milestone and ticket management APIs with audit events.
 - [x] Static customer portal UI extended to quotes, orders, project milestones/comments and support tickets.
 - [x] Customer portal marked noindex; runtime script and schema validation added to repository checks.
-- [ ] Admin UI for orders, project lifecycle/milestones, and ticket queue/replies.
+- [x] Admin UI for order creation from accepted quotes, project creation/status/milestones, ticket queue/status/priority and staff replies.
 - [ ] Customer onboarding/linking workflow and safe admin role provisioning.
 - [ ] Secure private file attachments, notification delivery, invoicing/payment and production deployment.

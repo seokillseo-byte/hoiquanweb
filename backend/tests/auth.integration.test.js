@@ -1059,6 +1059,30 @@ test("customer portal scopes orders, projects, milestones, comments and support 
     body: JSON.stringify({ email: "not-registered@example.test", membership_role: "member" })
   });
   assert.equal(missingAccount.status, 404, "staff must not create a membership for an unknown identity");
+
+  const customerRevocation = await server.fetch(origin + "/api/v1/admin/customers/test-customer-a/members/" + encodeURIComponent(userB.id), {
+    method: "DELETE", headers: { origin, cookie: userB.cookie }
+  });
+  assert.equal(customerRevocation.status, 403, "customers cannot revoke customer memberships through admin APIs");
+
+  const lastOwnerRevocation = await server.fetch(origin + "/api/v1/admin/customers/test-customer-a/members/" + encodeURIComponent(userA.id), {
+    method: "DELETE", headers: { origin, cookie: admin.cookie }
+  });
+  assert.equal(lastOwnerRevocation.status, 409, "the final customer owner must not be removable");
+
+  const revokeMember = await server.fetch(origin + "/api/v1/admin/customers/test-customer-a/members/" + encodeURIComponent(userB.id), {
+    method: "DELETE", headers: { origin, cookie: admin.cookie }
+  });
+  assert.equal(revokeMember.status, 200, await revokeMember.clone().text());
+  assert.equal((await revokeMember.json()).data.revoked, true);
+  const projectsAfterRevocation = await getFor("/api/v1/me/projects", userB.cookie);
+  assert.ok(!(await projectsAfterRevocation.json()).data.some(item => item.id === project.id),
+    "revoking membership must immediately remove access to that customer's projects");
+  const membersAfterRevocation = await getFor("/api/v1/admin/customers/test-customer-a/members", admin.cookie);
+  assert.ok(!(await membersAfterRevocation.json()).data.some(item => item.user_id === userB.id));
+  const customerAudit = await getFor("/_test/customer-audit-count", admin.cookie);
+  assert.ok((await customerAudit.json()).data.some(item => item.action === "customer.member.unlinked" && item.count >= 1),
+    "membership revocation must create an audit event");
 });
 
 test("private project files enforce customer membership and staff-only internal visibility", async () => {
@@ -1251,5 +1275,40 @@ test("in-app notifications are generated for project and ticket events and isola
   });
   assert.equal(readAll.status, 200, await readAll.clone().text());
   assert.equal((await getNotifications(admin.cookie).then(response => response.json())).meta.unread_count, 0);
+
+  const milestoneCreate = await server.fetch(origin + "/api/v1/admin/projects/" + project.id + "/milestones", {
+    method: "POST",
+    headers: { origin, cookie: admin.cookie, "content-type": "application/json" },
+    body: JSON.stringify({ title: "Audit milestone" })
+  });
+  assert.equal(milestoneCreate.status, 201, await milestoneCreate.clone().text());
+  const milestone = (await milestoneCreate.json()).data;
+  const milestoneUpdate = await server.fetch(origin + "/api/v1/admin/milestones/" + milestone.id, {
+    method: "PATCH",
+    headers: { origin, cookie: admin.cookie, "content-type": "application/json" },
+    body: JSON.stringify({ status: "in_progress" })
+  });
+  assert.equal(milestoneUpdate.status, 200, await milestoneUpdate.clone().text());
+
+  const projectAudit = await server.fetch(origin + "/_test/resource-audit?resource_type=project&resource_id=" + encodeURIComponent(project.id), { headers: { origin } });
+  const projectEvents = (await projectAudit.json()).data;
+  const projectUpdateEvent = projectEvents.find(item => item.action === "project.updated");
+  assert.deepEqual(JSON.parse(projectUpdateEvent.metadata_json).changes.status, { from: "planning", to: "in_progress" });
+
+  const milestoneAuditEvent = projectEvents.find(item => item.action === "project.milestone.updated");
+  assert.deepEqual(JSON.parse(milestoneAuditEvent.metadata_json).changes.status, { from: "pending", to: "in_progress" });
+
+  const ticketUpdate = await server.fetch(origin + "/api/v1/admin/tickets/" + ticketId, {
+    method: "PATCH",
+    headers: { origin, cookie: admin.cookie, "content-type": "application/json" },
+    body: JSON.stringify({ status: "in_progress", priority: "high" })
+  });
+  assert.equal(ticketUpdate.status, 200, await ticketUpdate.clone().text());
+  const ticketAudit = await server.fetch(origin + "/_test/resource-audit?resource_type=ticket&resource_id=" + encodeURIComponent(ticketId), { headers: { origin } });
+  const ticketEvents = (await ticketAudit.json()).data;
+  const ticketUpdateEvent = ticketEvents.find(item => item.action === "ticket.updated");
+  const ticketChanges = JSON.parse(ticketUpdateEvent.metadata_json).changes;
+  assert.deepEqual(ticketChanges.status, { from: "open", to: "in_progress" });
+  assert.deepEqual(ticketChanges.priority, { from: "normal", to: "high" });
 });
 

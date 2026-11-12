@@ -76,6 +76,8 @@ Never accept a client-provided customer ID as proof of ownership. Resolve member
 | GET/PATCH | `/api/v1/admin/leads` | Review/assign/update leads | CRM permission |
 | GET/POST | `/api/v1/admin/customers` | Manage customer records | CRM permission |
 | GET/POST | `/api/v1/admin/quotes` | Create/list quotes and items | Quote permission |
+| GET | `/api/v1/admin/quotes/:id` | Read quote and line items | Admin or staff |
+| POST | `/api/v1/admin/quotes/:id/send` | Send a draft quote (state transition; no email is sent yet) | Admin or staff |
 | GET/POST | `/api/v1/admin/projects` | Create/list projects | Project permission |
 | GET/PATCH | `/api/v1/admin/users` | Manage users and role assignments | User-admin permission |
 

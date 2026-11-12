@@ -15,7 +15,7 @@ async function request(path, authorization) {
 }
 
 test("identity-protected routes fail closed when the identity database is unavailable", async () => {
-  for (const path of ["/api/v1/me", "/api/v1/me/customers", "/api/v1/me/quotes", "/api/v1/admin/customers"]) {
+  for (const path of ["/api/v1/me", "/api/v1/me/customers", "/api/v1/me/quotes", "/api/v1/admin/customers", "/api/v1/admin/quotes"]) {
     const response = await request(path);
     assert.equal(response.status, 503, `${path} must fail closed if identity storage is unavailable`);
     const body = await response.json();
@@ -24,7 +24,7 @@ test("identity-protected routes fail closed when the identity database is unavai
 });
 
 test("legacy ADMIN_TOKEN does not bypass identity-protected routes", async () => {
-  for (const path of ["/api/v1/me", "/api/v1/me/customers", "/api/v1/me/quotes", "/api/v1/admin/customers"]) {
+  for (const path of ["/api/v1/me", "/api/v1/me/customers", "/api/v1/me/quotes", "/api/v1/admin/customers", "/api/v1/admin/quotes"]) {
     const response = await request(path, "Bearer test-only-legacy-token");
     assert.equal(response.status, 503, `${path} must not use the legacy token as identity`);
     const body = await response.json();
@@ -40,7 +40,7 @@ test("legacy lead administration no longer accepts the shared ADMIN_TOKEN", asyn
 });
 
 test("unimplemented customer portal routes remain unavailable", async () => {
-  for (const path of ["/api/v1/admin/quotes", "/api/v1/me/projects"]) {
+  for (const path of ["/api/v1/me/projects"]) {
     const response = await request(path);
     assert.equal(response.status, 404, `${path} must not imply a working protected API`);
   }

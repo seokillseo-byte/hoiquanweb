@@ -1234,33 +1234,32 @@ function mediaRecord(row) {
   };
 }
 
+let activeCmsMediaUploads = 0;
+const CMS_MEDIA_MAX_CONCURRENT_UPLOADS = 4;
+
 async function readRequestBodyWithinLimit(request, maxBytes) {
   const reader = request.body?.getReader();
   if (!reader) return new Uint8Array();
-  const chunks = [];
+  // Allocate the bounded body once. Retaining chunk arrays and then flattening
+  // them created a second full-size copy for every concurrent upload.
+  const body = new Uint8Array(maxBytes);
   let total = 0;
   try {
     while (true) {
       const { done, value } = await reader.read();
       if (done) break;
-      total += value.byteLength;
-      if (total > maxBytes) {
+      if (value.byteLength > maxBytes - total) {
         try { await reader.cancel(); } catch {}
         return null;
       }
-      chunks.push(value);
+      body.set(value, total);
+      total += value.byteLength;
     }
   } catch (error) {
     try { await reader.cancel(); } catch {}
     throw error;
   }
-  const body = new Uint8Array(total);
-  let offset = 0;
-  for (const chunk of chunks) {
-    body.set(chunk, offset);
-    offset += chunk.byteLength;
-  }
-  return body;
+  return body.subarray(0, total);
 }
 
 async function adminMedia(request, env, url) {
@@ -1293,6 +1292,10 @@ async function adminMedia(request, env, url) {
     if (length > CMS_MEDIA_MAX_BYTES + 128 * 1024) return json({ error: { code: "UPLOAD_TOO_LARGE", message: "Ảnh vượt quá giới hạn 5 MB." } }, 413);
     const contentType = request.headers.get("content-type") || "";
     if (!contentType.toLowerCase().startsWith("multipart/form-data")) return json({ error: { code: "VALIDATION_ERROR", message: "Yêu cầu tải ảnh phải dùng multipart/form-data." } }, 400);
+    if (activeCmsMediaUploads >= CMS_MEDIA_MAX_CONCURRENT_UPLOADS) {
+      return json({ error: { code: "UPLOAD_CAPACITY", message: "Máy chủ đang xử lý nhiều lượt tải ảnh. Vui lòng thử lại sau." } }, 503, { "retry-after": "2" });
+    }
+    activeCmsMediaUploads++;
     let form;
     try {
       const boundedBody = await readRequestBodyWithinLimit(request, CMS_MEDIA_MAX_BYTES + 128 * 1024);
@@ -1302,6 +1305,7 @@ async function adminMedia(request, env, url) {
       const boundedRequest = new Request(request.url, { method: "POST", headers: boundedHeaders, body: boundedBody });
       form = await boundedRequest.formData();
     } catch { return json({ error: { code: "INVALID_UPLOAD", message: "Không đọc được dữ liệu ảnh tải lên." } }, 400); }
+    finally { activeCmsMediaUploads--; }
     const file = form.get("file");
     if (!file || typeof file.arrayBuffer !== "function" || typeof file.size !== "number") return json({ error: { code: "VALIDATION_ERROR", message: "Vui lòng chọn một tệp ảnh." } }, 400);
     if (file.size < 1 || file.size > CMS_MEDIA_MAX_BYTES) return json({ error: { code: "UPLOAD_TOO_LARGE", message: "Ảnh phải có dung lượng từ 1 byte đến 5 MB." } }, 413);

@@ -15,7 +15,7 @@ async function request(path, authorization) {
 }
 
 test("identity-protected routes fail closed when the identity database is unavailable", async () => {
-  for (const path of ["/api/v1/me", "/api/v1/me/customers", "/api/v1/me/quotes", "/api/v1/admin/customers", "/api/v1/admin/customers/test-customer/activities", "/api/v1/admin/quotes", "/api/v1/admin/staff"]) {
+  for (const path of ["/api/v1/me", "/api/v1/me/customers", "/api/v1/me/quotes", "/api/v1/admin/customers", "/api/v1/admin/customers/test-customer/activities", "/api/v1/admin/quotes", "/api/v1/admin/staff", "/api/v1/admin/media"]) {
     const response = await request(path);
     assert.equal(response.status, 503, `${path} must fail closed if identity storage is unavailable`);
     const body = await response.json();
@@ -24,7 +24,7 @@ test("identity-protected routes fail closed when the identity database is unavai
 });
 
 test("legacy ADMIN_TOKEN does not bypass identity-protected routes", async () => {
-  for (const path of ["/api/v1/me", "/api/v1/me/customers", "/api/v1/me/quotes", "/api/v1/admin/customers", "/api/v1/admin/customers/test-customer/activities", "/api/v1/admin/quotes", "/api/v1/admin/staff"]) {
+  for (const path of ["/api/v1/me", "/api/v1/me/customers", "/api/v1/me/quotes", "/api/v1/admin/customers", "/api/v1/admin/customers/test-customer/activities", "/api/v1/admin/quotes", "/api/v1/admin/staff", "/api/v1/admin/media"]) {
     const response = await request(path, "Bearer test-only-legacy-token");
     assert.equal(response.status, 503, `${path} must not use the legacy token as identity`);
     const body = await response.json();
@@ -42,6 +42,12 @@ test("legacy lead administration no longer accepts the shared ADMIN_TOKEN", asyn
   assert.equal(versionedLeadConversion.status, 503, "versioned lead conversion must fail closed when identity storage is unavailable");
   const body = await response.json();
   assert.equal(body.error.code, "SERVICE_UNAVAILABLE");
+});
+
+test("public media delivery fails closed when media storage/database is unavailable", async () => {
+  const response = await request("/api/v1/public/media/test-asset");
+  assert.equal(response.status, 503);
+  assert.equal((await response.json()).error.code, "SERVICE_UNAVAILABLE");
 });
 
 test("customer portal routes fail closed when identity storage is unavailable", async () => {

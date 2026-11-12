@@ -1234,6 +1234,35 @@ function mediaRecord(row) {
   };
 }
 
+async function readRequestBodyWithinLimit(request, maxBytes) {
+  const reader = request.body?.getReader();
+  if (!reader) return new Uint8Array();
+  const chunks = [];
+  let total = 0;
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      total += value.byteLength;
+      if (total > maxBytes) {
+        try { await reader.cancel(); } catch {}
+        return null;
+      }
+      chunks.push(value);
+    }
+  } catch (error) {
+    try { await reader.cancel(); } catch {}
+    throw error;
+  }
+  const body = new Uint8Array(total);
+  let offset = 0;
+  for (const chunk of chunks) {
+    body.set(chunk, offset);
+    offset += chunk.byteLength;
+  }
+  return body;
+}
+
 async function adminMedia(request, env, url) {
   const principal = await authenticatedPrincipal(request, env);
   if (principal.error) return principal.error;
@@ -1265,7 +1294,14 @@ async function adminMedia(request, env, url) {
     const contentType = request.headers.get("content-type") || "";
     if (!contentType.toLowerCase().startsWith("multipart/form-data")) return json({ error: { code: "VALIDATION_ERROR", message: "Yêu cầu tải ảnh phải dùng multipart/form-data." } }, 400);
     let form;
-    try { form = await request.formData(); } catch { return json({ error: { code: "INVALID_UPLOAD", message: "Không đọc được dữ liệu ảnh tải lên." } }, 400); }
+    try {
+      const boundedBody = await readRequestBodyWithinLimit(request, CMS_MEDIA_MAX_BYTES + 128 * 1024);
+      if (!boundedBody) return json({ error: { code: "UPLOAD_TOO_LARGE", message: "Ảnh vượt quá giới hạn 5 MB." } }, 413);
+      const boundedHeaders = new Headers(request.headers);
+      boundedHeaders.delete("content-length");
+      const boundedRequest = new Request(request.url, { method: "POST", headers: boundedHeaders, body: boundedBody });
+      form = await boundedRequest.formData();
+    } catch { return json({ error: { code: "INVALID_UPLOAD", message: "Không đọc được dữ liệu ảnh tải lên." } }, 400); }
     const file = form.get("file");
     if (!file || typeof file.arrayBuffer !== "function" || typeof file.size !== "number") return json({ error: { code: "VALIDATION_ERROR", message: "Vui lòng chọn một tệp ảnh." } }, 400);
     if (file.size < 1 || file.size > CMS_MEDIA_MAX_BYTES) return json({ error: { code: "UPLOAD_TOO_LARGE", message: "Ảnh phải có dung lượng từ 1 byte đến 5 MB." } }, 413);

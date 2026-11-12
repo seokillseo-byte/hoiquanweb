@@ -149,3 +149,12 @@ Staging-specific runbook and isolated config template: [CLOUDFLARE_STAGING_RUNBO
 - API tổng hợp counts trực tiếp từ D1: leads/new leads 7 ngày, active customers, quotes theo trạng thái, active orders/projects, overdue projects, open/urgent tickets.
 - API trả lead status breakdown, 6 lead gần nhất và 10 audit activity summaries gần nhất; không trả raw `metadata_json`, nội dung comment/ticket hoặc secrets.
 - Admin console hiển thị KPI cards, lead status, recent leads và recent activity. Dashboard không phải báo cáo kế toán/doanh thu ghi nhận.
+
+
+## Email outbox và retry
+
+- Migration 0013 tạo durable outbox, unique event key và index cho tác vụ đến hạn. Lead và outbox row được ghi cùng một D1 batch.
+- Worker scheduled trigger chạy mỗi 5 phút, xử lý tối đa 10 email mỗi lượt. Email chỉ được gửi khi RESEND_API_KEY, NOTIFICATION_EMAIL và EMAIL_FROM đều được cấu hình.
+- Retry tối đa 6 lần với backoff tăng dần; lỗi cuối chuyển trạng thái failed. Lease cho phép khôi phục tác vụ bị dừng giữa chừng.
+- Mỗi lead dùng Resend Idempotency-Key lead-created/<lead-id>. Outbox chỉ lưu lead ID và trạng thái gửi, không nhân bản email/brief; log chỉ ghi mã lỗi tổng quát.
+- Trước khi bật: áp dụng migration 0013 lên D1 staging, đặt secrets/vars, xác minh sender domain và kiểm thử cron + Resend thật. CI không thay thế runtime acceptance.

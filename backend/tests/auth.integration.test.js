@@ -1368,6 +1368,96 @@ test("CRM dashboard reports database-backed KPIs and requires staff/admin role",
 
 
 
+test("new lead and email outbox event are persisted atomically when email is not configured", async () => {
+  const ip = "198.51.100." + (30 + Math.floor(Math.random() * 100));
+  const response = await server.fetch(origin + "/api/leads", {
+    method: "POST",
+    headers: { origin, "content-type": "application/json", "cf-connecting-ip": ip },
+    body: JSON.stringify({
+      name: "Outbox Test Lead",
+      email: "outbox-test@example.test",
+      service: "Website Design",
+      budget: "20-50 million VND",
+      goals: "Validate durable email event",
+      consent: true
+    })
+  });
+  assert.equal(response.status, 201, await response.clone().text());
+  const body = await response.json();
+  assert.equal(body.notification, "not_configured", "the API must not claim email was sent without provider configuration");
+  const outboxResponse = await server.fetch(origin + "/_test/email-outbox", { headers: { origin } });
+  assert.equal(outboxResponse.status, 200, await outboxResponse.clone().text());
+  const events = (await outboxResponse.json()).data;
+  const event = events.find(item => item.lead_id === body.id);
+  assert.ok(event, "lead creation must enqueue a durable email event");
+  assert.equal(event.event_key, "lead.created/" + body.id);
+  assert.equal(event.status, "pending");
+  assert.equal(event.attempts, 0);
+});
+
+
+test("email outbox retries transient provider failures with a stable idempotency key and stops on permanent failures", async () => {
+  async function createOutboxLead(label) {
+    const response = await server.fetch(origin + "/api/leads", {
+      method: "POST",
+      headers: { origin, "content-type": "application/json", "cf-connecting-ip": "198.51.100." + (40 + Math.floor(Math.random() * 100)) },
+      body: JSON.stringify({
+        name: label,
+        email: "outbox-" + crypto.randomUUID() + "@example.test",
+        service: "Website Design",
+        budget: "20-50 million VND",
+        goals: "Verify retry behavior",
+        consent: true
+      })
+    });
+    assert.equal(response.status, 201, await response.clone().text());
+    return (await response.json()).id;
+  }
+  async function process(leadId, status, now) {
+    return server.fetch(origin + "/_test/process-email-outbox?lead_id=" + encodeURIComponent(leadId) +
+      "&provider_status=" + status + "&now=" + encodeURIComponent(now), {
+      method: "POST", headers: { origin }
+    });
+  }
+  async function readEvent(leadId) {
+    const response = await server.fetch(origin + "/_test/email-outbox", { headers: { origin } });
+    assert.equal(response.status, 200);
+    return (await response.json()).data.find(item => item.lead_id === leadId);
+  }
+
+  const transientLeadId = await createOutboxLead("Transient Provider Failure");
+  const firstNow = new Date();
+  const transientFailure = await process(transientLeadId, 503, firstNow.toISOString());
+  assert.equal(transientFailure.status, 200, await transientFailure.clone().text());
+  const firstAttempt = await transientFailure.json();
+  assert.equal(firstAttempt.data.processed, 1);
+  assert.equal(firstAttempt.idempotency_key, "lead-created/" + transientLeadId);
+  const pending = await readEvent(transientLeadId);
+  assert.equal(pending.status, "pending");
+  assert.equal(pending.attempts, 1);
+  assert.equal(pending.last_error_code, "PROVIDER_HTTP_503");
+
+  const retryNow = new Date(firstNow.getTime() + 10 * 60 * 1000);
+  const retrySuccess = await process(transientLeadId, 200, retryNow.toISOString());
+  assert.equal(retrySuccess.status, 200, await retrySuccess.clone().text());
+  const secondAttempt = await retrySuccess.json();
+  assert.equal(secondAttempt.data.processed, 1);
+  assert.equal(secondAttempt.idempotency_key, firstAttempt.idempotency_key);
+  const sent = await readEvent(transientLeadId);
+  assert.equal(sent.status, "sent");
+  assert.equal(sent.attempts, 2);
+  assert.equal(sent.last_error_code, null);
+
+  const permanentLeadId = await createOutboxLead("Permanent Provider Failure");
+  const permanentFailure = await process(permanentLeadId, 400, new Date().toISOString());
+  assert.equal(permanentFailure.status, 200, await permanentFailure.clone().text());
+  const failed = await readEvent(permanentLeadId);
+  assert.equal(failed.status, "failed");
+  assert.equal(failed.attempts, 1);
+  assert.equal(failed.last_error_code, "PROVIDER_HTTP_400");
+});
+
+
 test("authorization matrix separates admin, staff, customer membership roles, ordinary users and anonymous requests", async () => {
   const owner = await createSignedInUser("Matrix Customer Owner");
   const otherCustomer = await createSignedInUser("Matrix Other Customer");

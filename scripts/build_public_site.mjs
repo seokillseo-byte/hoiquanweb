@@ -5,6 +5,7 @@ const OUT = join(process.cwd(), "public-site", "dist");
 const DOMAIN = "https://hoiquanweb.io.vn";
 const BRAND = "HoiQuanWeb";
 const SLOGAN = "Your All-in-One Technology Partner";
+const API_BASE = process.env.HQ_API_BASE || "";
 
 const services = [
   { slug:"thiet-ke-website", enSlug:"website-design", icon:"◈",
@@ -133,7 +134,7 @@ function render(page){
  const canonical=DOMAIN+page.path;
  const otherLang=page.lang==="vi"?"en":"vi";
  const schema={"@context":"https://schema.org","@type":"Organization","name":BRAND,"url":DOMAIN};
- const html='<!doctype html><html lang="'+page.lang+'"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="theme-color" content="#0B1F3A"><meta name="description" content="'+esc(page.description)+'"><meta name="robots" content="index,follow,max-image-preview:large"><link rel="canonical" href="'+canonical+'"><link rel="alternate" hreflang="vi" href="'+DOMAIN+page.viPath+'"><link rel="alternate" hreflang="en" href="'+DOMAIN+(page.lang==="en"?page.path:page.enPath)+'"><link rel="alternate" hreflang="x-default" href="'+DOMAIN+page.viPath+'"><title>'+esc(page.title)+' | HoiQuanWeb</title><meta property="og:type" content="website"><meta property="og:site_name" content="HoiQuanWeb"><meta property="og:title" content="'+esc(page.title)+'"><meta property="og:description" content="'+esc(page.description)+'"><meta property="og:url" content="'+canonical+'"><meta property="og:locale" content="'+(page.lang==="vi"?"vi_VN":"en_US")+'"><link rel="stylesheet" href="/assets/css/site.css"><meta name="hq-api-base" content=""><script type="application/ld+json">'+JSON.stringify(schema)+'</script></head><body>'+header(page)+'<main id="main">'+body(page)+'</main>'+footer(page)+'<meta name="hq-api-base" content=""><script src="/assets/js/site.js" defer></script></body></html>';
+ const html='<!doctype html><html lang="'+page.lang+'"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="theme-color" content="#0B1F3A"><meta name="description" content="'+esc(page.description)+'"><meta name="robots" content="index,follow,max-image-preview:large"><link rel="canonical" href="'+canonical+'"><link rel="alternate" hreflang="vi" href="'+DOMAIN+page.viPath+'"><link rel="alternate" hreflang="en" href="'+DOMAIN+(page.lang==="en"?page.path:page.enPath)+'"><link rel="alternate" hreflang="x-default" href="'+DOMAIN+page.viPath+'"><title>'+esc(page.title)+' | HoiQuanWeb</title><meta property="og:type" content="website"><meta property="og:site_name" content="HoiQuanWeb"><meta property="og:title" content="'+esc(page.title)+'"><meta property="og:description" content="'+esc(page.description)+'"><meta property="og:url" content="'+canonical+'"><meta property="og:locale" content="'+(page.lang==="vi"?"vi_VN":"en_US")+'"><link rel="stylesheet" href="/assets/css/site.css"><meta name="hq-api-base" content="'+esc(API_BASE)+'"><script type="application/ld+json">'+JSON.stringify(schema)+'</script></head><body>'+header(page)+'<main id="main">'+body(page)+'</main>'+footer(page)+'<meta name="hq-api-base" content=""><script src="/assets/js/site.js" defer></script></body></html>';
  return html;
 }
 await rm(OUT,{recursive:true,force:true});

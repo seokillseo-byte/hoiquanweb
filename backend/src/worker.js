@@ -1114,10 +1114,11 @@ async function adminMedia(request, env, url) {
   if (action === "file" && request.method === "GET") {
     const object = await env.MEDIA_BUCKET.get(row.object_key);
     if (!object) return json({ error: { code: "MEDIA_OBJECT_MISSING", message: "Tệp media không còn trong kho lưu trữ." } }, 404);
+    const safeFilename = row.filename.replace(/[^a-zA-Z0-9._-]/g, "_");
     const headers = new Headers({
       "content-type": row.content_type,
       "content-length": String(row.size_bytes),
-      "content-disposition": "inline; filename=\"" + row.filename.replace(/["\\\\]/g, "_") + "\"",
+      "content-disposition": "inline; filename=\"" + safeFilename + "\"",
       "cache-control": "private, no-store",
       "x-content-type-options": "nosniff"
     });
@@ -1163,11 +1164,12 @@ async function publicMedia(request, env, url) {
   if (!row) return json({ error: { code: "NOT_FOUND", message: "Không tìm thấy media." } }, 404);
   const object = await env.MEDIA_BUCKET.get(row.object_key);
   if (!object) return json({ error: { code: "NOT_FOUND", message: "Không tìm thấy tệp media." } }, 404);
+  const safeFilename = row.filename.replace(/[^a-zA-Z0-9._-]/g, "_");
   const headers = new Headers({
     "content-type": row.content_type,
     "content-length": String(row.size_bytes),
-    "content-disposition": "inline; filename=\"" + row.filename.replace(/["\\\\]/g, "_") + "\"",
-    "cache-control": "public, max-age=3600, stale-while-revalidate=86400",
+    "content-disposition": "inline; filename=\"" + safeFilename + "\"",
+    "cache-control": "no-store",
     "x-content-type-options": "nosniff"
   });
   if (object.httpEtag) headers.set("etag", object.httpEtag);

@@ -121,7 +121,7 @@ try:
     for migration in migration_files:
         db.executescript(migration.read_text(encoding="utf-8"))
     tables = {row[0] for row in db.execute("SELECT name FROM sqlite_master WHERE type='table'")}
-    expected = {"leads", "lead_events", "rate_limits", "cms_pages", "cms_posts", "cms_services", "cms_templates", "crm_customers", "crm_activities", "crm_quotes", "crm_quote_items", "crm_audit_events"}
+    expected = {"leads", "lead_events", "rate_limits", "cms_pages", "cms_posts", "cms_services", "cms_templates", "cms_revisions", "crm_customers", "crm_activities", "crm_quotes", "crm_quote_items", "crm_audit_events"}
     if not expected.issubset(tables):
         fail("database migrations did not create all required tables: " + ", ".join(sorted(expected - tables)))
     # Publicly readable content must have an explicit status and publication timestamp.

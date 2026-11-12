@@ -1281,3 +1281,65 @@ test("new lead and email outbox event are persisted atomically when email is not
   assert.equal(event.status, "pending");
   assert.equal(event.attempts, 0);
 });
+
+
+test("email outbox retries transient provider failures with a stable idempotency key and stops on permanent failures", async () => {
+  async function createOutboxLead(label) {
+    const response = await server.fetch(origin + "/api/leads", {
+      method: "POST",
+      headers: { origin, "content-type": "application/json", "cf-connecting-ip": "198.51.100." + (40 + Math.floor(Math.random() * 100)) },
+      body: JSON.stringify({
+        name: label,
+        email: "outbox-" + crypto.randomUUID() + "@example.test",
+        service: "Website Design",
+        budget: "20-50 million VND",
+        goals: "Verify retry behavior",
+        consent: true
+      })
+    });
+    assert.equal(response.status, 201, await response.clone().text());
+    return (await response.json()).id;
+  }
+  async function process(leadId, status, now) {
+    return server.fetch(origin + "/_test/process-email-outbox?lead_id=" + encodeURIComponent(leadId) +
+      "&provider_status=" + status + "&now=" + encodeURIComponent(now), {
+      method: "POST", headers: { origin }
+    });
+  }
+  async function readEvent(leadId) {
+    const response = await server.fetch(origin + "/_test/email-outbox", { headers: { origin } });
+    assert.equal(response.status, 200);
+    return (await response.json()).data.find(item => item.lead_id === leadId);
+  }
+
+  const transientLeadId = await createOutboxLead("Transient Provider Failure");
+  const firstNow = new Date();
+  const transientFailure = await process(transientLeadId, 503, firstNow.toISOString());
+  assert.equal(transientFailure.status, 200, await transientFailure.clone().text());
+  const firstAttempt = await transientFailure.json();
+  assert.equal(firstAttempt.data.processed, 1);
+  assert.equal(firstAttempt.idempotency_key, "lead-created/" + transientLeadId);
+  const pending = await readEvent(transientLeadId);
+  assert.equal(pending.status, "pending");
+  assert.equal(pending.attempts, 1);
+  assert.equal(pending.last_error_code, "PROVIDER_HTTP_503");
+
+  const retryNow = new Date(firstNow.getTime() + 10 * 60 * 1000);
+  const retrySuccess = await process(transientLeadId, 200, retryNow.toISOString());
+  assert.equal(retrySuccess.status, 200, await retrySuccess.clone().text());
+  const secondAttempt = await retrySuccess.json();
+  assert.equal(secondAttempt.data.processed, 1);
+  assert.equal(secondAttempt.idempotency_key, firstAttempt.idempotency_key);
+  const sent = await readEvent(transientLeadId);
+  assert.equal(sent.status, "sent");
+  assert.equal(sent.attempts, 2);
+  assert.equal(sent.last_error_code, null);
+
+  const permanentLeadId = await createOutboxLead("Permanent Provider Failure");
+  const permanentFailure = await process(permanentLeadId, 400, new Date().toISOString());
+  assert.equal(permanentFailure.status, 200, await permanentFailure.clone().text());
+  const failed = await readEvent(permanentLeadId);
+  assert.equal(failed.status, "failed");
+  assert.equal(failed.attempts, 1);
+  assert.equal(failed.last_error_code, "PROVIDER_HTTP_400");
+});

@@ -193,7 +193,45 @@
       assignmentCell.appendChild(assignment);
       const crmCell=cell(tr,"");const convert=document.createElement("button");convert.type="button";convert.className="btn secondary";convert.textContent="Chuyển vào CRM";const eligible=["qualified","proposal_sent","won"].includes(lead.status);convert.disabled=!!lead.customer_id||!eligible;convert.textContent=lead.customer_id?"Đã có trong CRM":eligible?"Chuyển vào CRM":"Chưa đủ điều kiện";convert.title=lead.customer_id?"Lead đã được liên kết với khách hàng CRM.":eligible?"Tạo hồ sơ khách hàng và ghi nhận nguồn lead.":"Cần chuyển lead sang Đủ điều kiện hoặc Đã gửi đề xuất trước.";
       convert.addEventListener("click",async()=>{convert.disabled=true;try{const converted=await request("/api/v1/admin/leads/"+encodeURIComponent(lead.id)+"/convert",{method:"POST"});convert.textContent=converted.data.already_converted?"Đã có trong CRM":"Đã chuyển vào CRM";const customer=await request("/api/v1/admin/customers/"+encodeURIComponent(converted.data.customer_id));await loadCustomers();await loadQuoteCustomers();await selectCustomer(customer.data);crmMessage(converted.data.already_converted?"Lead này đã được liên kết với khách hàng CRM.":"Đã chuyển lead thành khách hàng và ghi nhận lịch sử nguồn.");}catch(error){convert.disabled=false;message("Không chuyển được lead vào CRM: "+error.message,true);}});
-      crmCell.appendChild(convert);body.appendChild(tr);
+      crmCell.appendChild(convert);
+      const history=document.createElement("details");
+      history.className="lead-history";
+      const historySummary=document.createElement("summary");
+      historySummary.textContent="Lịch sử xử lý";
+      const historyList=document.createElement("div");
+      historyList.className="revision-list";
+      history.append(historySummary,historyList);
+      history.addEventListener("toggle",async()=>{
+        if(!history.open||history.dataset.loaded==="true")return;
+        historyList.replaceChildren();
+        const loading=document.createElement("p");loading.textContent="Đang tải lịch sử…";historyList.appendChild(loading);
+        try{
+          const result=await request("/api/v1/admin/leads/"+encodeURIComponent(lead.id)+"/events");
+          historyList.replaceChildren();
+          const events=result.data||[];
+          if(!events.length){const empty=document.createElement("p");empty.textContent="Chưa có lịch sử xử lý.";historyList.appendChild(empty);}
+          for(const event of events){
+            let details={};try{details=JSON.parse(event.details||"{}");}catch{}
+            const entry=document.createElement("p");
+            const eventLabel={assigned:"Đã giao người phụ trách",unassigned:"Đã bỏ phân công",status_changed:"Đã đổi trạng thái"}[event.event_type]||event.event_type;
+            let transition="";
+            if(event.event_type==="assigned"){
+              const staff=staffMembers.find(person=>person.id===details.to);
+              transition=staff?(staff.name||staff.email):"Tài khoản nhân sự";
+            }else if(event.event_type==="status_changed"){
+              transition=(labels[details.from]||details.from||"") + " → " + (labels[details.to]||details.to||"");
+            }
+            entry.textContent=new Date(event.created_at).toLocaleString("vi-VN")+" · "+eventLabel+(transition?" · "+transition:"");
+            historyList.appendChild(entry);
+          }
+          history.dataset.loaded="true";
+        }catch(error){
+          historyList.replaceChildren();
+          const failure=document.createElement("p");failure.textContent="Không tải được lịch sử: "+error.message;historyList.appendChild(failure);
+        }
+      });
+      crmCell.appendChild(history);
+      body.appendChild(tr);
     }
   }
 

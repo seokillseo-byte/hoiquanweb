@@ -178,4 +178,7 @@ Không công bố hệ thống là production-ready cho đến khi có domain v�
 - [x] Customer portal marked noindex; runtime script and schema validation added to repository checks.
 - [x] Admin UI for order creation from accepted quotes, project creation/status/milestones, ticket queue/status/priority and staff replies.
 - [x] Customer account onboarding: staff can link an already registered Better Auth identity to a CRM customer from the admin CRM workspace; membership updates are audited.
-- [ ] Secure private project file APIs/UI and local integration tests are implemented; Cloudflare staging R2/D1 runtime acceptance remains pending. Notification delivery, invoicing/payment and production deployment remain incomplete.
+- [x] Private project file APIs/UI, customer membership isolation, internal/customer visibility and local integration tests are implemented.
+- [ ] Cloudflare staging R2/D1 runtime acceptance for CMS media and private project files.
+- [x] In-app notifications for project, milestone and support-ticket events; per-user inbox/read-state isolation covered by integration tests.
+- [ ] Resend email delivery, retry/idempotency and verified sender configuration; invoicing/payment and production deployment remain incomplete.

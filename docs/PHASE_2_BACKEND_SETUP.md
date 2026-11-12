@@ -141,3 +141,11 @@ Staging-specific runbook and isolated config template: [CLOUDFLARE_STAGING_RUNBO
 - Project status/milestone và staff ticket reply tạo notification cho các customer members; customer project comments, ticket creation và customer ticket replies tạo notification cho staff/admin.
 - Notification payload chỉ chứa summary chung và resource ID; không sao chép nội dung trao đổi, dữ liệu liên hệ hoặc thông tin nhạy cảm.
 - Đây là in-app notification; Resend email chưa được cấu hình bởi migration/API này. Chỉ bật email sau khi xác minh sender domain, secrets, retry/idempotency và consent/policy.
+
+
+## CRM dashboard
+
+- `GET /api/v1/admin/dashboard` yêu cầu Better Auth session và role admin/staff.
+- API tổng hợp counts trực tiếp từ D1: leads/new leads 7 ngày, active customers, quotes theo trạng thái, active orders/projects, overdue projects, open/urgent tickets.
+- API trả lead status breakdown, 6 lead gần nhất và 10 audit activity summaries gần nhất; không trả raw `metadata_json`, nội dung comment/ticket hoặc secrets.
+- Admin console hiển thị KPI cards, lead status, recent leads và recent activity. Dashboard không phải báo cáo kế toán/doanh thu ghi nhận.

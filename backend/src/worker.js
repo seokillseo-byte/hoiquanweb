@@ -761,6 +761,8 @@ async function adminTemplates(request, env, url) {
   }
   if (action === "publish" && request.method === "POST") {
     if (!hasAnyRole(principal, ["admin"])) return json({ error: { code: "FORBIDDEN", message: "Chỉ Admin được xuất bản template." } }, 403);
+    if (current.status === "archived") return json({ error: { code: "INVALID_STATE", message: "Template đã lưu trữ; hãy sửa và lưu lại thành bản nháp trước khi xuất bản." } }, 409);
+    if (current.status === "published") return json({ data: current });
     if (!current.preview_url || !current.preview_verified || !current.license_verified || current.license_key === "review_required") {
       return json({ error: { code: "PUBLISH_REVIEW_REQUIRED", message: "Cần xác minh quyền sử dụng license và kiểm tra URL demo trước khi xuất bản." } }, 409);
     }

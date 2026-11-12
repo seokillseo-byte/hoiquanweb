@@ -48,7 +48,7 @@ Mục tiêu: dựng nền tảng có thể mở rộng, không chỉ thêm HTML 
 ## Phase 2 — Website dịch vụ nhiều trang + CMS nội dung
 
 - Các trang riêng: home, giới thiệu, dịch vụ, trang dịch vụ chi tiết, giải pháp theo ngành, portfolio/case study, bảng giá, blog/kiến thức, FAQ, liên hệ và pháp lý.
-- CMS cho pages/posts/services có draft, edit, publish/archive và revision snapshots đã có API/UI. Public renderer hỗ trợ các block an toàn cho route tĩnh khớp slug khi API được cấu hình. Còn thiếu categories/tags, navigation/footer, media, scheduling, revision restore, route động mới và blog publishing.
+- CMS cho pages/posts/services có draft, edit, publish/archive và revision snapshots đã có API/UI. Public renderer hỗ trợ các block an toàn cho route tĩnh khớp slug khi API được cấu hình. Còn thiếu categories/tags, navigation/footer, media, scheduling, route động mới và blog publishing. CMS revision history + admin-only restore đã được bổ sung ở nhánh feature; restore luôn đưa nội dung về draft và cần publish lại.
 - Nội dung công khai được đọc từ API/database; có fallback lỗi rõ ràng, không âm thầm hiển thị dữ liệu giả.
 - Sitemap và canonical phản ánh các URL thực; metadata và structured data chỉ dùng thông tin đã xác minh.
 - Chuyển các section hiện tại thành nội dung/khối tái sử dụng khi phù hợp, tránh viết lại không cần thiết.

@@ -108,7 +108,7 @@ async function identityRoutes(request, env, url) {
     const principal = await authenticatedPrincipal(request, env);
     if (principal.error) return principal.error;
     const result = await env.DB.prepare(
-      "SELECT q.id, q.quote_number, q.status, q.currency, q.subtotal_minor, q.discount_minor, q.total_minor, q.valid_until, q.created_at, q.updated_at FROM crm_quotes q INNER JOIN crm_customer_members m ON m.customer_id = q.customer_id WHERE m.user_id = ? AND q.status != 'draft' ORDER BY q.created_at DESC LIMIT 100"
+      "SELECT q.id, q.customer_id, q.quote_number, q.status, q.currency, q.subtotal_minor, q.discount_minor, q.total_minor, q.valid_until, q.created_at, q.updated_at, m.membership_role FROM crm_quotes q INNER JOIN crm_customer_members m ON m.customer_id = q.customer_id WHERE m.user_id = ? AND q.status != 'draft' ORDER BY q.created_at DESC LIMIT 100"
     ).bind(principal.user.id).all();
     return json({ data: result.results || [] });
   }
@@ -164,7 +164,7 @@ async function identityRoutes(request, env, url) {
     const items = await env.DB.prepare(
       "SELECT id, description, quantity, unit_price_minor, line_total_minor, sort_order FROM crm_quote_items WHERE quote_id = ? ORDER BY sort_order ASC, id ASC"
     ).bind(quoteId).all();
-    return json({ data: { ...current, items: items.results || [] } });
+    return json({ data: { ...current, customer_id: quote.customer_id, membership_role: quote.membership_role, items: items.results || [] } });
   }
   const adminQuotePath = url.pathname.match(/^\/api\/v1\/admin\/quotes(?:\/([^/]+)(?:\/([^/]+))?)?$/);
   if (adminQuotePath) {

@@ -56,3 +56,8 @@ Repository hiện có migration CRM `0003_crm_foundation.sql`, CMS revisions `00
 - Phân biệt rõ mã nguồn, deploy và nghiệm thu runtime.
 - Không công bố dữ liệu demo, giá tham khảo, case study hoặc chức năng chưa xác minh như sự thật production.
 - Chỉ chuyển giai đoạn khi acceptance gates trong roadmap đạt; các thao tác cần tài khoản, billing hoặc secrets của chủ dự án phải được ghi rõ là blocker.
+
+
+### Customer workspace
+
+The static `portal.html` now includes customer quote access, order history, project milestones/comments and support ticket conversations. Customer data is scoped by server-side customer membership. The portal is noindex and requires a configured Worker API plus provisioned customer membership; self-registration alone does not create customer access. Admin order/project/ticket UI, attachments, notifications, payments and production Worker/D1 deployment remain incomplete.

@@ -79,7 +79,7 @@ Template license and compatibility information must be reviewed before publicati
 
 | Entity | Important fields | Notes |
 |---|---|---|
-| notifications | id, user_id, type, payload_json, read_at, created_at | Avoid sensitive information in push/email payloads |
+| notifications | id, user_id, type, title, body, resource_type, resource_id, read_at, created_at | User-scoped in-app inbox; generic summaries only; no private message bodies in notification payloads |
 | idempotency_keys | key, actor_user_id, operation, response_reference, expires_at | For non-repeatable write operations if needed |
 | rate_limits | key_hash, window_start, hits | Existing migration has IP-hash rate limiting; revisit storage/retention limits |
 

@@ -328,6 +328,23 @@ test("customer portal isolates customers and quotes; admin access requires a ser
   const conversion = (await convertedLead.json()).data;
   assert.equal(conversion.lead_id, "test-lead-convert");
   assert.equal(conversion.already_converted, false);
+  const adminLeadList = await getFor("/api/v1/admin/leads", admin.cookie);
+  assert.equal(adminLeadList.status, 200, await adminLeadList.clone().text());
+  const convertedLeadInList = (await adminLeadList.json()).leads.find(item => item.id === "test-lead-convert");
+  assert.equal(convertedLeadInList.customer_id, conversion.customer_id, "lead list must expose the linked CRM customer");
+
+  const unqualifiedLead = await authRequest("/_test/seed-lead", {
+    id: "test-lead-unqualified",
+    name: "Unqualified Lead",
+    email: "unqualified@example.test",
+    service: "Website Design",
+    status: "new"
+  });
+  assert.equal(unqualifiedLead.status, 201, await unqualifiedLead.clone().text());
+  const blockedConversion = await server.fetch(origin + "/api/v1/admin/leads/test-lead-unqualified/convert", {
+    method: "POST", headers: { origin, cookie: admin.cookie }
+  });
+  assert.equal(blockedConversion.status, 409, "new leads must be qualified before conversion");
   const repeatedConversion = await server.fetch(origin + "/api/v1/admin/leads/test-lead-convert/convert", {
     method: "POST", headers: { origin, cookie: admin.cookie }
   });

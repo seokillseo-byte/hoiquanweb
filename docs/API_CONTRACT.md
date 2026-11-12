@@ -79,6 +79,26 @@ Never accept a client-provided customer ID as proof of ownership. Resolve member
 
 The table is a target contract, not a claim of route availability. Add request/response schemas and error cases alongside each implementation PR. Avoid generic endpoints that permit mass assignment of protected fields.
 
+
+## CMS page block content schema
+
+The content_json field is stored as a JSON object with a blocks array. The public renderer accepts only these block types:
+
+| Type | Fields |
+|---|---|
+| heading | text string, level integer 2–4 |
+| paragraph | text string |
+| list | items string array, optional ordered boolean |
+| quote | text string, optional author string |
+| image | src HTTP(S) or site-relative URL, alt string, optional caption string |
+| cta | label string, href safe HTTP(S), site-relative or fragment URL |
+| faq | items array of objects with question and answer strings |
+| divider | no additional fields |
+
+The public renderer builds DOM nodes and assigns text with textContent; it does not accept raw HTML or inject innerHTML. Unsupported blocks are ignored. Public CMS overrides are loaded only when the build-time API base is configured and a published page slug matches the static route. Current slug mapping is home for /, en for /en/, and the final route segment for other pages.
+
+SEO JSON may include title, description and robots: "noindex". A missing API, unpublished page or failed request leaves the generated static page unchanged.
+
 ## Security invariants
 
 1. Authorization is server-side and deny-by-default for every route.

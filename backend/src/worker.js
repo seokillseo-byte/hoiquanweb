@@ -1649,7 +1649,11 @@ export default { async fetch(request, env) {
       const body = await readJson(request);
       const ids = [body?.userA, body?.userB, body?.adminUser].map(value => clean(value, 128));
       const memberUser = clean(body?.memberUser, 128);
-      if (ids.some(value => !value) || new Set(ids).size !== 3 || (memberUser && ids.includes(memberUser))) {
+      const billingUser = clean(body?.billingUser, 128);
+      const staffUser = clean(body?.staffUser, 128);
+      const optionalIds = [memberUser, billingUser, staffUser].filter(Boolean);
+      if (ids.some(value => !value) || new Set(ids).size !== 3 ||
+          optionalIds.some(value => ids.includes(value)) || new Set(optionalIds).size !== optionalIds.length) {
         response = json({ error: "VALIDATION_ERROR" }, 400);
       } else {
         const now = new Date().toISOString();
@@ -1667,8 +1671,14 @@ export default { async fetch(request, env) {
           }
         }
         await env.DB.prepare("INSERT OR REPLACE INTO app_user_roles (user_id, role, assigned_by, assigned_at) VALUES (?, 'admin', 'test-fixture', ?)").bind(ids[2], now).run();
+        if (staffUser) {
+          await env.DB.prepare("INSERT OR REPLACE INTO app_user_roles (user_id, role, assigned_by, assigned_at) VALUES (?, 'staff', 'test-fixture', ?)").bind(staffUser, now).run();
+        }
         if (memberUser) {
           await env.DB.prepare("INSERT OR REPLACE INTO crm_customer_members (customer_id, user_id, membership_role, created_at) VALUES ('test-customer-a', ?, 'member', ?)").bind(memberUser, now).run();
+        }
+        if (billingUser) {
+          await env.DB.prepare("INSERT OR REPLACE INTO crm_customer_members (customer_id, user_id, membership_role, created_at) VALUES ('test-customer-a', ?, 'billing', ?)").bind(billingUser, now).run();
         }
         response = json({ ok: true });
       }

@@ -1618,6 +1618,9 @@ export default { async fetch(request, env) {
       await env.DB.prepare("CREATE INDEX IF NOT EXISTS idx_cms_media_status_created ON cms_media_assets(status, created_at DESC, id)").run();
       await env.DB.prepare("CREATE TABLE IF NOT EXISTS crm_project_files (id TEXT PRIMARY KEY, project_id TEXT NOT NULL REFERENCES crm_projects(id) ON DELETE CASCADE, customer_id TEXT NOT NULL REFERENCES crm_customers(id) ON DELETE CASCADE, object_key TEXT NOT NULL UNIQUE, filename TEXT NOT NULL, content_type TEXT NOT NULL CHECK(content_type IN ('application/pdf','image/png','image/jpeg','image/webp','text/plain','text/csv')), size_bytes INTEGER NOT NULL CHECK(size_bytes BETWEEN 1 AND 10485760), sha256 TEXT NOT NULL, visibility TEXT NOT NULL DEFAULT 'customer' CHECK(visibility IN ('customer','internal')), uploaded_by TEXT NOT NULL, uploaded_role TEXT NOT NULL CHECK(uploaded_role IN ('admin','staff','customer')), created_at TEXT NOT NULL, archived_at TEXT)").run();
       await env.DB.prepare("CREATE INDEX IF NOT EXISTS idx_crm_project_files_project_visibility_created ON crm_project_files(project_id, visibility, created_at DESC, id)").run();
+      await env.DB.prepare("CREATE TABLE IF NOT EXISTS crm_notifications (id TEXT PRIMARY KEY, user_id TEXT NOT NULL, type TEXT NOT NULL, title TEXT NOT NULL, body TEXT NOT NULL, resource_type TEXT NOT NULL, resource_id TEXT NOT NULL, read_at TEXT, created_at TEXT NOT NULL)").run();
+      await env.DB.prepare("CREATE INDEX IF NOT EXISTS idx_crm_notifications_user_created ON crm_notifications(user_id, created_at DESC, id)").run();
+      await env.DB.prepare("CREATE INDEX IF NOT EXISTS idx_crm_notifications_user_unread ON crm_notifications(user_id, read_at, created_at DESC)").run();
       response = new Response(null, { status: 204, headers: { "cache-control": "no-store" } });
     }
     else if (url.pathname === "/_test/audit-count" && request.method === "GET" && env.TEST_MODE === "true") {
@@ -1689,6 +1692,7 @@ export default { async fetch(request, env) {
     else if (url.pathname === "/api/health" && request.method === "GET") response = json({ ok: true, service: "hoiquanweb-api", version: "phase-2" });
     else if (url.pathname.startsWith("/api/v1/admin/pages") || url.pathname.startsWith("/api/v1/admin/posts") || url.pathname.startsWith("/api/v1/admin/services")) response = await adminContent(request, env, url);
     else if (url.pathname.startsWith("/api/v1/me/orders") || url.pathname.startsWith("/api/v1/me/projects") || url.pathname.startsWith("/api/v1/me/tickets")) response = await customerProjectRoutes(request, env, url);
+    else if (url.pathname.startsWith("/api/v1/me/notifications")) response = await notificationRoutes(request, env, url);
     else if (url.pathname.startsWith("/api/v1/admin/orders") || url.pathname.startsWith("/api/v1/admin/projects") || url.pathname.startsWith("/api/v1/admin/milestones") || url.pathname.startsWith("/api/v1/admin/tickets")) response = await adminProjectRoutes(request, env, url);
     else if (url.pathname === "/api/v1/admin/media" || url.pathname.startsWith("/api/v1/admin/media/")) response = await adminMedia(request, env, url);
     else if (url.pathname === "/api/v1/admin/templates" || url.pathname.startsWith("/api/v1/admin/templates/")) response = await adminTemplates(request, env, url);

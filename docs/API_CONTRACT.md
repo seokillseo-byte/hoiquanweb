@@ -182,7 +182,7 @@ The static `portal.html` customer workspace is marked `noindex,nofollow`; it inc
 | GET/POST | `/api/v1/admin/customers/:id/members` | List linked identities; link a registered account by email with owner/member/billing role | Admin or staff |
 | DELETE | `/api/v1/admin/customers/:id/members/:userId` | Revoke one customer membership; the final owner cannot be removed | Admin or staff |
 
-The endpoint resolves an existing Better Auth user by normalized email and upserts the membership. It never creates an identity or grants membership during public sign-up. Unknown emails return 404; invalid membership roles return 400. The operation is recorded in the CRM audit log. Customer portal access continues to depend on membership, not on the supplied customer ID.
+The endpoint resolves an existing Better Auth user by normalized email and creates or updates the membership. It never creates an identity or grants membership during public sign-up. Unknown emails return 404; invalid membership roles return 400. The final customer owner cannot be deleted or demoted to member/billing; the guard is enforced inside the D1 write batch so concurrent role changes cannot remove the last owner. Membership changes are recorded in the CRM audit log. Customer portal access continues to depend on membership, not on the supplied customer ID.
 
 
 ### CMS media library

@@ -127,7 +127,7 @@ async function identityRoutes(request, env, url) {
       return json({ error: { code: "METHOD_NOT_ALLOWED", message: "Phương thức không được hỗ trợ." } }, 405);
     }
     const quote = await env.DB.prepare(
-      "SELECT q.id, q.customer_id, q.quote_number, q.status, q.currency, q.subtotal_minor, q.discount_minor, q.total_minor, q.valid_until, q.notes, q.created_at, q.updated_at, q.accepted_by, q.accepted_at, m.membership_role FROM crm_quotes q INNER JOIN crm_customer_members m ON m.customer_id = q.customer_id WHERE q.id = ? AND m.user_id = ? AND q.status != 'draft' LIMIT 1"
+      "SELECT q.id, q.customer_id, q.quote_number, q.status, q.currency, q.subtotal_minor, q.discount_minor, q.total_minor, q.valid_until, q.created_at, q.updated_at, q.accepted_by, q.accepted_at, m.membership_role FROM crm_quotes q INNER JOIN crm_customer_members m ON m.customer_id = q.customer_id WHERE q.id = ? AND m.user_id = ? AND q.status != 'draft' LIMIT 1"
     ).bind(quoteId, principal.user.id).first();
     if (!quote) return json({ error: { code: "NOT_FOUND", message: "Không tìm thấy báo giá." } }, 404);
     if (isAccept) {
@@ -159,7 +159,7 @@ async function identityRoutes(request, env, url) {
       }
     }
     const current = await env.DB.prepare(
-      "SELECT id, quote_number, status, currency, subtotal_minor, discount_minor, total_minor, valid_until, notes, created_at, updated_at, accepted_by, accepted_at FROM crm_quotes WHERE id = ? LIMIT 1"
+      "SELECT id, quote_number, status, currency, subtotal_minor, discount_minor, total_minor, valid_until, created_at, updated_at, accepted_by, accepted_at FROM crm_quotes WHERE id = ? LIMIT 1"
     ).bind(quoteId).first();
     const items = await env.DB.prepare(
       "SELECT id, description, quantity, unit_price_minor, line_total_minor, sort_order FROM crm_quote_items WHERE quote_id = ? ORDER BY sort_order ASC, id ASC"

@@ -123,7 +123,8 @@ Mục tiêu: dựng nền tảng có thể mở rộng, không chỉ thêm HTML 
 - [x] CRM customer workspace: tạo/list khách hàng, cập nhật trạng thái active/inactive/archived, ghi nhận và xem activity timeline.
 - [x] Lead conversion vào CRM, giữ source attribution, ghi activity/audit và chống tạo khách hàng trùng khi retry.
 - [x] Lead assignment: chỉ admin/staff được xem danh sách nhân sự; chỉ tài khoản có role admin/staff được giao lead; assignment/unassignment và status changes được ghi history + CRM audit trong một D1 batch.
-- [ ] CRM dashboard và quy trình email thông báo.
+- [x] CRM dashboard đã được triển khai ở PR #36 (đang chờ review/merge).
+- [ ] Email lead notification: transactional outbox, lịch retry, idempotency provider và kiểm thử lỗi; đang triển khai ở PR kế tiếp.
 - [ ] Kiểm thử email/webhook và lỗi mạng; không báo thành công giả.
 - [ ] Kiểm tra quyền, retention, export/delete dữ liệu và báo cáo.
 

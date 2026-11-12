@@ -527,10 +527,13 @@ async function identityRoutes(request, env, url) {
         const account = await env.DB.prepare("SELECT id, email, name FROM user WHERE lower(email) = ? LIMIT 1").bind(email).first();
         if (!account) return json({ error: { code: "USER_NOT_FOUND", message: "Chưa có tài khoản với email này. Khách hàng cần đăng ký tài khoản trước." } }, 404);
         const now = new Date().toISOString();
-        await env.DB.batch([
-          env.DB.prepare("INSERT INTO crm_customer_members (customer_id, user_id, membership_role, created_at) VALUES (?, ?, ?, ?) ON CONFLICT(customer_id, user_id) DO UPDATE SET membership_role = excluded.membership_role").bind(customerId, account.id, membershipRole, now),
-          env.DB.prepare("INSERT INTO crm_audit_events (id, actor_id, action, resource_type, resource_id, metadata_json, created_at) VALUES (?, ?, 'customer.member.linked', 'customer', ?, ?, ?)").bind(crypto.randomUUID(), principal.user.id, customerId, JSON.stringify({ user_id: account.id, email: account.email, membership_role: membershipRole }), now)
+        const results = await env.DB.batch([
+          env.DB.prepare("INSERT INTO crm_customer_members (customer_id, user_id, membership_role, created_at) VALUES (?, ?, ?, ?) ON CONFLICT(customer_id, user_id) DO UPDATE SET membership_role = excluded.membership_role WHERE crm_customer_members.membership_role != 'owner' OR excluded.membership_role = 'owner' OR (SELECT COUNT(*) FROM crm_customer_members WHERE customer_id = excluded.customer_id AND membership_role = 'owner') > 1").bind(customerId, account.id, membershipRole, now),
+          env.DB.prepare("INSERT INTO crm_audit_events (id, actor_id, action, resource_type, resource_id, metadata_json, created_at) SELECT ?, ?, 'customer.member.linked', 'customer', ?, ?, ? WHERE EXISTS (SELECT 1 FROM crm_customer_members WHERE customer_id = ? AND user_id = ? AND membership_role = ?)").bind(crypto.randomUUID(), principal.user.id, customerId, JSON.stringify({ user_id: account.id, membership_role: membershipRole }), now, customerId, account.id, membershipRole)
         ]);
+        if (!results?.[0]?.meta?.changes) {
+          return json({ error: { code: "LAST_CUSTOMER_OWNER", message: "Không thể hạ quyền chủ sở hữu cuối cùng của khách hàng." } }, 409);
+        }
         return json({ data: { user_id: account.id, email: account.email, name: account.name, membership_role: membershipRole } }, 201);
       }
       return json({ error: { code: "METHOD_NOT_ALLOWED", message: "Phương thức không được hỗ trợ." } }, 405);

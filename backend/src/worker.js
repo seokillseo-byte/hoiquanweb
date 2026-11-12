@@ -9,16 +9,89 @@ function corsHeaders(request, env) { const origin = request.headers.get("Origin"
 function withSecurity(response) { const headers = new Headers(response.headers); headers.set("x-content-type-options", "nosniff"); headers.set("referrer-policy", "no-referrer"); headers.set("x-frame-options", "DENY"); headers.set("permissions-policy", "camera=(), microphone=(), geolocation=()"); return new Response(response.body, { status: response.status, statusText: response.statusText, headers }); }
 async function readJson(request) { const type = request.headers.get("content-type") || ""; if (!type.toLowerCase().includes("application/json")) throw new Error("CONTENT_TYPE"); const length = Number(request.headers.get("content-length") || 0); if (length > 12000) throw new Error("TOO_LARGE"); try { return await request.json(); } catch { throw new Error("INVALID_JSON"); } }
 async function rateLimit(request, env) { if (!env.DB) throw new Error("DB_NOT_CONFIGURED"); const ip = request.headers.get("CF-Connecting-IP") || "unknown"; const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(ip)); const hash = [...new Uint8Array(digest)].map(v => v.toString(16).padStart(2, "0")).join(""); const now = Math.floor(Date.now() / 60000); await env.DB.prepare("DELETE FROM rate_limits WHERE window_minute < ?").bind(now - 2).run(); const row = await env.DB.prepare("SELECT hits FROM rate_limits WHERE ip_hash = ? AND window_minute = ?").bind(hash, now).first(); if ((row?.hits || 0) >= 5) return false; await env.DB.prepare("INSERT INTO rate_limits (ip_hash, window_minute, hits) VALUES (?, ?, 1) ON CONFLICT(ip_hash, window_minute) DO UPDATE SET hits = hits + 1").bind(hash, now).run(); return true; }
-async function sendNotification(env, lead) { if (!env.RESEND_API_KEY || !env.NOTIFICATION_EMAIL) return; const response = await fetch("https://api.resend.com/emails", { method: "POST", headers: { authorization: "Bearer " + env.RESEND_API_KEY, "content-type": "application/json" }, body: JSON.stringify({ from: env.EMAIL_FROM || "Hội Quán Web <onboarding@resend.dev>", to: [env.NOTIFICATION_EMAIL], subject: "Lead mới: " + lead.name + " — Hội Quán Web", text: ["Có yêu cầu dự án mới.", "Mã lead: " + lead.id, "Tên: " + lead.name, "Email: " + lead.email, "Dịch vụ: " + lead.service, "Ngân sách: " + (lead.budget || "Chưa xác định"), "Mục tiêu: " + (lead.goals || "Chưa cung cấp"), "Consent: " + lead.consentAt].join("\n") }) }); if (!response.ok) throw new Error("EMAIL_PROVIDER_ERROR"); }
+const EMAIL_OUTBOX_MAX_ATTEMPTS = 6;
+const EMAIL_OUTBOX_BATCH_SIZE = 10;
+function emailRetryDelayMs(attempt) {
+  return [60_000, 5 * 60_000, 15 * 60_000, 60 * 60_000, 6 * 60 * 60_000][Math.max(0, Math.min(4, attempt - 1))];
+}
+async function processEmailOutbox(env, now = new Date(), providerFetch = fetch, leadIdFilter = null) {
+  if (!env.DB || !env.RESEND_API_KEY || !env.NOTIFICATION_EMAIL || !env.EMAIL_FROM) {
+    return { processed: 0, skipped: true };
+  }
+  const nowIso = now.toISOString();
+  const due = await env.DB.prepare(
+    "SELECT id, lead_id, attempts FROM crm_email_outbox WHERE ((status = 'pending' AND next_attempt_at <= ?) OR (status = 'sending' AND lease_until <= ?)) AND (? IS NULL OR lead_id = ?) ORDER BY created_at ASC, id ASC LIMIT ?"
+  ).bind(nowIso, nowIso, leadIdFilter, leadIdFilter, EMAIL_OUTBOX_BATCH_SIZE).all();
+  let processed = 0;
+  for (const item of due.results || []) {
+    const leaseUntil = new Date(now.getTime() + 120_000).toISOString();
+    const claim = await env.DB.prepare(
+      "UPDATE crm_email_outbox SET status = 'sending', attempts = attempts + 1, lease_until = ?, updated_at = ? WHERE id = ? AND ((status = 'pending' AND next_attempt_at <= ?) OR (status = 'sending' AND lease_until <= ?))"
+    ).bind(leaseUntil, nowIso, item.id, nowIso, nowIso).run();
+    if (!claim?.meta?.changes) continue;
+    const attempt = Number(item.attempts || 0) + 1;
+    try {
+      const lead = await env.DB.prepare(
+        "SELECT id, name, email, service, budget, goals, consent_at FROM leads WHERE id = ? LIMIT 1"
+      ).bind(item.lead_id).first();
+      if (!lead) {
+        await env.DB.prepare("UPDATE crm_email_outbox SET status = 'failed', lease_until = NULL, last_error_code = 'LEAD_NOT_FOUND', updated_at = ? WHERE id = ? AND status = 'sending'").bind(nowIso, item.id).run();
+        processed++;
+        continue;
+      }
+      const response = await providerFetch("https://api.resend.com/emails", {
+        method: "POST",
+        headers: {
+          authorization: "Bearer " + env.RESEND_API_KEY,
+          "content-type": "application/json",
+          "idempotency-key": "lead-created/" + item.lead_id
+        },
+        body: JSON.stringify({
+          from: env.EMAIL_FROM,
+          to: [env.NOTIFICATION_EMAIL],
+          subject: "Lead mới: " + lead.name + " — Hội Quán Web",
+          text: [
+            "Có yêu cầu dự án mới.",
+            "Mã lead: " + lead.id,
+            "Tên: " + lead.name,
+            "Email: " + lead.email,
+            "Dịch vụ: " + lead.service,
+            "Ngân sách: " + (lead.budget || "Chưa xác định"),
+            "Mục tiêu: " + (lead.goals || "Chưa cung cấp"),
+            "Consent: " + lead.consent_at
+          ].join("\n")
+        })
+      });
+      if (!response.ok) throw new Error("PROVIDER_HTTP_" + response.status);
+      const result = await response.json().catch(() => ({}));
+      await env.DB.prepare(
+        "UPDATE crm_email_outbox SET status = 'sent', lease_until = NULL, provider_message_id = ?, last_error_code = NULL, sent_at = ?, updated_at = ? WHERE id = ? AND status = 'sending'"
+      ).bind(clean(result.id, 100) || null, nowIso, nowIso, item.id).run();
+    } catch (error) {
+      const errorCode = /^PROVIDER_HTTP_\d{3}$/.test(error?.message || "") ? error.message : "PROVIDER_NETWORK_ERROR";
+      const providerStatus = Number(errorCode.slice("PROVIDER_HTTP_".length));
+      const retryable = errorCode === "PROVIDER_NETWORK_ERROR" || providerStatus >= 500 || [408, 409, 429].includes(providerStatus);
+      const terminal = attempt >= EMAIL_OUTBOX_MAX_ATTEMPTS || !retryable;
+      const nextAttemptAt = new Date(now.getTime() + emailRetryDelayMs(attempt)).toISOString();
+      await env.DB.prepare(
+        "UPDATE crm_email_outbox SET status = ?, next_attempt_at = ?, lease_until = NULL, last_error_code = ?, updated_at = ? WHERE id = ? AND status = 'sending'"
+      ).bind(terminal ? "failed" : "pending", nextAttemptAt, errorCode, nowIso, item.id).run();
+    }
+    processed++;
+  }
+  return { processed, skipped: false };
+}
 async function createLead(request, env) {
   if (!await rateLimit(request, env)) return json({ error: "RATE_LIMITED", message: "Bạn đã gửi quá nhiều yêu cầu. Vui lòng thử lại sau ít phút." }, 429);
   const body = await readJson(request); if (!body || typeof body !== "object" || Array.isArray(body)) return json({ error: "VALIDATION_ERROR", message: "Dữ liệu yêu cầu không hợp lệ." }, 400); if (clean(body.website, 200)) return json({ ok: true, id: "accepted" }, 202);
   const name = clean(body.name, 120), email = clean(body.email, 254).toLowerCase(), service = clean(body.service, 100), budget = clean(body.budget, 100), goals = clean(body.goals, 3000), consent = body.consent === true;
   if (name.length < 2 || !validEmail(email) || !SERVICES.has(service) || !consent) return json({ error: "VALIDATION_ERROR", message: "Vui lòng kiểm tra họ tên, email, dịch vụ và đồng ý chính sách quyền riêng tư." }, 400);
   const id = crypto.randomUUID(), createdAt = new Date().toISOString(), consentAt = createdAt;
-  await env.DB.prepare("INSERT INTO leads (id, name, email, service, budget, goals, status, consent_at, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, 'new', ?, ?, ?)").bind(id, name, email, service, budget, goals, consentAt, createdAt, createdAt).run();
-  const lead = { id, name, email, service, budget, goals, consentAt }; let notification = "not_configured";
-  try { await sendNotification(env, lead); notification = env.RESEND_API_KEY && env.NOTIFICATION_EMAIL ? "sent" : "not_configured"; } catch (error) { console.error("Lead notification failed", error?.message || "unknown"); notification = "failed"; }
+  await env.DB.batch([
+    env.DB.prepare("INSERT INTO leads (id, name, email, service, budget, goals, status, consent_at, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, 'new', ?, ?, ?)").bind(id, name, email, service, budget, goals, consentAt, createdAt, createdAt),
+    env.DB.prepare("INSERT INTO crm_email_outbox (id, event_key, lead_id, status, attempts, next_attempt_at, created_at, updated_at) VALUES (?, ?, ?, 'pending', 0, ?, ?, ?)").bind(crypto.randomUUID(), "lead.created/" + id, id, createdAt, createdAt, createdAt)
+  ]);
+  const notification = env.RESEND_API_KEY && env.NOTIFICATION_EMAIL && env.EMAIL_FROM ? "queued" : "not_configured";
   return json({ ok: true, id, message: "Yêu cầu đã được lưu.", notification }, 201);
 }
 async function estimate(request) { const body = await readJson(request); if (!body || typeof body !== "object" || Array.isArray(body)) return json({ error: "VALIDATION_ERROR", message: "Dữ liệu ước tính không hợp lệ." }, 400); const pages = Math.max(1, Math.min(100, Number.parseInt(body.pages, 10) || 1)); const complexity = ["simple", "standard", "advanced"].includes(body.complexity) ? body.complexity : "standard"; const integrations = Math.max(0, Math.min(10, Number.parseInt(body.integrations, 10) || 0)); const base = { simple: 8000000, standard: 20000000, advanced: 50000000 }[complexity]; const total = base + Math.max(0, pages - 5) * 800000 + integrations * 2500000; return json({ currency: "VND", min: total, max: Math.round(total * 1.45), disclaimer: "Ước tính sơ bộ, không phải báo giá ràng buộc. Giá cuối cùng cần xác nhận sau khi làm rõ phạm vi." }); }
@@ -1658,7 +1731,13 @@ async function publicContent(request, env, url) {
   return null;
 }
 
-export default { async fetch(request, env) {
+export default {
+  async scheduled(_controller, env, context) {
+    context.waitUntil(processEmailOutbox(env).catch(error => {
+      console.error("Email outbox batch failed", error?.message || "unknown");
+    }));
+  },
+  async fetch(request, env) {
   const url = new URL(request.url), cors = corsHeaders(request, env), origin = request.headers.get("Origin"), allowed = (env.ALLOWED_ORIGINS || "").split(",").map(v => v.trim()).filter(Boolean);
   if (request.method === "OPTIONS") return withSecurity(cors["access-control-allow-origin"] ? new Response(null, { status: 204, headers: cors }) : json({ error: "ORIGIN_NOT_ALLOWED" }, 403));
   if (!["GET", "POST", "PATCH", "DELETE"].includes(request.method)) return withSecurity(json({ error: "METHOD_NOT_ALLOWED" }, 405, { allow: "GET, POST, PATCH, OPTIONS" }));
@@ -1699,7 +1778,33 @@ export default { async fetch(request, env) {
       await env.DB.prepare("CREATE TABLE IF NOT EXISTS crm_notifications (id TEXT PRIMARY KEY, user_id TEXT NOT NULL, type TEXT NOT NULL, title TEXT NOT NULL, body TEXT NOT NULL, resource_type TEXT NOT NULL, resource_id TEXT NOT NULL, read_at TEXT, created_at TEXT NOT NULL)").run();
       await env.DB.prepare("CREATE INDEX IF NOT EXISTS idx_crm_notifications_user_created ON crm_notifications(user_id, created_at DESC, id)").run();
       await env.DB.prepare("CREATE INDEX IF NOT EXISTS idx_crm_notifications_user_unread ON crm_notifications(user_id, read_at, created_at DESC)").run();
+      await env.DB.prepare("CREATE TABLE IF NOT EXISTS crm_email_outbox (id TEXT PRIMARY KEY, event_key TEXT NOT NULL UNIQUE, lead_id TEXT NOT NULL REFERENCES leads(id) ON DELETE CASCADE, status TEXT NOT NULL DEFAULT 'pending' CHECK(status IN ('pending','sending','sent','failed')), attempts INTEGER NOT NULL DEFAULT 0 CHECK(attempts >= 0), next_attempt_at TEXT NOT NULL, lease_until TEXT, provider_message_id TEXT, last_error_code TEXT, sent_at TEXT, created_at TEXT NOT NULL, updated_at TEXT NOT NULL)").run();
+      await env.DB.prepare("CREATE INDEX IF NOT EXISTS idx_crm_email_outbox_due ON crm_email_outbox(status, next_attempt_at, created_at)").run();
       response = new Response(null, { status: 204, headers: { "cache-control": "no-store" } });
+    }
+    else if (url.pathname === "/_test/email-outbox" && request.method === "GET" && env.TEST_MODE === "true") {
+      const result = await env.DB.prepare("SELECT event_key, lead_id, status, attempts, last_error_code FROM crm_email_outbox ORDER BY created_at DESC, id DESC LIMIT 20").all();
+      response = json({ data: result.results || [] });
+    }
+    else if (url.pathname === "/_test/process-email-outbox" && request.method === "POST" && env.TEST_MODE === "true") {
+      const leadId = clean(url.searchParams.get("lead_id"), 80);
+      const status = Number(url.searchParams.get("provider_status") || 200);
+      const requestedNow = url.searchParams.get("now");
+      const now = requestedNow ? new Date(requestedNow) : new Date();
+      if (!leadId || !Number.isFinite(now.getTime()) || !Number.isInteger(status) || status < 200 || status > 599) {
+        response = json({ error: "VALIDATION_ERROR" }, 400);
+      } else {
+        let idempotencyKey = null;
+        const testEnv = { DB: env.DB, RESEND_API_KEY: "test-only", NOTIFICATION_EMAIL: "test@example.test", EMAIL_FROM: "Test <test@example.test>" };
+        const result = await processEmailOutbox(testEnv, now, async (_url, init) => {
+          idempotencyKey = new Headers(init?.headers || {}).get("idempotency-key");
+          return new Response(JSON.stringify(status < 400 ? { id: "test-provider-message" } : { error: "simulated provider failure" }), {
+            status,
+            headers: { "content-type": "application/json" }
+          });
+        }, leadId);
+        response = json({ data: result, idempotency_key: idempotencyKey });
+      }
     }
     else if (url.pathname === "/_test/audit-count" && request.method === "GET" && env.TEST_MODE === "true") {
       const result = await env.DB.prepare("SELECT COUNT(*) AS count FROM crm_audit_events WHERE action = 'quote.accepted'").first();

@@ -57,7 +57,9 @@ If a managed identity provider owns login and recovery, document its callback ro
 Quote detail and acceptance are implemented for authenticated customer members. `GET /api/v1/me/quotes/:id` returns only quotes belonging to the current user's customer membership, including line items. `POST /api/v1/me/quotes/:id/accept` is limited to owner/billing members, accepts only a non-expired quote in `sent` state, performs a conditional state transition and records `quote.accepted` in `crm_audit_events` atomically. Cross-customer access returns 404; repeated or stale acceptance returns 409.
 | GET | `/api/v1/me/orders` | List own orders | Customer |
 | GET | `/api/v1/me/projects` | List own projects and milestones | Customer |
-| GET | `/api/v1/me/projects/:id/files` | List files the customer is allowed to access | Customer project member |
+| GET | `/api/v1/me/projects/:id/files` | List customer-visible project files | Customer project member |
+| POST | `/api/v1/me/projects/:id/files` | Upload a private customer-visible project file (PDF, PNG, JPEG, WebP, TXT, CSV; max 10 MiB) | Customer project member |
+| GET | `/api/v1/me/projects/:id/files/:fileId` | Download a customer-visible project file after membership check | Customer project member |
 | POST | `/api/v1/me/projects/:id/comments` | Add a customer-visible project comment | Customer project member |
 | GET | `/api/v1/me/tickets` | List own support tickets | Customer |
 | POST | `/api/v1/me/tickets` | Open a support request | Customer |
@@ -151,6 +153,9 @@ SEO JSON may include title, description and robots: "noindex". A missing API, un
 | GET/POST | `/api/v1/me/tickets/:id/messages` | Read/reply to an authorized support ticket | Ticket customer membership |
 | GET/POST | `/api/v1/admin/orders` | List orders; create an order from an accepted quote | Admin or staff |
 | GET/POST/PATCH | `/api/v1/admin/projects` | List/create/update projects | Admin or staff |
+| GET | `/api/v1/admin/projects/:id/files` | List customer-visible and internal project files | Admin or staff |
+| POST | `/api/v1/admin/projects/:id/files?visibility=customer\|internal` | Upload a private project file with explicit visibility | Admin or staff |
+| GET | `/api/v1/admin/projects/:id/files/:fileId` | Download a project file, including internal files | Admin or staff |
 | GET/POST | `/api/v1/admin/projects/:id/milestones` | List/add milestones | Admin or staff |
 | PATCH | `/api/v1/admin/milestones/:id` | Update milestone status/details | Admin or staff |
 | GET/PATCH | `/api/v1/admin/tickets/:id` | Read and update support ticket status/priority | Admin or staff |
@@ -173,3 +178,8 @@ The endpoint resolves an existing Better Auth user by normalized email and upser
 ### CMS media library
 
 CMS media uploads use multipart/form-data with a single file and optional alt_text. The Worker accepts PNG, JPEG, GIF and WebP only, enforces a 5 MiB file limit and checks file signatures against the declared MIME type. Object keys are generated server-side and remain private in R2. Uploads are draft by default. Admin publication changes the D1 state; only published assets can be streamed through the public media endpoint. Admin/staff can preview drafts through the authenticated admin file route. Archiving immediately revokes public delivery but retains the R2 object for controlled retention/deletion. The CMS media library is for public website imagery; customer project attachments remain a separate private-file workflow and are not implemented by this API.
+
+
+### Private customer project files
+
+Project files are stored in the private R2 bucket under server-generated `projects/{projectId}/` keys. The Worker accepts PDF, PNG, JPEG, WebP, UTF-8 TXT and CSV files up to 10 MiB, validates the declared MIME type against the file signature/content, computes SHA-256 and records metadata/audit events in D1. Storage keys are never returned. All downloads use attachment disposition, `private, no-store` and `nosniff`. Customer endpoints check current `crm_customer_members` membership on every request and expose only `visibility='customer'`; staff/admin endpoints can read both customer and internal files. Customer uploads are always customer-visible. Staff/admin uploads default to customer-visible and can explicitly set `visibility=internal`. No public or signed permanent file URLs are created. The shared R2 binding is used with separate `cms/` and `projects/` prefixes; customer files must never use the public CMS media route.

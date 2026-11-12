@@ -97,7 +97,7 @@ Mục tiêu: dựng nền tảng có thể mở rộng, không chỉ thêm HTML 
 - [x] Quote detail endpoint chỉ trả dữ liệu thuộc customer membership hiện tại, gồm line items; CI kiểm tra không đọc được quote của customer khác.
 - [x] Quote acceptance chỉ dành cho owner/billing, chỉ nhận quote đang sent và chưa hết hạn; kiểm tra member bị từ chối, expired/repeated acceptance và actor/timestamp.
 - [x] Quote acceptance ghi `quote.accepted` audit event cùng transaction batch với cập nhật trạng thái.
-- [ ] Automated authorization matrix đầy đủ cho admin/staff/customer.
+- [x] Automated authorization matrix cho ranh giới vai trò cốt lõi (admin/staff/customer owner/member/billing/ordinary/anonymous); xem docs/AUTHORIZATION_MATRIX.md.
 - [x] Cross-customer isolation test cho orders, projects, project comments, tickets và ticket messages; quote isolation đã có test riêng.
 - [ ] Hoàn thiện authorization matrix cho mọi endpoint riêng tư, gồm session expiry/recovery và file access.
 - [ ] Audit log cho milestone changes, permissions và các thao tác nhạy cảm khác.

@@ -305,6 +305,71 @@ test("customer portal isolates customers and quotes; admin access requires a ser
   assert.equal(adminAccess.status, 200, await adminAccess.clone().text());
   assert.deepEqual(new Set((await adminAccess.json()).data.map(item => item.id)), new Set(["test-customer-a", "test-customer-b"]));
 
+  const forbiddenCustomerCreate = await server.fetch(origin + "/api/v1/admin/customers", {
+    method: "POST",
+    headers: { origin, cookie: ordinaryUser.cookie, "content-type": "application/json" },
+    body: JSON.stringify({ display_name: "Unauthorized Customer", contact_email: "unauthorized@example.test" })
+  });
+  assert.equal(forbiddenCustomerCreate.status, 403, "ordinary users must not create CRM customers");
+
+  const invalidCustomerCreate = await server.fetch(origin + "/api/v1/admin/customers", {
+    method: "POST",
+    headers: { origin, cookie: admin.cookie, "content-type": "application/json" },
+    body: JSON.stringify({ display_name: "Invalid Email", contact_email: "not-an-email" })
+  });
+  assert.equal(invalidCustomerCreate.status, 400, "customer email must be validated");
+
+  const createCustomer = await server.fetch(origin + "/api/v1/admin/customers", {
+    method: "POST",
+    headers: { origin, cookie: admin.cookie, "content-type": "application/json" },
+    body: JSON.stringify({
+      display_name: "New CRM Customer",
+      organization_name: "Example Organization",
+      contact_email: "crm-customer@example.test",
+      phone: "+84 900 000 000",
+      notes: "Private CRM note"
+    })
+  });
+  assert.equal(createCustomer.status, 201, await createCustomer.clone().text());
+  const createdCustomer = (await createCustomer.json()).data;
+  assert.equal(createdCustomer.status, "active");
+
+  const customerDetail = await getFor("/api/v1/admin/customers/" + createdCustomer.id, admin.cookie);
+  assert.equal(customerDetail.status, 200, await customerDetail.clone().text());
+  assert.equal((await customerDetail.json()).data.contact_email, "crm-customer@example.test");
+
+  const forbiddenActivityRead = await getFor("/api/v1/admin/customers/" + createdCustomer.id + "/activities", ordinaryUser.cookie);
+  assert.equal(forbiddenActivityRead.status, 403, "ordinary users must not read internal CRM activity");
+
+  const createActivity = await server.fetch(origin + "/api/v1/admin/customers/" + createdCustomer.id + "/activities", {
+    method: "POST",
+    headers: { origin, cookie: admin.cookie, "content-type": "application/json" },
+    body: JSON.stringify({ activity_type: "call", subject: "Discovery call", body: "Discussed initial project requirements." })
+  });
+  assert.equal(createActivity.status, 201, await createActivity.clone().text());
+  const activity = (await createActivity.json()).data;
+  assert.equal(activity.actor_id, admin.id);
+  assert.equal(activity.activity_type, "call");
+
+  const activities = await getFor("/api/v1/admin/customers/" + createdCustomer.id + "/activities", admin.cookie);
+  assert.equal(activities.status, 200, await activities.clone().text());
+  assert.equal((await activities.json()).data[0].subject, "Discovery call");
+
+  const updateCustomer = await server.fetch(origin + "/api/v1/admin/customers/" + createdCustomer.id, {
+    method: "PATCH",
+    headers: { origin, cookie: admin.cookie, "content-type": "application/json" },
+    body: JSON.stringify({ status: "inactive", phone: "+84 911 111 111" })
+  });
+  assert.equal(updateCustomer.status, 200, await updateCustomer.clone().text());
+  assert.equal((await updateCustomer.json()).data.status, "inactive");
+
+  const customerAudit = await server.fetch(origin + "/_test/customer-audit-count", { headers: { origin } });
+  assert.equal(customerAudit.status, 200, await customerAudit.clone().text());
+  const customerAuditCounts = Object.fromEntries((await customerAudit.json()).data.map(row => [row.action, row.count]));
+  assert.equal(customerAuditCounts["customer.created"], 1);
+  assert.equal(customerAuditCounts["customer.updated"], 1);
+  assert.equal(customerAuditCounts["customer.activity.created"], 1);
+
   const forbiddenQuoteCreate = await server.fetch(origin + "/api/v1/admin/quotes", {
     method: "POST",
     headers: { origin, cookie: ordinaryUser.cookie, "content-type": "application/json" },

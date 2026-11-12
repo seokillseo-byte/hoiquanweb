@@ -112,6 +112,60 @@ async function identityRoutes(request, env, url) {
     ).bind(principal.user.id).all();
     return json({ data: result.results || [] });
   }
+  const quoteMatch = url.pathname.match(/^\/api\/v1\/me\/quotes\/([^/]+)(?:\/accept)?$/);
+  if (quoteMatch && ["GET", "POST"].includes(request.method)) {
+    const principal = await authenticatedPrincipal(request, env);
+    if (principal.error) return principal.error;
+    let quoteId;
+    try { quoteId = decodeURIComponent(quoteMatch[1]); }
+    catch { return json({ error: { code: "NOT_FOUND", message: "Không tìm thấy báo giá." } }, 404); }
+    if (!quoteId || quoteId.length > 80 || quoteId.includes("/")) {
+      return json({ error: { code: "NOT_FOUND", message: "Không tìm thấy báo giá." } }, 404);
+    }
+    const isAccept = url.pathname.endsWith("/accept");
+    if (!isAccept && request.method !== "GET") {
+      return json({ error: { code: "METHOD_NOT_ALLOWED", message: "Phương thức không được hỗ trợ." } }, 405);
+    }
+    const quote = await env.DB.prepare(
+      "SELECT q.id, q.customer_id, q.quote_number, q.status, q.currency, q.subtotal_minor, q.discount_minor, q.total_minor, q.valid_until, q.notes, q.created_at, q.updated_at, q.accepted_by, q.accepted_at, m.membership_role FROM crm_quotes q INNER JOIN crm_customer_members m ON m.customer_id = q.customer_id WHERE q.id = ? AND m.user_id = ? AND q.status != 'draft' LIMIT 1"
+    ).bind(quoteId, principal.user.id).first();
+    if (!quote) return json({ error: { code: "NOT_FOUND", message: "Không tìm thấy báo giá." } }, 404);
+    if (isAccept) {
+      if (request.method !== "POST") return json({ error: { code: "METHOD_NOT_ALLOWED", message: "Phương thức không được hỗ trợ." } }, 405);
+      if (!["owner", "billing"].includes(quote.membership_role)) {
+        return json({ error: { code: "FORBIDDEN", message: "Bạn không có quyền xác nhận báo giá này." } }, 403);
+      }
+      if (quote.status !== "sent") {
+        return json({ error: { code: "INVALID_STATE", message: "Chỉ báo giá đang chờ xác nhận mới có thể được chấp nhận." } }, 409);
+      }
+      if (quote.valid_until) {
+        const dateOnly = /^\d{4}-\d{2}-\d{2}$/.test(quote.valid_until);
+        const expired = dateOnly
+          ? quote.valid_until < new Date().toISOString().slice(0, 10)
+          : !Number.isFinite(Date.parse(quote.valid_until)) || Date.parse(quote.valid_until) < Date.now();
+        if (expired) return json({ error: { code: "QUOTE_EXPIRED", message: "Báo giá đã hết hạn và không thể được chấp nhận." } }, 409);
+      }
+      const acceptedAt = new Date().toISOString();
+      const auditId = crypto.randomUUID();
+      const update = env.DB.prepare(
+        "UPDATE crm_quotes SET status = 'accepted', accepted_by = ?, accepted_at = ?, updated_at = ? WHERE id = ? AND status = 'sent' AND (valid_until IS NULL OR date(valid_until) >= date(?))"
+      ).bind(principal.user.id, acceptedAt, acceptedAt, quoteId, acceptedAt);
+      const audit = env.DB.prepare(
+        "INSERT INTO crm_audit_events (id, actor_id, action, resource_type, resource_id, metadata_json, created_at) SELECT ?, ?, 'quote.accepted', 'quote', id, ?, ? FROM crm_quotes WHERE id = ? AND status = 'accepted' AND accepted_by = ? AND accepted_at = ?"
+      ).bind(auditId, principal.user.id, JSON.stringify({ quote_number: quote.quote_number }), acceptedAt, quoteId, principal.user.id, acceptedAt);
+      const results = await env.DB.batch([update, audit]);
+      if (!results?.[0]?.meta?.changes) {
+        return json({ error: { code: "INVALID_STATE", message: "Báo giá đã thay đổi hoặc không còn hiệu lực. Vui lòng tải lại." } }, 409);
+      }
+    }
+    const current = await env.DB.prepare(
+      "SELECT id, quote_number, status, currency, subtotal_minor, discount_minor, total_minor, valid_until, notes, created_at, updated_at, accepted_by, accepted_at FROM crm_quotes WHERE id = ? LIMIT 1"
+    ).bind(quoteId).first();
+    const items = await env.DB.prepare(
+      "SELECT id, description, quantity, unit_price_minor, line_total_minor, sort_order FROM crm_quote_items WHERE quote_id = ? ORDER BY sort_order ASC, id ASC"
+    ).bind(quoteId).all();
+    return json({ data: { ...current, items: items.results || [] } });
+  }
   if (url.pathname === "/api/v1/admin/customers" && request.method === "GET") {
     const principal = await authenticatedPrincipal(request, env);
     if (principal.error) return principal.error;
@@ -435,6 +489,8 @@ export default { async fetch(request, env) {
       await env.DB.prepare("CREATE TABLE IF NOT EXISTS app_user_roles (user_id TEXT NOT NULL, role TEXT NOT NULL CHECK(role IN ('admin','staff','customer')), assigned_by TEXT NOT NULL, assigned_at TEXT NOT NULL, PRIMARY KEY(user_id, role))").run();
       await env.DB.prepare("CREATE TABLE IF NOT EXISTS crm_customer_members (customer_id TEXT NOT NULL REFERENCES crm_customers(id) ON DELETE CASCADE, user_id TEXT NOT NULL, membership_role TEXT NOT NULL DEFAULT 'owner' CHECK(membership_role IN ('owner','member','billing')), created_at TEXT NOT NULL, PRIMARY KEY(customer_id, user_id))").run();
       await env.DB.prepare("CREATE TABLE IF NOT EXISTS crm_quotes (id TEXT PRIMARY KEY, customer_id TEXT NOT NULL REFERENCES crm_customers(id) ON DELETE RESTRICT, quote_number TEXT NOT NULL UNIQUE, status TEXT NOT NULL DEFAULT 'draft', currency TEXT NOT NULL DEFAULT 'VND', subtotal_minor INTEGER NOT NULL DEFAULT 0, discount_minor INTEGER NOT NULL DEFAULT 0, total_minor INTEGER NOT NULL DEFAULT 0, valid_until TEXT, notes TEXT NOT NULL DEFAULT '', created_by TEXT NOT NULL, created_at TEXT NOT NULL, updated_at TEXT NOT NULL, accepted_by TEXT, accepted_at TEXT)").run();
+      await env.DB.prepare("CREATE TABLE IF NOT EXISTS crm_quote_items (id TEXT PRIMARY KEY, quote_id TEXT NOT NULL REFERENCES crm_quotes(id) ON DELETE CASCADE, description TEXT NOT NULL, quantity INTEGER NOT NULL, unit_price_minor INTEGER NOT NULL, line_total_minor INTEGER NOT NULL, sort_order INTEGER NOT NULL DEFAULT 0)").run();
+      await env.DB.prepare("CREATE TABLE IF NOT EXISTS crm_audit_events (id TEXT PRIMARY KEY, actor_id TEXT NOT NULL, action TEXT NOT NULL, resource_type TEXT NOT NULL, resource_id TEXT NOT NULL, metadata_json TEXT NOT NULL DEFAULT '{}', created_at TEXT NOT NULL)").run();
       await env.DB.prepare("CREATE TABLE IF NOT EXISTS leads (id TEXT PRIMARY KEY, name TEXT NOT NULL, email TEXT NOT NULL, service TEXT NOT NULL, budget TEXT NOT NULL DEFAULT '', goals TEXT NOT NULL DEFAULT '', status TEXT NOT NULL DEFAULT 'new', consent_at TEXT, created_at TEXT NOT NULL, updated_at TEXT NOT NULL)").run();
       await env.DB.prepare("CREATE TABLE IF NOT EXISTS lead_events (id TEXT PRIMARY KEY, lead_id TEXT NOT NULL REFERENCES leads(id) ON DELETE CASCADE, event_type TEXT NOT NULL, details TEXT NOT NULL DEFAULT '', created_at TEXT NOT NULL)").run();
       await env.DB.prepare("CREATE TABLE IF NOT EXISTS cms_pages (id TEXT PRIMARY KEY, slug TEXT NOT NULL UNIQUE, title TEXT NOT NULL, excerpt TEXT NOT NULL DEFAULT '', content_json TEXT NOT NULL DEFAULT '{}', seo_json TEXT NOT NULL DEFAULT '{}', status TEXT NOT NULL DEFAULT 'draft', published_at TEXT, created_at TEXT NOT NULL, updated_at TEXT NOT NULL)").run();
@@ -443,10 +499,15 @@ export default { async fetch(request, env) {
       await env.DB.prepare("CREATE TABLE IF NOT EXISTS cms_revisions (id TEXT PRIMARY KEY, resource_type TEXT NOT NULL, resource_id TEXT NOT NULL, action TEXT NOT NULL, actor_id TEXT NOT NULL, snapshot_json TEXT NOT NULL, created_at TEXT NOT NULL)").run();
       response = new Response(null, { status: 204, headers: { "cache-control": "no-store" } });
     }
+    else if (url.pathname === "/_test/audit-count" && request.method === "GET" && env.TEST_MODE === "true") {
+      const result = await env.DB.prepare("SELECT COUNT(*) AS count FROM crm_audit_events WHERE action = 'quote.accepted'").first();
+      response = json({ count: result?.count || 0 });
+    }
     else if (url.pathname === "/_test/seed-identity" && request.method === "POST" && env.TEST_MODE === "true") {
       const body = await readJson(request);
       const ids = [body?.userA, body?.userB, body?.adminUser].map(value => clean(value, 128));
-      if (ids.some(value => !value) || new Set(ids).size !== 3) {
+      const memberUser = clean(body?.memberUser, 128);
+      if (ids.some(value => !value) || new Set(ids).size !== 3 || (memberUser && ids.includes(memberUser))) {
         response = json({ error: "VALIDATION_ERROR" }, 400);
       } else {
         const now = new Date().toISOString();
@@ -458,8 +519,15 @@ export default { async fetch(request, env) {
           await env.DB.prepare("INSERT INTO crm_customers (id, display_name, organization_name, contact_email, phone, status, notes, created_at, updated_at) VALUES (?, ?, '', ?, '', 'active', '', ?, ?) ON CONFLICT(id) DO UPDATE SET display_name = excluded.display_name, contact_email = excluded.contact_email, status = 'active', updated_at = excluded.updated_at").bind(customer.id, customer.name, customer.email, now, now).run();
           await env.DB.prepare("INSERT OR REPLACE INTO crm_customer_members (customer_id, user_id, membership_role, created_at) VALUES (?, ?, 'owner', ?)").bind(customer.id, customer.userId, now).run();
           await env.DB.prepare("INSERT OR REPLACE INTO crm_quotes (id, customer_id, quote_number, status, currency, subtotal_minor, discount_minor, total_minor, created_by, created_at, updated_at) VALUES (?, ?, ?, 'sent', 'VND', 1000000, 0, 1000000, ?, ?, ?)").bind(customer.quoteId, customer.id, customer.quoteNumber, customer.userId, now, now).run();
+          await env.DB.prepare("INSERT OR REPLACE INTO crm_quote_items (id, quote_id, description, quantity, unit_price_minor, line_total_minor, sort_order) VALUES (?, ?, 'Website development', 1, 1000000, 1000000, 0)").bind(customer.quoteId + "-item", customer.quoteId).run();
+          if (customer.id === "test-customer-a") {
+            await env.DB.prepare("INSERT OR REPLACE INTO crm_quotes (id, customer_id, quote_number, status, currency, subtotal_minor, discount_minor, total_minor, valid_until, created_by, created_at, updated_at) VALUES ('test-quote-expired', ?, 'TEST-EXPIRED', 'sent', 'VND', 1000000, 0, 1000000, '2000-01-01', ?, ?, ?)").bind(customer.id, customer.userId, now, now).run();
+          }
         }
         await env.DB.prepare("INSERT OR REPLACE INTO app_user_roles (user_id, role, assigned_by, assigned_at) VALUES (?, 'admin', 'test-fixture', ?)").bind(ids[2], now).run();
+        if (memberUser) {
+          await env.DB.prepare("INSERT OR REPLACE INTO crm_customer_members (customer_id, user_id, membership_role, created_at) VALUES ('test-customer-a', ?, 'member', ?)").bind(memberUser, now).run();
+        }
         response = json({ ok: true });
       }
     }

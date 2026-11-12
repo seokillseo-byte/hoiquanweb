@@ -49,6 +49,8 @@ If a managed identity provider owns login and recovery, document its callback ro
 | GET | `/api/v1/me/quotes` | List quotes for current customer's authorized account | Customer |
 | GET | `/api/v1/me/quotes/:id` | Read one authorized quote and items | Customer owner/member |
 | POST | `/api/v1/me/quotes/:id/accept` | Accept a valid quote version | Customer authorized to accept |
+
+Quote detail and acceptance are implemented for authenticated customer members. `GET /api/v1/me/quotes/:id` returns only quotes belonging to the current user's customer membership, including line items. `POST /api/v1/me/quotes/:id/accept` is limited to owner/billing members, accepts only a non-expired quote in `sent` state, performs a conditional state transition and records `quote.accepted` in `crm_audit_events` atomically. Cross-customer access returns 404; repeated or stale acceptance returns 409.
 | GET | `/api/v1/me/orders` | List own orders | Customer |
 | GET | `/api/v1/me/projects` | List own projects and milestones | Customer |
 | GET | `/api/v1/me/projects/:id/files` | List files the customer is allowed to access | Customer project member |

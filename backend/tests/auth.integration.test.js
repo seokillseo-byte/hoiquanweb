@@ -211,11 +211,13 @@ test("customer portal isolates customers and quotes; admin access requires a ser
   const userB = await createSignedInUser("Customer B");
   const admin = await createSignedInUser("Test Admin");
   const ordinaryUser = await createSignedInUser("Ordinary User");
+  const memberUser = await createSignedInUser("Customer Member");
 
   const seed = await authRequest("/_test/seed-identity", {
     userA: userA.id,
     userB: userB.id,
-    adminUser: admin.id
+    adminUser: admin.id,
+    memberUser: memberUser.id
   });
   assert.equal(seed.status, 200, await seed.clone().text());
 
@@ -233,11 +235,63 @@ test("customer portal isolates customers and quotes; admin access requires a ser
 
   const quotesA = await getFor("/api/v1/me/quotes", userA.cookie);
   assert.equal(quotesA.status, 200, await quotesA.clone().text());
-  assert.deepEqual((await quotesA.json()).data.map(item => item.quote_number), ["TEST-A"]);
+  assert.deepEqual((await quotesA.json()).data.map(item => item.quote_number).sort(), ["TEST-A", "TEST-EXPIRED"]);
 
   const quotesB = await getFor("/api/v1/me/quotes", userB.cookie);
   assert.equal(quotesB.status, 200, await quotesB.clone().text());
   assert.deepEqual((await quotesB.json()).data.map(item => item.quote_number), ["TEST-B"]);
+
+  const quoteDetail = await getFor("/api/v1/me/quotes/test-quote-a", userA.cookie);
+  assert.equal(quoteDetail.status, 200, await quoteDetail.clone().text());
+  const detail = (await quoteDetail.json()).data;
+  assert.equal(detail.quote_number, "TEST-A");
+  assert.equal(detail.status, "sent");
+  assert.equal(detail.items.length, 1);
+  assert.equal(detail.items[0].description, "Website development");
+
+  const crossCustomerQuote = await getFor("/api/v1/me/quotes/test-quote-a", userB.cookie);
+  assert.equal(crossCustomerQuote.status, 404, "a customer must not read another customer's quote");
+
+  const memberDetail = await getFor("/api/v1/me/quotes/test-quote-a", memberUser.cookie);
+  assert.equal(memberDetail.status, 200, "a customer member may read the shared quote");
+  const memberAcceptance = await server.fetch(origin + "/api/v1/me/quotes/test-quote-a/accept", {
+    method: "POST",
+    headers: { origin, cookie: memberUser.cookie }
+  });
+  assert.equal(memberAcceptance.status, 403, "a non-billing customer member must not accept the quote");
+
+  const accepted = await server.fetch(origin + "/api/v1/me/quotes/test-quote-a/accept", {
+    method: "POST",
+    headers: { origin, cookie: userA.cookie }
+  });
+  assert.equal(accepted.status, 200, await accepted.clone().text());
+  const acceptedQuote = (await accepted.json()).data;
+  assert.equal(acceptedQuote.status, "accepted");
+  assert.equal(acceptedQuote.accepted_by, userA.id);
+  assert.ok(acceptedQuote.accepted_at);
+  const auditCount = await server.fetch(origin + "/_test/audit-count", { headers: { origin } });
+  assert.equal(auditCount.status, 200, await auditCount.clone().text());
+  assert.equal((await auditCount.json()).count, 1, "acceptance must write one audit event");
+
+  const repeatedAcceptance = await server.fetch(origin + "/api/v1/me/quotes/test-quote-a/accept", {
+    method: "POST",
+    headers: { origin, cookie: userA.cookie }
+  });
+  assert.equal(repeatedAcceptance.status, 409, "quote acceptance must not be repeated");
+  const auditCountAfterRepeat = await server.fetch(origin + "/_test/audit-count", { headers: { origin } });
+  assert.equal((await auditCountAfterRepeat.json()).count, 1, "a repeated acceptance must not create another audit event");
+
+  const expiredAcceptance = await server.fetch(origin + "/api/v1/me/quotes/test-quote-expired/accept", {
+    method: "POST",
+    headers: { origin, cookie: userA.cookie }
+  });
+  assert.equal(expiredAcceptance.status, 409, "expired quotes must not be accepted");
+
+  const crossCustomerAcceptance = await server.fetch(origin + "/api/v1/me/quotes/test-quote-b/accept", {
+    method: "POST",
+    headers: { origin, cookie: userA.cookie }
+  });
+  assert.equal(crossCustomerAcceptance.status, 404, "a customer must not accept another customer's quote");
 
   const ordinaryAdminAccess = await getFor("/api/v1/admin/customers", ordinaryUser.cookie);
   assert.equal(ordinaryAdminAccess.status, 403, await ordinaryAdminAccess.clone().text());

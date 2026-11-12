@@ -495,6 +495,79 @@ function validDateOnly(value) {
   const parsed = Date.parse(value + "T00:00:00Z");
   return Number.isFinite(parsed) && new Date(parsed).toISOString().slice(0, 10) === value;
 }
+const PROJECT_FILE_MAX_BYTES = 10 * 1024 * 1024;
+const PROJECT_FILE_TYPES = {
+  "application/pdf": { extension: "pdf", valid: bytes => bytes.length >= 5 && new TextDecoder().decode(bytes.slice(0,5)) === "%PDF-" },
+  "image/png": { extension: "png", valid: bytes => bytes.length >= 8 && [137,80,78,71,13,10,26,10].every((value,index) => bytes[index] === value) },
+  "image/jpeg": { extension: "jpg", valid: bytes => bytes.length >= 3 && bytes[0] === 255 && bytes[1] === 216 && bytes[2] === 255 },
+  "image/webp": { extension: "webp", valid: bytes => bytes.length >= 12 && new TextDecoder().decode(bytes.slice(0,4)) === "RIFF" && new TextDecoder().decode(bytes.slice(8,12)) === "WEBP" },
+  "text/plain": { extension: "txt", valid: bytes => { try { return !new TextDecoder("utf-8", { fatal: true }).decode(bytes).includes("\u0000"); } catch { return false; } } },
+  "text/csv": { extension: "csv", valid: bytes => { try { return !new TextDecoder("utf-8", { fatal: true }).decode(bytes).includes("\u0000"); } catch { return false; } } }
+};
+function projectFileRecord(row) {
+  return {
+    id: row.id, project_id: row.project_id, customer_id: row.customer_id,
+    filename: row.filename, content_type: row.content_type, size_bytes: row.size_bytes,
+    sha256: row.sha256, visibility: row.visibility, uploaded_by: row.uploaded_by,
+    uploaded_role: row.uploaded_role, created_at: row.created_at
+  };
+}
+async function uploadProjectFile(request, env, project, principal, visibility) {
+  if (!env.MEDIA_BUCKET) return json({ error: { code: "FILE_STORAGE_UNAVAILABLE", message: "Kho lưu trữ tệp dự án chưa được cấu hình." } }, 503);
+  const length = Number(request.headers.get("content-length") || 0);
+  if (length > PROJECT_FILE_MAX_BYTES + 128 * 1024) return json({ error: { code: "UPLOAD_TOO_LARGE", message: "Tệp vượt quá giới hạn 10 MB." } }, 413);
+  const contentType = request.headers.get("content-type") || "";
+  if (!contentType.toLowerCase().startsWith("multipart/form-data")) return json({ error: { code: "VALIDATION_ERROR", message: "Yêu cầu tải tệp phải dùng multipart/form-data." } }, 400);
+  let form;
+  try { form = await request.formData(); } catch { return json({ error: { code: "INVALID_UPLOAD", message: "Không đọc được dữ liệu tệp tải lên." } }, 400); }
+  const file = form.get("file");
+  if (!file || typeof file.arrayBuffer !== "function" || typeof file.size !== "number") return json({ error: { code: "VALIDATION_ERROR", message: "Vui lòng chọn một tệp hợp lệ." } }, 400);
+  if (file.size < 1 || file.size > PROJECT_FILE_MAX_BYTES) return json({ error: { code: "UPLOAD_TOO_LARGE", message: "Tệp phải có dung lượng từ 1 byte đến 10 MB." } }, 413);
+  const mime = clean(file.type, 100).toLowerCase();
+  const typeConfig = PROJECT_FILE_TYPES[mime];
+  if (!typeConfig) return json({ error: { code: "UNSUPPORTED_MEDIA_TYPE", message: "Chỉ chấp nhận PDF, PNG, JPEG, WebP, TXT và CSV." } }, 415);
+  const bytes = new Uint8Array(await file.arrayBuffer());
+  if (bytes.byteLength !== file.size || !typeConfig.valid(bytes)) return json({ error: { code: "INVALID_FILE_SIGNATURE", message: "Nội dung tệp không khớp định dạng đã khai báo." } }, 400);
+  const id = crypto.randomUUID(), now = new Date().toISOString();
+  const objectKey = "projects/" + project.id + "/" + id + "." + typeConfig.extension;
+  const filename = clean(String(file.name || "project-file." + typeConfig.extension).replace(/[\u0000-\u001f\\/:*?"<>|]/g, "_"), 150) || "project-file." + typeConfig.extension;
+  const digest = await crypto.subtle.digest("SHA-256", bytes);
+  const sha256 = Array.from(new Uint8Array(digest), value => value.toString(16).padStart(2, "0")).join("");
+  const row = {
+    id, project_id: project.id, customer_id: project.customer_id, object_key: objectKey,
+    filename, content_type: mime, size_bytes: bytes.byteLength, sha256, visibility,
+    uploaded_by: principal.user.id, uploaded_role: hasAnyRole(principal, ["admin"]) ? "admin" : hasAnyRole(principal, ["staff"]) ? "staff" : "customer", created_at: now
+  };
+  try {
+    await env.MEDIA_BUCKET.put(objectKey, bytes, {
+      httpMetadata: { contentType: mime, cacheControl: "private, no-store" },
+      customMetadata: { fileId: id, projectId: project.id, customerId: project.customer_id, visibility }
+    });
+    await env.DB.batch([
+      env.DB.prepare("INSERT INTO crm_project_files (id, project_id, customer_id, object_key, filename, content_type, size_bytes, sha256, visibility, uploaded_by, uploaded_role, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)").bind(id, project.id, project.customer_id, objectKey, filename, mime, bytes.byteLength, sha256, visibility, principal.user.id, row.uploaded_role, now),
+      env.DB.prepare("INSERT INTO crm_audit_events (id, actor_id, action, resource_type, resource_id, metadata_json, created_at) VALUES (?, ?, 'project.file.uploaded', 'project', ?, ?, ?)").bind(crypto.randomUUID(), principal.user.id, project.id, JSON.stringify({ file_id: id, filename, content_type: mime, size_bytes: bytes.byteLength, visibility }), now)
+    ]);
+    return json({ data: projectFileRecord(row) }, 201);
+  } catch {
+    try { await env.MEDIA_BUCKET.delete(objectKey); } catch {}
+    return json({ error: { code: "FILE_UPLOAD_FAILED", message: "Không thể lưu tệp dự án. Vui lòng thử lại." } }, 503);
+  }
+}
+async function downloadProjectFile(env, row) {
+  if (!env.MEDIA_BUCKET) return json({ error: { code: "FILE_STORAGE_UNAVAILABLE", message: "Kho lưu trữ tệp dự án chưa được cấu hình." } }, 503);
+  const object = await env.MEDIA_BUCKET.get(row.object_key);
+  if (!object) return json({ error: { code: "FILE_NOT_FOUND", message: "Không tìm thấy tệp trong kho lưu trữ." } }, 404);
+  const safeFilename = row.filename.replace(/[^a-zA-Z0-9._-]/g, "_") || "project-file";
+  const headers = new Headers({
+    "content-type": row.content_type,
+    "content-length": String(row.size_bytes),
+    "content-disposition": "attachment; filename=\"" + safeFilename + "\"",
+    "cache-control": "private, no-store",
+    "x-content-type-options": "nosniff"
+  });
+  return new Response(object.body, { status: 200, headers });
+}
+
 async function customerProjectRoutes(request, env, url) {
   const path = url.pathname;
   if (!path.startsWith("/api/v1/me/orders") && !path.startsWith("/api/v1/me/projects") && !path.startsWith("/api/v1/me/tickets")) return null;
@@ -512,7 +585,7 @@ async function customerProjectRoutes(request, env, url) {
     ).bind(principal.user.id).all();
     return json({ data: result.results || [] });
   }
-  const projectMatch = path.match(/^\/api\/v1\/me\/projects\/([^/]+)(?:\/(comments))?$/);
+  const projectMatch = path.match(/^\/api\/v1\/me\/projects\/([^/]+)(?:\/(comments|files)(?:\/([^/]+))?)?$/);
   if (projectMatch) {
     let projectId;
     try { projectId = decodeURIComponent(projectMatch[1]); }
@@ -522,6 +595,23 @@ async function customerProjectRoutes(request, env, url) {
       "SELECT p.id, p.customer_id, p.order_id, p.name, p.description, p.status, p.start_date, p.due_date, p.created_at, p.updated_at FROM crm_projects p INNER JOIN crm_customer_members m ON m.customer_id = p.customer_id WHERE p.id = ? AND m.user_id = ? LIMIT 1"
     ).bind(projectId, principal.user.id).first();
     if (!project) return json({ error: { code: "NOT_FOUND", message: "Không tìm thấy dự án." } }, 404);
+    if (projectMatch[2] === "files") {
+      if (projectMatch[3]) {
+        let fileId;
+        try { fileId = decodeURIComponent(projectMatch[3]); } catch { return json({ error: { code: "NOT_FOUND", message: "Không tìm thấy tệp." } }, 404); }
+        if (!fileId || fileId.length > 80 || fileId.includes("/")) return json({ error: { code: "NOT_FOUND", message: "Không tìm thấy tệp." } }, 404);
+        if (request.method !== "GET") return json({ error: { code: "METHOD_NOT_ALLOWED", message: "Phương thức không được hỗ trợ." } }, 405);
+        const file = await env.DB.prepare("SELECT id, project_id, customer_id, object_key, filename, content_type, size_bytes, sha256, visibility, uploaded_by, uploaded_role, created_at FROM crm_project_files WHERE id = ? AND project_id = ? AND visibility = 'customer' LIMIT 1").bind(fileId, projectId).first();
+        if (!file) return json({ error: { code: "NOT_FOUND", message: "Không tìm thấy tệp." } }, 404);
+        return downloadProjectFile(env, file);
+      }
+      if (request.method === "GET") {
+        const result = await env.DB.prepare("SELECT id, project_id, customer_id, filename, content_type, size_bytes, sha256, visibility, uploaded_by, uploaded_role, created_at FROM crm_project_files WHERE project_id = ? AND visibility = 'customer' ORDER BY created_at DESC, id DESC LIMIT 100").bind(projectId).all();
+        return json({ data: (result.results || []).map(projectFileRecord) });
+      }
+      if (request.method === "POST") return uploadProjectFile(request, env, project, principal, "customer");
+      return json({ error: { code: "METHOD_NOT_ALLOWED", message: "Phương thức không được hỗ trợ." } }, 405);
+    }
     if (projectMatch[2] === "comments") {
       if (request.method === "GET") {
         const result = await env.DB.prepare("SELECT id, actor_type, body, created_at FROM crm_project_comments WHERE project_id = ? AND visibility = 'customer' ORDER BY created_at ASC LIMIT 200").bind(projectId).all();
@@ -597,6 +687,32 @@ async function adminProjectRoutes(request, env, url) {
   const principal = await authenticatedPrincipal(request, env);
   if (principal.error) return principal.error;
   if (!hasAnyRole(principal, ["admin", "staff"])) return json({ error: { code: "FORBIDDEN", message: "Bạn không có quyền quản lý dự án và hỗ trợ." } }, 403);
+  const projectFilesMatch = path.match(/^\/api\/v1\/admin\/projects\/([^/]+)\/files(?:\/([^/]+))?$/);
+  if (projectFilesMatch) {
+    let projectId, fileId = "";
+    try { projectId = decodeURIComponent(projectFilesMatch[1]); fileId = projectFilesMatch[2] ? decodeURIComponent(projectFilesMatch[2]) : ""; }
+    catch { return json({ error: { code: "NOT_FOUND", message: "Không tìm thấy dự án hoặc tệp." } }, 404); }
+    if (!projectId || projectId.length > 80 || projectId.includes("/") || (fileId && (fileId.length > 80 || fileId.includes("/")))) return json({ error: { code: "NOT_FOUND", message: "Không tìm thấy dự án hoặc tệp." } }, 404);
+    const project = await env.DB.prepare("SELECT id, customer_id, name FROM crm_projects WHERE id = ? LIMIT 1").bind(projectId).first();
+    if (!project) return json({ error: { code: "NOT_FOUND", message: "Không tìm thấy dự án." } }, 404);
+    if (fileId) {
+      if (request.method !== "GET") return json({ error: { code: "METHOD_NOT_ALLOWED", message: "Phương thức không được hỗ trợ." } }, 405);
+      const file = await env.DB.prepare("SELECT id, project_id, customer_id, object_key, filename, content_type, size_bytes, sha256, visibility, uploaded_by, uploaded_role, created_at FROM crm_project_files WHERE id = ? AND project_id = ? LIMIT 1").bind(fileId, projectId).first();
+      if (!file) return json({ error: { code: "NOT_FOUND", message: "Không tìm thấy tệp." } }, 404);
+      return downloadProjectFile(env, file);
+    }
+    if (request.method === "GET") {
+      const result = await env.DB.prepare("SELECT id, project_id, customer_id, filename, content_type, size_bytes, sha256, visibility, uploaded_by, uploaded_role, created_at FROM crm_project_files WHERE project_id = ? ORDER BY created_at DESC, id DESC LIMIT 100").bind(projectId).all();
+      return json({ data: (result.results || []).map(projectFileRecord) });
+    }
+    if (request.method === "POST") {
+      const visibility = clean(url.searchParams.get("visibility") || "customer", 20);
+      if (!["customer", "internal"].includes(visibility)) return json({ error: { code: "VALIDATION_ERROR", message: "Phạm vi hiển thị tệp không hợp lệ." } }, 400);
+      return uploadProjectFile(request, env, project, principal, visibility);
+    }
+    return json({ error: { code: "METHOD_NOT_ALLOWED", message: "Phương thức không được hỗ trợ." } }, 405);
+  }
+
   if (path === "/api/v1/admin/orders" && request.method === "GET") {
     const result = await env.DB.prepare("SELECT o.id, o.customer_id, c.display_name AS customer_name, o.order_number, o.status, o.currency, o.total_minor, o.quote_id, o.created_at, o.updated_at FROM crm_orders o INNER JOIN crm_customers c ON c.id = o.customer_id ORDER BY o.created_at DESC LIMIT 100").all();
     return json({ data: result.results || [] });
@@ -1422,6 +1538,8 @@ export default { async fetch(request, env) {
       await env.DB.prepare("CREATE TABLE IF NOT EXISTS cms_revisions (id TEXT PRIMARY KEY, resource_type TEXT NOT NULL, resource_id TEXT NOT NULL, action TEXT NOT NULL, actor_id TEXT NOT NULL, snapshot_json TEXT NOT NULL, created_at TEXT NOT NULL)").run();
       await env.DB.prepare("CREATE TABLE IF NOT EXISTS cms_media_assets (id TEXT PRIMARY KEY, object_key TEXT NOT NULL UNIQUE, filename TEXT NOT NULL, content_type TEXT NOT NULL, size_bytes INTEGER NOT NULL CHECK(size_bytes > 0), alt_text TEXT NOT NULL DEFAULT '', status TEXT NOT NULL DEFAULT 'draft' CHECK(status IN ('draft','published','archived')), uploaded_by TEXT NOT NULL, created_at TEXT NOT NULL, updated_at TEXT NOT NULL)").run();
       await env.DB.prepare("CREATE INDEX IF NOT EXISTS idx_cms_media_status_created ON cms_media_assets(status, created_at DESC, id)").run();
+      await env.DB.prepare("CREATE TABLE IF NOT EXISTS crm_project_files (id TEXT PRIMARY KEY, project_id TEXT NOT NULL REFERENCES crm_projects(id) ON DELETE CASCADE, customer_id TEXT NOT NULL REFERENCES crm_customers(id) ON DELETE CASCADE, object_key TEXT NOT NULL UNIQUE, filename TEXT NOT NULL, content_type TEXT NOT NULL CHECK(content_type IN ('application/pdf','image/png','image/jpeg','image/webp','text/plain','text/csv')), size_bytes INTEGER NOT NULL CHECK(size_bytes BETWEEN 1 AND 10485760), sha256 TEXT NOT NULL, visibility TEXT NOT NULL DEFAULT 'customer' CHECK(visibility IN ('customer','internal')), uploaded_by TEXT NOT NULL, uploaded_role TEXT NOT NULL CHECK(uploaded_role IN ('admin','staff','customer')), created_at TEXT NOT NULL, archived_at TEXT)").run();
+      await env.DB.prepare("CREATE INDEX IF NOT EXISTS idx_crm_project_files_project_visibility_created ON crm_project_files(project_id, visibility, created_at DESC, id)").run();
       response = new Response(null, { status: 204, headers: { "cache-control": "no-store" } });
     }
     else if (url.pathname === "/_test/audit-count" && request.method === "GET" && env.TEST_MODE === "true") {

@@ -95,6 +95,18 @@
     <div class="table-wrap"><table class="cms-table"><thead><tr><th>Nội dung</th><th>Slug</th><th>Trạng thái</th><th>Cập nhật</th><th>Thao tác</th></tr></thead><tbody id="cmsRows"><tr><td colspan="5">Chưa tải nội dung.</td></tr></tbody></table></div>
     <p class="message" id="cmsMessage" role="status" aria-live="polite"></p>
   </section>
+  <section class="panel" id="mediaPanel" hidden>
+    <div class="topline"><div><h2>Thư viện Media</h2><p class="muted">Tải ảnh CMS lên kho R2 riêng tư. Ảnh chỉ được truy cập công khai sau khi Admin xuất bản.</p></div><button class="btn secondary" type="button" id="mediaRefresh">Làm mới</button></div>
+    <form class="cms-form" id="mediaUploadForm">
+      <div class="cms-grid">
+        <div class="field"><label for="mediaFile">Tệp ảnh (PNG, JPEG, GIF, WebP · tối đa 5 MB)</label><input id="mediaFile" name="file" type="file" accept="image/png,image/jpeg,image/gif,image/webp" required></div>
+        <div class="field"><label for="mediaAlt">Alt text</label><input id="mediaAlt" name="alt_text" maxlength="250" placeholder="Mô tả ảnh cho khả năng truy cập và SEO"></div>
+      </div>
+      <div class="cms-actions"><button class="btn" type="submit" id="mediaUploadButton">Tải ảnh lên</button><span id="mediaFormStatus" class="cms-status" role="status" aria-live="polite"></span></div>
+    </form>
+    <p class="message" id="mediaMessage" role="status" aria-live="polite"></p>
+    <div class="table-wrap"><table class="cms-table"><thead><tr><th>Ảnh</th><th>Tệp / Thông tin</th><th>Alt text</th><th>Trạng thái</th><th>Thao tác</th></tr></thead><tbody id="mediaRows"><tr><td colspan="5">Chưa tải thư viện media.</td></tr></tbody></table></div>
+  </section>
   <section class="panel" id="templatePanel" hidden>
     <div class="topline"><div><h2>Kho giao diện / Template</h2><p class="muted">Quản lý template WordPress và HTML/CSS riêng biệt. Chỉ xuất bản khi đã xác minh quyền sử dụng và kiểm tra URL demo.</p></div><div class="cms-top"><select id="templateStatusFilter" aria-label="Lọc trạng thái"><option value="">Tất cả trạng thái</option><option value="draft">Bản nháp</option><option value="published">Đã xuất bản</option><option value="archived">Đã lưu trữ</option></select><select id="templateTypeFilter" aria-label="Lọc loại template"><option value="">Tất cả loại</option><option value="wordpress">WordPress</option><option value="html_css">HTML/CSS</option></select><button class="btn secondary" type="button" id="templateRefresh">Làm mới</button></div></div>
     <form class="cms-form" id="templateForm">
@@ -419,7 +431,62 @@
   $("#orderCreateForm").addEventListener("submit",async event=>{event.preventDefault();$("#orderCreateStatus").textContent="Đang tạo…";try{const result=await request("/api/v1/admin/orders",{method:"POST",body:JSON.stringify({quote_id:$("#orderQuoteId").value.trim()})});$("#orderCreateStatus").textContent="Đã tạo / đã tồn tại: "+result.data.order_number;await loadDelivery();}catch(error){$("#orderCreateStatus").textContent=error.message;}});
   $("#projectCreateForm").addEventListener("submit",async event=>{event.preventDefault();$("#projectCreateStatus").textContent="Đang tạo…";try{const result=await request("/api/v1/admin/projects",{method:"POST",body:JSON.stringify({customer_id:$("#projectCustomerId").value.trim(),order_id:$("#projectOrderId").value.trim()||null,name:$("#projectName").value.trim(),description:$("#projectDescription").value.trim(),due_date:$("#projectDueDate").value||null})});$("#projectCreateStatus").textContent="Đã tạo dự án: "+result.data.name;$("#projectCreateForm").reset();await loadDelivery();}catch(error){$("#projectCreateStatus").textContent=error.message;}});
   $("#deliveryRefresh").addEventListener("click",loadDelivery);
-  $("#connectForm").addEventListener("submit",async event=>{event.preventDefault();apiBase=$("#apiBase").value.trim().replace(/\/$/,"");const email=$("#adminEmail").value.trim();const password=$("#adminPassword").value;$("#loadButton").disabled=true;message("Đang xác thực…");try{const response=await fetch(apiBase+"/api/v1/auth/sign-in/email",{method:"POST",credentials:"include",headers:{"content-type":"application/json"},body:JSON.stringify({email,password})});const body=await response.json().catch(()=>({}));if(!response.ok)throw new Error(body.message||body.error||("HTTP "+response.status));signedIn=true;$("#adminPassword").value="";message("Đăng nhập thành công. Đang kiểm tra quyền quản trị…");const me=await request("/api/v1/me");if(!Array.isArray(me.data?.roles)||!me.data.roles.some(role=>["admin","staff"].includes(role))){signedIn=false;throw new Error("Tài khoản chưa được cấp quyền admin/staff.");}currentRoles=me.data.roles;$("#crmPanel").hidden=false;$("#cmsPanel").hidden=false;$("#quotePanel").hidden=false;$("#templatePanel").hidden=false;$("#deliveryPanel").hidden=false;updateCmsFields();resetQuoteForm();resetTemplateForm();await loadStaff();await load();await loadCustomers();await loadCms();await loadQuoteCustomers();await loadQuotes();await loadTemplates();await loadDelivery();}catch(error){signedIn=false;message("Không thể đăng nhập/quản trị: "+error.message,true);}finally{$("#loadButton").disabled=false;}});
+  const mediaMessage=(text,error=false)=>{$("#mediaMessage").textContent=text;$("#mediaMessage").classList.toggle("danger",error);};
+  async function loadMedia(){
+    if(!signedIn)return;
+    $("#mediaRefresh").disabled=true;
+    try{
+      const result=await request("/api/v1/admin/media?limit=100");
+      const rows=$("#mediaRows");rows.replaceChildren();
+      const items=result.data||[];
+      if(!items.length){const tr=document.createElement("tr"),td=document.createElement("td");td.colSpan=5;td.textContent="Chưa có ảnh. Tải ảnh đầu tiên để dùng trong nội dung CMS.";tr.appendChild(td);rows.appendChild(tr);}
+      for(const item of items){
+        const tr=document.createElement("tr");
+        const imageCell=document.createElement("td");
+        const image=document.createElement("img");image.alt=item.alt_text||"";image.loading="lazy";image.width=72;image.height=54;image.style.objectFit="cover";image.style.borderRadius="7px";image.hidden=true;
+        if(item.status==="published"&&item.public_url){image.src=apiBase+item.public_url;image.hidden=false;}
+        else{
+          const preview=document.createElement("button");preview.type="button";preview.className="btn secondary";preview.textContent="Xem preview";
+          preview.addEventListener("click",async()=>{preview.disabled=true;try{const response=await fetch(apiBase+"/api/v1/admin/media/"+encodeURIComponent(item.id)+"/file",{credentials:"include"});if(!response.ok)throw new Error("HTTP "+response.status);const blob=await response.blob();if(image.dataset.objectUrl)URL.revokeObjectURL(image.dataset.objectUrl);image.dataset.objectUrl=URL.createObjectURL(blob);image.src=image.dataset.objectUrl;image.hidden=false;preview.hidden=true;}catch(error){mediaMessage("Không xem được ảnh: "+error.message,true);}finally{preview.disabled=false;}});
+          imageCell.appendChild(preview);
+        }
+        imageCell.appendChild(image);
+        tr.appendChild(imageCell);
+        const fileCell=document.createElement("td");const name=document.createElement("strong");name.textContent=item.filename;const details=document.createElement("p");details.textContent=item.content_type+" · "+(Number(item.size_bytes)/1024).toFixed(1)+" KB";fileCell.append(name,details);tr.appendChild(fileCell);
+        const altCell=document.createElement("td");altCell.textContent=item.alt_text||"Chưa có alt text";tr.appendChild(altCell);
+        const statusCell=document.createElement("td");statusCell.textContent=item.status==="published"?"Đã xuất bản":item.status==="archived"?"Đã lưu trữ":"Bản nháp";tr.appendChild(statusCell);
+        const actionCell=document.createElement("td");const actions=document.createElement("div");actions.className="cms-actions";
+        const edit=document.createElement("button");edit.type="button";edit.className="btn secondary";edit.textContent="Sửa alt";edit.addEventListener("click",async()=>{const alt=prompt("Nhập alt text cho ảnh:",item.alt_text||"");if(alt===null)return;try{await request("/api/v1/admin/media/"+encodeURIComponent(item.id),{method:"PATCH",body:JSON.stringify({alt_text:alt})});mediaMessage("Đã cập nhật alt text.");await loadMedia();}catch(error){mediaMessage("Không cập nhật được: "+error.message,true);}});actions.appendChild(edit);
+        if(item.status==="published"&&item.public_url){
+          const copy=document.createElement("button");copy.type="button";copy.className="btn secondary";copy.textContent="Sao chép URL";copy.addEventListener("click",async()=>{try{await navigator.clipboard.writeText(apiBase+item.public_url);mediaMessage("Đã sao chép URL ảnh công khai.");}catch{mediaMessage("Trình duyệt không cho phép sao chép URL.",true);}});actions.appendChild(copy);
+        }else if(currentRoles.includes("admin")&&item.status!=="archived"){
+          const publish=document.createElement("button");publish.type="button";publish.className="btn";publish.textContent="Xuất bản";publish.addEventListener("click",async()=>{publish.disabled=true;try{await request("/api/v1/admin/media/"+encodeURIComponent(item.id)+"/publish",{method:"POST"});mediaMessage("Đã xuất bản ảnh.");await loadMedia();}catch(error){mediaMessage("Không xuất bản được: "+error.message,true);}finally{publish.disabled=false;}});actions.appendChild(publish);
+        }
+        if(currentRoles.includes("admin")&&item.status!=="archived"){
+          const archive=document.createElement("button");archive.type="button";archive.className="btn danger";archive.textContent="Lưu trữ";archive.addEventListener("click",async()=>{if(!confirm("Lưu trữ ảnh này? URL công khai sẽ ngừng hoạt động."))return;archive.disabled=true;try{await request("/api/v1/admin/media/"+encodeURIComponent(item.id)+"/archive",{method:"POST"});mediaMessage("Đã lưu trữ ảnh.");await loadMedia();}catch(error){mediaMessage("Không lưu trữ được: "+error.message,true);}finally{archive.disabled=false;}});actions.appendChild(archive);
+        }
+        actionCell.appendChild(actions);tr.appendChild(actionCell);rows.appendChild(tr);
+      }
+      mediaMessage("Đã tải "+items.length+" tệp media.");
+    }catch(error){mediaMessage("Không tải được thư viện media: "+error.message,true);}
+    finally{$("#mediaRefresh").disabled=false;}
+  }
+  $("#mediaUploadForm").addEventListener("submit",async event=>{
+    event.preventDefault();if(!signedIn)return;
+    const file=$("#mediaFile").files[0];if(!file)return;
+    const form=new FormData();form.set("file",file);form.set("alt_text",$("#mediaAlt").value.trim());
+    $("#mediaUploadButton").disabled=true;$("#mediaFormStatus").textContent="Đang tải ảnh lên…";
+    try{
+      const response=await fetch(apiBase+"/api/v1/admin/media",{method:"POST",credentials:"include",body:form});
+      const result=await response.json().catch(()=>({}));
+      if(!response.ok)throw new Error(result.message||result.error?.message||result.error||("HTTP "+response.status));
+      $("#mediaUploadForm").reset();$("#mediaFormStatus").textContent="Đã tải ảnh lên dưới dạng bản nháp.";
+      await loadMedia();
+    }catch(error){$("#mediaFormStatus").textContent="Không tải được ảnh: "+error.message;}
+    finally{$("#mediaUploadButton").disabled=false;}
+  });
+  $("#mediaRefresh").addEventListener("click",loadMedia);
+  $("#connectForm").addEventListener("submit",async event=>{event.preventDefault();apiBase=$("#apiBase").value.trim().replace(/\/$/,"");const email=$("#adminEmail").value.trim();const password=$("#adminPassword").value;$("#loadButton").disabled=true;message("Đang xác thực…");try{const response=await fetch(apiBase+"/api/v1/auth/sign-in/email",{method:"POST",credentials:"include",headers:{"content-type":"application/json"},body:JSON.stringify({email,password})});const body=await response.json().catch(()=>({}));if(!response.ok)throw new Error(body.message||body.error||("HTTP "+response.status));signedIn=true;$("#adminPassword").value="";message("Đăng nhập thành công. Đang kiểm tra quyền quản trị…");const me=await request("/api/v1/me");if(!Array.isArray(me.data?.roles)||!me.data.roles.some(role=>["admin","staff"].includes(role))){signedIn=false;throw new Error("Tài khoản chưa được cấp quyền admin/staff.");}currentRoles=me.data.roles;$("#crmPanel").hidden=false;$("#cmsPanel").hidden=false;$("#mediaPanel").hidden=false;$("#quotePanel").hidden=false;$("#templatePanel").hidden=false;$("#deliveryPanel").hidden=false;updateCmsFields();resetQuoteForm();resetTemplateForm();await loadStaff();await load();await loadCustomers();await loadCms();await loadMedia();await loadQuoteCustomers();await loadQuotes();await loadTemplates();await loadDelivery();}catch(error){signedIn=false;message("Không thể đăng nhập/quản trị: "+error.message,true);}finally{$("#loadButton").disabled=false;}});
   $("#refreshButton").addEventListener("click",load);
   const configured=document.querySelector('meta[name="hq-api-base"]')?.content?.trim(); if(configured){$("#apiBase").value=configured;apiBase=configured.replace(/\/$/,"");}
 })();

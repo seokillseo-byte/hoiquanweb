@@ -76,12 +76,16 @@ admin_parser = MarkupCheck()
 admin_parser.feed(admin_html)
 if 'name="robots" content="noindex,nofollow"' not in admin_html:
     fail("admin page must be marked noindex")
-for required_admin_id in ["connectForm", "apiBase", "adminEmail", "adminPassword", "refreshButton", "leadRows", "memberForm", "memberList", "memberRefresh", "deliveryPanel", "adminOrders", "adminProjects", "adminTickets", "orderCreateForm", "projectCreateForm"]:
+for required_admin_id in ["connectForm", "apiBase", "adminEmail", "adminPassword", "refreshButton", "leadRows", "memberForm", "memberList", "memberRefresh", "deliveryPanel", "adminOrders", "adminProjects", "adminTickets", "orderCreateForm", "projectCreateForm", "mediaPanel", "mediaUploadForm", "mediaFile", "mediaAlt", "mediaRows"]:
     if required_admin_id not in admin_parser.ids:
         fail("required admin UI ID missing: " + required_admin_id)
 for fragment in admin_parser.fragments:
     if fragment and fragment not in admin_parser.ids:
         fail("broken admin in-page anchor: #" + fragment)
+if "/api/v1/admin/media/" not in admin_html or 'credentials:"include"' not in admin_html:
+    fail("admin media library must use the authenticated media preview route")
+if 'accept="image/png,image/jpeg,image/gif,image/webp"' not in admin_html:
+    fail("admin media upload must restrict the browser picker to supported image types")
 if not parser.scripts or not any("briefForm" in chunk for script_type, chunk in parser.scripts if script_type in ("", "text/javascript", "application/javascript", "module")):
     fail("inline form handler not found")
 for fragment in parser.fragments:
@@ -153,6 +157,12 @@ try:
     post_indexes = {row[1] for row in db.execute("PRAGMA index_list(cms_posts)")}
     if "idx_cms_posts_category_public" not in post_indexes:
         fail("CMS post taxonomy query index is missing")
+    media_columns = {row[1] for row in db.execute("PRAGMA table_info(cms_media_assets)")}
+    if not {"object_key", "content_type", "size_bytes", "alt_text", "status", "uploaded_by"}.issubset(media_columns):
+        fail("CMS media metadata columns are missing")
+    media_indexes = {row[1] for row in db.execute("PRAGMA index_list(cms_media_assets)")}
+    if "idx_cms_media_status_created" not in media_indexes:
+        fail("CMS media library query index is missing")
     # Publicly readable content must have an explicit status and publication timestamp.
     page_columns = {row[1] for row in db.execute("PRAGMA table_info(cms_pages)")}
     if not {"status", "published_at", "slug"}.issubset(page_columns):

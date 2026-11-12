@@ -1031,6 +1031,151 @@ async function adminContent(request, env, url) {
   return json({ error: { code: "METHOD_NOT_ALLOWED", message: "Phương thức không được hỗ trợ." } }, 405);
 }
 
+const CMS_MEDIA_MAX_BYTES = 5 * 1024 * 1024;
+const CMS_IMAGE_TYPES = {
+  "image/png": { extension: "png", valid: bytes => bytes.length >= 8 && [137,80,78,71,13,10,26,10].every((value,index) => bytes[index] === value) },
+  "image/jpeg": { extension: "jpg", valid: bytes => bytes.length >= 3 && bytes[0] === 255 && bytes[1] === 216 && bytes[2] === 255 },
+  "image/gif": { extension: "gif", valid: bytes => bytes.length >= 6 && ["GIF87a","GIF89a"].includes(new TextDecoder().decode(bytes.slice(0,6))) },
+  "image/webp": { extension: "webp", valid: bytes => bytes.length >= 12 && new TextDecoder().decode(bytes.slice(0,4)) === "RIFF" && new TextDecoder().decode(bytes.slice(8,12)) === "WEBP" }
+};
+
+function mediaRecord(row) {
+  return {
+    id: row.id, filename: row.filename, content_type: row.content_type,
+    size_bytes: row.size_bytes, alt_text: row.alt_text, status: row.status,
+    uploaded_by: row.uploaded_by, created_at: row.created_at, updated_at: row.updated_at,
+    public_url: row.status === "published" ? "/api/v1/public/media/" + encodeURIComponent(row.id) : null
+  };
+}
+
+async function adminMedia(request, env, url) {
+  const principal = await authenticatedPrincipal(request, env);
+  if (principal.error) return principal.error;
+  if (!hasAnyRole(principal, ["admin", "staff"])) {
+    return json({ error: { code: "FORBIDDEN", message: "Bạn không có quyền quản lý thư viện media." } }, 403);
+  }
+  if (!env.MEDIA_BUCKET) return json({ error: { code: "MEDIA_STORAGE_UNAVAILABLE", message: "Kho lưu trữ media chưa được cấu hình." } }, 503);
+  const match = url.pathname.match(/^\/api\/v1\/admin\/media(?:\/([^/]+)(?:\/(publish|archive|file))?)?$/);
+  if (!match) return json({ error: { code: "NOT_FOUND", message: "Không tìm thấy media." } }, 404);
+  let mediaId = "";
+  try { mediaId = match[1] ? decodeURIComponent(match[1]) : ""; }
+  catch { return json({ error: { code: "NOT_FOUND", message: "Không tìm thấy media." } }, 404); }
+  if (mediaId && (mediaId.length > 80 || mediaId.includes("/"))) return json({ error: { code: "NOT_FOUND", message: "Không tìm thấy media." } }, 404);
+  const action = match[2] || "";
+  const now = new Date().toISOString();
+  if (!mediaId && request.method === "GET") {
+    const status = clean(url.searchParams.get("status"), 20);
+    if (status && !["draft", "published", "archived"].includes(status)) return json({ error: { code: "VALIDATION_ERROR", message: "Trạng thái media không hợp lệ." } }, 400);
+    const limit = Math.max(1, Math.min(100, Number.parseInt(url.searchParams.get("limit") || "50", 10) || 50));
+    const offset = Math.max(0, Math.min(10000, Number.parseInt(url.searchParams.get("offset") || "0", 10) || 0));
+    const where = status ? " WHERE status = ?" : "";
+    const statement = env.DB.prepare("SELECT id, filename, content_type, size_bytes, alt_text, status, uploaded_by, created_at, updated_at FROM cms_media_assets" + where + " ORDER BY created_at DESC, id DESC LIMIT ? OFFSET ?");
+    const result = status ? await statement.bind(status, limit, offset).all() : await statement.bind(limit, offset).all();
+    return json({ data: (result.results || []).map(mediaRecord), meta: { limit, offset, status: status || "all" } });
+  }
+  if (!mediaId && request.method === "POST") {
+    const length = Number(request.headers.get("content-length") || 0);
+    if (length > CMS_MEDIA_MAX_BYTES + 128 * 1024) return json({ error: { code: "UPLOAD_TOO_LARGE", message: "Ảnh vượt quá giới hạn 5 MB." } }, 413);
+    const contentType = request.headers.get("content-type") || "";
+    if (!contentType.toLowerCase().startsWith("multipart/form-data")) return json({ error: { code: "VALIDATION_ERROR", message: "Yêu cầu tải ảnh phải dùng multipart/form-data." } }, 400);
+    let form;
+    try { form = await request.formData(); } catch { return json({ error: { code: "INVALID_UPLOAD", message: "Không đọc được dữ liệu ảnh tải lên." } }, 400); }
+    const file = form.get("file");
+    if (!file || typeof file.arrayBuffer !== "function" || typeof file.size !== "number") return json({ error: { code: "VALIDATION_ERROR", message: "Vui lòng chọn một tệp ảnh." } }, 400);
+    if (file.size < 1 || file.size > CMS_MEDIA_MAX_BYTES) return json({ error: { code: "UPLOAD_TOO_LARGE", message: "Ảnh phải có dung lượng từ 1 byte đến 5 MB." } }, 413);
+    const mime = clean(file.type, 80).toLowerCase();
+    const typeConfig = CMS_IMAGE_TYPES[mime];
+    if (!typeConfig) return json({ error: { code: "UNSUPPORTED_MEDIA_TYPE", message: "Chỉ chấp nhận PNG, JPEG, GIF và WebP." } }, 415);
+    const bytes = new Uint8Array(await file.arrayBuffer());
+    if (bytes.byteLength !== file.size || !typeConfig.valid(bytes)) return json({ error: { code: "INVALID_IMAGE_SIGNATURE", message: "Nội dung tệp không khớp định dạng ảnh đã khai báo." } }, 400);
+    const id = crypto.randomUUID();
+    const objectKey = "cms/" + id + "." + typeConfig.extension;
+    const filename = clean(String(file.name || "image." + typeConfig.extension).replace(/[\\u0000-\\u001f\\/:*?"<>|]/g, "_"), 120) || "image." + typeConfig.extension;
+    const altText = clean(form.get("alt_text"), 250);
+    try {
+      await env.MEDIA_BUCKET.put(objectKey, bytes, {
+        httpMetadata: { contentType: mime, cacheControl: "public, max-age=3600" },
+        customMetadata: { assetId: id, uploadedBy: principal.user.id }
+      });
+      const row = { id, filename, content_type: mime, size_bytes: bytes.byteLength, alt_text: altText, status: "draft", uploaded_by: principal.user.id, created_at: now, updated_at: now };
+      await env.DB.batch([
+        env.DB.prepare("INSERT INTO cms_media_assets (id, object_key, filename, content_type, size_bytes, alt_text, status, uploaded_by, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, 'draft', ?, ?, ?)").bind(id, objectKey, filename, mime, bytes.byteLength, altText, principal.user.id, now, now),
+        env.DB.prepare("INSERT INTO crm_audit_events (id, actor_id, action, resource_type, resource_id, metadata_json, created_at) VALUES (?, ?, 'media.uploaded', 'media', ?, ?, ?)").bind(crypto.randomUUID(), principal.user.id, id, JSON.stringify({ filename, contentType: mime, sizeBytes: bytes.byteLength }), now)
+      ]);
+      return json({ data: mediaRecord(row) }, 201);
+    } catch {
+      try { await env.MEDIA_BUCKET.delete(objectKey); } catch {}
+      return json({ error: { code: "MEDIA_UPLOAD_FAILED", message: "Không thể lưu ảnh. Vui lòng thử lại." } }, 503);
+    }
+  }
+  if (!mediaId) return json({ error: { code: "METHOD_NOT_ALLOWED", message: "Phương thức không được hỗ trợ." } }, 405);
+  const row = await env.DB.prepare("SELECT id, object_key, filename, content_type, size_bytes, alt_text, status, uploaded_by, created_at, updated_at FROM cms_media_assets WHERE id = ? LIMIT 1").bind(mediaId).first();
+  if (!row) return json({ error: { code: "NOT_FOUND", message: "Không tìm thấy media." } }, 404);
+  if (action === "file" && request.method === "GET") {
+    const object = await env.MEDIA_BUCKET.get(row.object_key);
+    if (!object) return json({ error: { code: "MEDIA_OBJECT_MISSING", message: "Tệp media không còn trong kho lưu trữ." } }, 404);
+    const safeFilename = row.filename.replace(/[^a-zA-Z0-9._-]/g, "_");
+    const headers = new Headers({
+      "content-type": row.content_type,
+      "content-length": String(row.size_bytes),
+      "content-disposition": "inline; filename=\"" + safeFilename + "\"",
+      "cache-control": "private, no-store",
+      "x-content-type-options": "nosniff"
+    });
+    return new Response(object.body, { status: 200, headers });
+  }
+  if (action === "publish" && request.method === "POST") {
+    if (!hasAnyRole(principal, ["admin"])) return json({ error: { code: "FORBIDDEN", message: "Chỉ Admin được xuất bản media." } }, 403);
+    if (row.status === "archived") return json({ error: { code: "INVALID_STATE", message: "Không thể xuất bản media đã lưu trữ." } }, 409);
+    await env.DB.batch([
+      env.DB.prepare("UPDATE cms_media_assets SET status = 'published', updated_at = ? WHERE id = ?").bind(now, mediaId),
+      env.DB.prepare("INSERT INTO crm_audit_events (id, actor_id, action, resource_type, resource_id, metadata_json, created_at) VALUES (?, ?, 'media.published', 'media', ?, '{}', ?)").bind(crypto.randomUUID(), principal.user.id, mediaId, now)
+    ]);
+    return json({ data: mediaRecord({ ...row, status: "published", updated_at: now }) });
+  }
+  if (action === "archive" && request.method === "POST") {
+    if (!hasAnyRole(principal, ["admin"])) return json({ error: { code: "FORBIDDEN", message: "Chỉ Admin được lưu trữ media." } }, 403);
+    await env.DB.batch([
+      env.DB.prepare("UPDATE cms_media_assets SET status = 'archived', updated_at = ? WHERE id = ?").bind(now, mediaId),
+      env.DB.prepare("INSERT INTO crm_audit_events (id, actor_id, action, resource_type, resource_id, metadata_json, created_at) VALUES (?, ?, 'media.archived', 'media', ?, '{}', ?)").bind(crypto.randomUUID(), principal.user.id, mediaId, now)
+    ]);
+    return json({ data: mediaRecord({ ...row, status: "archived", updated_at: now }) });
+  }
+  if (!action && request.method === "PATCH") {
+    const body = await readJson(request);
+    const altText = clean(body?.alt_text, 250);
+    if (!body || typeof body !== "object" || Array.isArray(body) || !Object.prototype.hasOwnProperty.call(body, "alt_text")) return json({ error: { code: "VALIDATION_ERROR", message: "Thiếu nội dung alt text." } }, 400);
+    await env.DB.batch([
+      env.DB.prepare("UPDATE cms_media_assets SET alt_text = ?, updated_at = ? WHERE id = ?").bind(altText, now, mediaId),
+      env.DB.prepare("INSERT INTO crm_audit_events (id, actor_id, action, resource_type, resource_id, metadata_json, created_at) VALUES (?, ?, 'media.alt_updated', 'media', ?, ?, ?)").bind(crypto.randomUUID(), principal.user.id, mediaId, JSON.stringify({ altText }), now)
+    ]);
+    return json({ data: mediaRecord({ ...row, alt_text: altText, updated_at: now }) });
+  }
+  if (!action && request.method === "GET") return json({ data: mediaRecord(row) });
+  return json({ error: { code: "METHOD_NOT_ALLOWED", message: "Phương thức không được hỗ trợ." } }, 405);
+}
+
+async function publicMedia(request, env, url) {
+  if (request.method !== "GET") return json({ error: { code: "METHOD_NOT_ALLOWED", message: "Phương thức không được hỗ trợ." } }, 405, { allow: "GET" });
+  if (!env.DB || !env.MEDIA_BUCKET) return json({ error: { code: "SERVICE_UNAVAILABLE", message: "Kho media công khai chưa khả dụng." } }, 503);
+  const id = decodeSlug(url.pathname, "/api/v1/public/media/");
+  if (!id) return json({ error: { code: "NOT_FOUND", message: "Không tìm thấy media." } }, 404);
+  const row = await env.DB.prepare("SELECT object_key, filename, content_type, size_bytes FROM cms_media_assets WHERE id = ? AND status = 'published' LIMIT 1").bind(id).first();
+  if (!row) return json({ error: { code: "NOT_FOUND", message: "Không tìm thấy media." } }, 404);
+  const object = await env.MEDIA_BUCKET.get(row.object_key);
+  if (!object) return json({ error: { code: "NOT_FOUND", message: "Không tìm thấy tệp media." } }, 404);
+  const safeFilename = row.filename.replace(/[^a-zA-Z0-9._-]/g, "_");
+  const headers = new Headers({
+    "content-type": row.content_type,
+    "content-length": String(row.size_bytes),
+    "content-disposition": "inline; filename=\"" + safeFilename + "\"",
+    "cache-control": "no-store",
+    "x-content-type-options": "nosniff"
+  });
+  if (object.httpEtag) headers.set("etag", object.httpEtag);
+  return new Response(object.body, { status: 200, headers });
+}
+
 function templateRecord(row) {
   if (!row) return null;
   const result = { ...row };
@@ -1180,6 +1325,7 @@ async function adminTemplates(request, env, url) {
 async function publicContent(request, env, url) {
   if (!env.DB) return json({ error: { code: "SERVICE_UNAVAILABLE", message: "Nội dung hiện chưa khả dụng." } }, 503);
   const path = url.pathname;
+  if (path.startsWith("/api/v1/public/media/")) return publicMedia(request, env, url);
   if (path.startsWith("/api/v1/public/pages/") && request.method === "GET") {
     const slug = decodeSlug(path, "/api/v1/public/pages/");
     if (!slug) return json({ error: { code: "NOT_FOUND", message: "Không tìm thấy trang." } }, 404);
@@ -1274,6 +1420,8 @@ export default { async fetch(request, env) {
       await env.DB.prepare("CREATE TABLE IF NOT EXISTS crm_tickets (id TEXT PRIMARY KEY, customer_id TEXT NOT NULL REFERENCES crm_customers(id), ticket_number TEXT NOT NULL UNIQUE, subject TEXT NOT NULL, description TEXT NOT NULL DEFAULT '', status TEXT NOT NULL DEFAULT 'open', priority TEXT NOT NULL DEFAULT 'normal', created_by TEXT NOT NULL, created_at TEXT NOT NULL, updated_at TEXT NOT NULL)").run();
       await env.DB.prepare("CREATE TABLE IF NOT EXISTS crm_ticket_messages (id TEXT PRIMARY KEY, ticket_id TEXT NOT NULL REFERENCES crm_tickets(id) ON DELETE CASCADE, actor_id TEXT NOT NULL, actor_type TEXT NOT NULL, body TEXT NOT NULL, created_at TEXT NOT NULL)").run();
       await env.DB.prepare("CREATE TABLE IF NOT EXISTS cms_revisions (id TEXT PRIMARY KEY, resource_type TEXT NOT NULL, resource_id TEXT NOT NULL, action TEXT NOT NULL, actor_id TEXT NOT NULL, snapshot_json TEXT NOT NULL, created_at TEXT NOT NULL)").run();
+      await env.DB.prepare("CREATE TABLE IF NOT EXISTS cms_media_assets (id TEXT PRIMARY KEY, object_key TEXT NOT NULL UNIQUE, filename TEXT NOT NULL, content_type TEXT NOT NULL, size_bytes INTEGER NOT NULL CHECK(size_bytes > 0), alt_text TEXT NOT NULL DEFAULT '', status TEXT NOT NULL DEFAULT 'draft' CHECK(status IN ('draft','published','archived')), uploaded_by TEXT NOT NULL, created_at TEXT NOT NULL, updated_at TEXT NOT NULL)").run();
+      await env.DB.prepare("CREATE INDEX IF NOT EXISTS idx_cms_media_status_created ON cms_media_assets(status, created_at DESC, id)").run();
       response = new Response(null, { status: 204, headers: { "cache-control": "no-store" } });
     }
     else if (url.pathname === "/_test/audit-count" && request.method === "GET" && env.TEST_MODE === "true") {
@@ -1346,6 +1494,7 @@ export default { async fetch(request, env) {
     else if (url.pathname.startsWith("/api/v1/admin/pages") || url.pathname.startsWith("/api/v1/admin/posts") || url.pathname.startsWith("/api/v1/admin/services")) response = await adminContent(request, env, url);
     else if (url.pathname.startsWith("/api/v1/me/orders") || url.pathname.startsWith("/api/v1/me/projects") || url.pathname.startsWith("/api/v1/me/tickets")) response = await customerProjectRoutes(request, env, url);
     else if (url.pathname.startsWith("/api/v1/admin/orders") || url.pathname.startsWith("/api/v1/admin/projects") || url.pathname.startsWith("/api/v1/admin/milestones") || url.pathname.startsWith("/api/v1/admin/tickets")) response = await adminProjectRoutes(request, env, url);
+    else if (url.pathname === "/api/v1/admin/media" || url.pathname.startsWith("/api/v1/admin/media/")) response = await adminMedia(request, env, url);
     else if (url.pathname === "/api/v1/admin/templates" || url.pathname.startsWith("/api/v1/admin/templates/")) response = await adminTemplates(request, env, url);
     else if (url.pathname === "/api/v1/me" || url.pathname.startsWith("/api/v1/me/") || url.pathname === "/api/v1/admin/staff" || url.pathname === "/api/v1/admin/customers" || url.pathname.startsWith("/api/v1/admin/customers/") || url.pathname === "/api/v1/admin/quotes" || url.pathname.startsWith("/api/v1/admin/quotes/") || url.pathname.startsWith("/api/v1/admin/leads/")) response = await identityRoutes(request, env, url) || json({ error: { code: "NOT_FOUND", message: "Không tìm thấy tài nguyên." } }, 404);
     else if (url.pathname.startsWith("/api/v1/public/")) response = await publicContent(request, env, url) || json({ error: { code: "NOT_FOUND", message: "Không tìm thấy tài nguyên." } }, 404);

@@ -14,3 +14,8 @@ binding = "DB"
 database_name = "hoiquanweb-auth-test"
 database_id = "00000000-0000-0000-0000-000000000001"
 migrations_dir = "migrations"
+
+[[r2_buckets]]
+binding = "MEDIA_BUCKET"
+bucket_name = "hoiquanweb-media-test"
+preview_bucket_name = "hoiquanweb-media-test-preview"

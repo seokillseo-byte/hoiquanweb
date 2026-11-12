@@ -233,7 +233,7 @@ test("customer portal isolates customers and quotes; admin access requires a ser
 
   const quotesA = await getFor("/api/v1/me/quotes", userA.cookie);
   assert.equal(quotesA.status, 200, await quotesA.clone().text());
-  assert.deepEqual((await quotesA.json()).data.map(item => item.quote_number), ["TEST-A"]);
+  assert.deepEqual((await quotesA.json()).data.map(item => item.quote_number).sort(), ["TEST-A", "TEST-EXPIRED"]);
 
   const quotesB = await getFor("/api/v1/me/quotes", userB.cookie);
   assert.equal(quotesB.status, 200, await quotesB.clone().text());

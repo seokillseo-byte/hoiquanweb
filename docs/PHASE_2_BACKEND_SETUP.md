@@ -1,11 +1,13 @@
-# Phase 2 — Lead API, ước tính chi phí và CRM tối thiểu
+# Backend, CMS, CRM và Customer Portal — Deployment Runbook
 
 ## Kiến trúc
 - Website tĩnh production tiếp tục deploy bằng GitHub Pages từ `main`; PR preview được đóng gói thành GitHub Actions artifact riêng, không ghi đè website production.
 - API chạy riêng trên Cloudflare Workers; lead lưu trong Cloudflare D1.
 - Email thông báo tùy chọn qua Resend. Lỗi gửi email không làm mất lead đã lưu.
 - Lịch tư vấn trả về từ GET /api/booking; chưa có nhà cung cấp lịch mặc định nên trả 503 cho đến khi cấu hình.
-- API có allowlist CORS, validation, honeypot, rate limit cơ bản theo IP hash, security headers và consent timestamp. Endpoint quản trị lead dùng Better Auth session và vai trò admin/staff được cấp từ phía máy chủ.
+- API có allowlist CORS, validation, honeypot, rate limit cơ bản theo IP hash, security headers và consent timestamp. Endpoint quản trị yêu cầu Better Auth session và vai trò admin/staff được cấp từ phía máy chủ.
+- Better Auth dùng cookie HttpOnly, Secure, SameSite=Lax; production frontend/API phải ở cùng site tin cậy để tránh third-party cookies.
+- D1 migrations hiện gồm 0001 đến 0007: lead, CMS, CRM/quotes/identity, revisions, template metadata, orders/projects/milestones/comments/tickets.
 
 ## Endpoints
 
@@ -21,42 +23,31 @@
 Trạng thái CRM: new, contacted, qualified, proposal_sent, won, lost, spam.
 
 ## Kiểm tra tự động
-Workflow .github/workflows/validate.yml chạy kiểm tra cú pháp JavaScript, cấu trúc HTML/anchor và migration SQL khi push hoặc mở pull request. Workflow Pages chỉ publish các tệp public website (index.html, privacy.html, admin.html, 404.html, robots.txt, sitemap.xml), không đưa thư mục backend và tài liệu triển khai vào artifact website.
+Workflow validate.yml chạy validator, API boundary tests, Better Auth + D1 integration tests, typecheck/build và public-site validation. Workflow Pages copy public site cùng admin.html và portal.html; không đưa backend và tài liệu triển khai vào artifact.
 
 ## Triển khai lần đầu
 1. Tạo tài khoản Cloudflare và D1 database tên hoiquanweb-production.
 2. Trong thư mục backend, chạy npx wrangler d1 create hoiquanweb-production.
 3. Thay database_id trong wrangler.toml bằng ID thực Cloudflare trả về.
-4. Chạy migration: npx wrangler d1 migrations apply hoiquanweb-production --remote.
+4. Tạo database staging riêng cho lần thử đầu; kiểm tra backup/ID rồi chạy migrations: npx wrangler d1 migrations apply hoiquanweb-production --remote.
 5. Chạy local: npx wrangler dev; kiểm tra /api/health trên URL local của Wrangler.
-6. Nếu cần email, cấu hình RESEND_API_KEY và NOTIFICATION_EMAIL. Không cần ADMIN_TOKEN cho endpoint quản trị lead trong phiên bản này.
-7. Đặt ALLOWED_ORIGINS thành origin chính xác. Với GitHub Pages hiện tại là https://seokillseo-byte.github.io; khi có domain riêng hãy cập nhật origin production.
+6. Cấu hình AUTH_BASE_URL bằng origin API thực tế, ALLOWED_ORIGINS bằng origin frontend được phép; dùng wrangler secret put cho secrets. Nếu cần email, cấu hình RESEND_API_KEY và NOTIFICATION_EMAIL. ADMIN_TOKEN không cấp quyền cho endpoint identity-protected.
+7. Không coi GitHub Pages + workers.dev là cấu hình auth production. Chọn custom domain cùng site trước khi mở login thật; CORS allowlist phải khớp chính xác frontend origin.
 8. Deploy API bằng npx wrangler deploy và lưu URL Worker thực tế.
-9. Cập nhật meta[name="hq-api-base"] trong index.html thành URL Worker (không có dấu / cuối), rồi commit để GitHub Pages triển khai website.
+9. Đặt GitHub repository variable HQ_API_BASE thành URL Worker (không có dấu / cuối); generator nhúng biến vào public pages. Không hardcode API URL hoặc secrets trong source.
 10. Kiểm tra health, gửi brief thử, dữ liệu D1, email, rate limit và CORS.
 
-## Identity authorization foundation (PR #9 — prototype only)
+## Identity, CRM membership và customer portal
 
-Migration `0004_identity_authorization.sql` adds `app_user_roles` and `crm_customer_members`. The Worker exposes:
-- `GET /api/v1/me`: authenticated identity and server-assigned roles.
-- `GET /api/v1/me/customers`: active customers linked to the authenticated user only.
-- `GET /api/v1/me/quotes`: non-draft quotes scoped through that user's customer memberships.
-- `GET /api/v1/admin/customers`: customer list for users with the server-assigned `admin` or `staff` role.
+- Better Auth email/password được cấu hình trong backend/src/better-auth.js; password tối thiểu 12 ký tự, session cookie HttpOnly + Secure + SameSite=Lax và database-backed rate limits cho sign-in/sign-up/password recovery.
+- Migration 0004 tạo app_user_roles và crm_customer_members. Public sign-up không thể tự cấp role admin/staff hoặc customer membership.
+- GET /api/v1/me trả identity và server-assigned roles; GET /api/v1/me/customers chỉ trả hồ sơ có membership.
+- Admin/staff quản lý liên kết tại GET/POST /api/v1/admin/customers/:id/members. Tài khoản phải đăng ký trước; endpoint tìm Better Auth user theo email đã chuẩn hóa, upsert owner/member/billing và ghi audit event. Email không có tài khoản trả 404.
+- Role admin/staff vẫn phải được gán qua quy trình vận hành được kiểm soát; không có public self-service role assignment.
+- Customer portal portal.html có quote, order, project/milestone/comment và support ticket. Dữ liệu riêng tư được lọc bằng crm_customer_members; message responses không trả user ID nội bộ.
+- Admin admin.html có CRM, quote, CMS, template, order, project/milestone và support ticket management.
 
-Public sign-up does not write to `app_user_roles`. Role assignments are intentionally not self-service; an authorized operator must assign them through a controlled database operation after verifying the user's Better Auth ID. Example for a separately reviewed operator session (replace placeholders; do not put personal data or credentials in source control):
-
-```sql
-INSERT INTO app_user_roles (user_id, role, assigned_by, assigned_at)
-VALUES ('<verified-better-auth-user-id>', 'admin', '<operator-id>', '<UTC-ISO-8601-timestamp>');
-```
-
-To link a customer account, verify both identities and create a membership:
-```sql
-INSERT INTO crm_customer_members (customer_id, user_id, membership_role, created_at)
-VALUES ('<verified-crm-customer-id>', '<verified-better-auth-user-id>', 'owner', '<UTC-ISO-8601-timestamp>');
-```
-
-Do not run these statements against production until the account/database has been explicitly verified and a backup/rollback plan exists. Automated local Worker/D1 integration tests now exercise two distinct customer identities, customer and quote isolation, no-membership behavior, and server-assigned admin-role enforcement. Remaining acceptance work includes role-assignment auditability, verified account recovery/email verification, and staging validation. Legacy `GET/PATCH /api/admin/leads` is also protected by Better Auth session plus server-assigned `admin`/`staff` roles; the legacy shared `ADMIN_TOKEN` no longer authorizes lead management. Do not treat these endpoints as production accepted until staging/browser acceptance is complete.
+Các endpoint đã có integration tests local với Wrangler D1; đây không thay thế staging/browser E2E. Không chạy SQL gán role trực tiếp trên production khi chưa có xác minh tài khoản, backup và rollback.
 
 ## Email và lịch tư vấn
 Tạo sender đã xác minh ở Resend và đặt EMAIL_FROM thành sender đó. Giá trị mặc định onboarding@resend.dev chỉ phù hợp thử nghiệm theo giới hạn của nhà cung cấp. Booking chưa được xem là hoạt động cho đến khi có URL nhà cung cấp lịch đã xác minh.
@@ -65,7 +56,7 @@ Tạo sender đã xác minh ở Resend và đặt EMAIL_FROM thành sender đó.
 POST /api/estimate nhận JSON gồm pages, complexity (simple/standard/advanced), integrations và trả khoảng min/max VND kèm disclaimer. Quy tắc hiện tại là mức tham khảo kỹ thuật; chủ doanh nghiệp cần xác nhận hoặc điều chỉnh trước khi dùng công khai.
 
 ## Quản trị CRM
-Trang admin.html cung cấp giao diện tối giản để xem tối đa 100 lead gần nhất và đổi trạng thái. Trang được đánh dấu noindex; URL không phải cơ chế bảo mật. Người quản trị đăng nhập bằng Better Auth và phải có vai trò admin/staff được cấp từ phía máy chủ. Phiên dùng cookie và yêu cầu CORS/credentials được cấu hình đúng cho origin quản trị. Vai trò được gán ngoài luồng; không cho phép tự đăng ký thành admin. Lưu ý: do session cookie là thông tin xác thực, nên host trang quản trị và API trên cùng site đáng tin cậy (ví dụ cùng custom domain) trước khi sử dụng thật; GitHub Pages và workers.dev là hai site khác nhau và có thể bị chặn cookie bên thứ ba. Chưa coi giao diện hiện tại là staging/production accepted cho đến khi xác minh cookie/CORS trên origin thực.
+Trang admin.html cung cấp quản lý lead, CRM, quote, CMS, template, orders, projects/milestones và tickets. Trang portal.html dành cho customer. Trang được đánh dấu noindex; URL không phải cơ chế bảo mật. Người quản trị đăng nhập bằng Better Auth và phải có vai trò admin/staff được cấp từ phía máy chủ. Phiên dùng cookie và yêu cầu CORS/credentials được cấu hình đúng cho origin quản trị. Vai trò được gán ngoài luồng; không cho phép tự đăng ký thành admin. Lưu ý: do session cookie là thông tin xác thực, nên host trang quản trị và API trên cùng site đáng tin cậy (ví dụ cùng custom domain) trước khi sử dụng thật; GitHub Pages và workers.dev là hai site khác nhau và có thể bị chặn cookie bên thứ ba. Chưa coi giao diện hiện tại là staging/production accepted cho đến khi xác minh cookie/CORS trên origin thực.
 
 ## Quyền riêng tư và production gate
 - Chỉ thu thập trường cần cho tư vấn; consent phải rõ ràng và có timestamp.

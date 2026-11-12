@@ -205,6 +205,9 @@ Notifications are created for customer-visible project status/milestone changes 
 Dashboard values are calculated from D1 on each request; they are not hard-coded or cached as synthetic values. KPIs cover total/new leads, active customers, quote states, active orders/projects, overdue projects and open/urgent tickets. Recent activity exposes only action/resource identifiers/timestamps and never raw audit metadata or message bodies. Metrics are operational summaries, not financial accounting or revenue-recognition reports.
 
 
+Lead submission returns notification state queued when the durable email outbox is available, or not_configured when provider credentials/sender settings are absent. This field does not claim that an email has already been delivered; delivery status is tracked by the server-side outbox.
+
+
 Membership revocation is audited as customer.member.unlinked. Project, milestone and ticket updates record safe before/after values for status, priority, title and dates; free-text descriptions and message bodies are not copied into audit metadata.
 
 Role-level access boundaries are summarized in [AUTHORIZATION_MATRIX.md](AUTHORIZATION_MATRIX.md); the matrix is a source/test contract, not production runtime acceptance.

@@ -742,6 +742,82 @@ test("CMS posts persist taxonomy, publish into public blog feeds and keep drafts
   assert.deepEqual(detailPost.tags, ["technical seo", "content"]);
 });
 
+test("CMS media uploads validate image signatures, remain private until Admin publication, and archive cleanly", async () => {
+  const admin = await createSignedInUser("Media Admin");
+  const customer = await createSignedInUser("Media Customer");
+  const seed = await authRequest("/_test/seed-identity", {
+    userA: customer.id,
+    userB: "media-no-membership-user",
+    adminUser: admin.id
+  });
+  assert.equal(seed.status, 200, await seed.clone().text());
+
+  const bytes = new Uint8Array([137,80,78,71,13,10,26,10,0,0,0,0]);
+  const form = new FormData();
+  form.set("file", new Blob([bytes], { type: "image/png" }), "brand-mark.png");
+  form.set("alt_text", "HoiQuanWeb brand mark");
+  const upload = await server.fetch(origin + "/api/v1/admin/media", {
+    method: "POST",
+    headers: { origin, cookie: admin.cookie },
+    body: form
+  });
+  assert.equal(upload.status, 201, await upload.clone().text());
+  const asset = (await upload.json()).data;
+  assert.equal(asset.status, "draft");
+  assert.equal(asset.content_type, "image/png");
+  assert.equal(asset.size_bytes, bytes.byteLength);
+  assert.equal(asset.public_url, null);
+
+  const customerList = await server.fetch(origin + "/api/v1/admin/media", { headers: { origin, cookie: customer.cookie } });
+  assert.equal(customerList.status, 403, "customer accounts cannot access the CMS media library");
+
+  const hidden = await server.fetch(origin + "/api/v1/public/media/" + asset.id, { headers: { origin } });
+  assert.equal(hidden.status, 404, "draft media must not be publicly retrievable");
+
+  const preview = await server.fetch(origin + "/api/v1/admin/media/" + asset.id + "/file", { headers: { origin, cookie: admin.cookie } });
+  assert.equal(preview.status, 200, await preview.clone().text());
+  assert.equal(preview.headers.get("content-type"), "image/png");
+  assert.deepEqual(new Uint8Array(await preview.arrayBuffer()), bytes);
+
+  const altUpdate = await server.fetch(origin + "/api/v1/admin/media/" + asset.id, {
+    method: "PATCH",
+    headers: { origin, cookie: admin.cookie, "content-type": "application/json" },
+    body: JSON.stringify({ alt_text: "Updated accessible description" })
+  });
+  assert.equal(altUpdate.status, 200, await altUpdate.clone().text());
+  assert.equal((await altUpdate.json()).data.alt_text, "Updated accessible description");
+
+  const customerPublish = await server.fetch(origin + "/api/v1/admin/media/" + asset.id + "/publish", {
+    method: "POST", headers: { origin, cookie: customer.cookie }
+  });
+  assert.equal(customerPublish.status, 403, "customers cannot publish media");
+
+  const publish = await server.fetch(origin + "/api/v1/admin/media/" + asset.id + "/publish", {
+    method: "POST", headers: { origin, cookie: admin.cookie }
+  });
+  assert.equal(publish.status, 200, await publish.clone().text());
+  assert.equal((await publish.json()).data.public_url, "/api/v1/public/media/" + asset.id);
+
+  const publicAsset = await server.fetch(origin + "/api/v1/public/media/" + asset.id, { headers: { origin } });
+  assert.equal(publicAsset.status, 200, await publicAsset.clone().text());
+  assert.equal(publicAsset.headers.get("x-content-type-options"), "nosniff");
+  assert.deepEqual(new Uint8Array(await publicAsset.arrayBuffer()), bytes);
+
+  const invalidForm = new FormData();
+  invalidForm.set("file", new Blob(["not a PNG"], { type: "image/png" }), "spoofed.png");
+  const invalid = await server.fetch(origin + "/api/v1/admin/media", {
+    method: "POST", headers: { origin, cookie: admin.cookie }, body: invalidForm
+  });
+  assert.equal(invalid.status, 400, "declared MIME type must match the actual image signature");
+
+  const archive = await server.fetch(origin + "/api/v1/admin/media/" + asset.id + "/archive", {
+    method: "POST", headers: { origin, cookie: admin.cookie }
+  });
+  assert.equal(archive.status, 200, await archive.clone().text());
+  const hiddenAfterArchive = await server.fetch(origin + "/api/v1/public/media/" + asset.id, { headers: { origin } });
+  assert.equal(hiddenAfterArchive.status, 404, "archived media must stop being publicly retrievable");
+});
+
 test("template catalog requires admin/staff access and verified previews/licenses before publication", async () => {
   const admin = await createSignedInUser("Template Admin");
   const ordinary = await createSignedInUser("Template Ordinary User");

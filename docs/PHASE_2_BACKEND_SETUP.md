@@ -7,7 +7,7 @@
 - Lịch tư vấn trả về từ GET /api/booking; chưa có nhà cung cấp lịch mặc định nên trả 503 cho đến khi cấu hình.
 - API có allowlist CORS, validation, honeypot, rate limit cơ bản theo IP hash, security headers và consent timestamp. Endpoint quản trị yêu cầu Better Auth session và vai trò admin/staff được cấp từ phía máy chủ.
 - Better Auth dùng cookie HttpOnly, Secure, SameSite=Lax; production frontend/API phải ở cùng site tin cậy để tránh third-party cookies.
-- D1 migrations hiện gồm 0001 đến 0009: lead, CMS, CRM/quotes/identity, revisions, template metadata, orders/projects/milestones/comments/tickets, lead assignment và blog post category/tags.
+- D1 migrations hiện gồm 0001 đến 0010: lead, CMS, CRM/quotes/identity, revisions, template metadata, orders/projects/milestones/comments/tickets, lead assignment, blog post category/tags và CMS media metadata.
 
 ## Endpoints
 
@@ -45,7 +45,8 @@ Workflow validate.yml chạy validator, API boundary tests, Better Auth + D1 int
 - Admin/staff quản lý liên kết tại GET/POST /api/v1/admin/customers/:id/members. Tài khoản phải đăng ký trước; endpoint tìm Better Auth user theo email đã chuẩn hóa, upsert owner/member/billing và ghi audit event. Email không có tài khoản trả 404.
 - Role admin/staff vẫn phải được gán qua quy trình vận hành được kiểm soát; không có public self-service role assignment.
 - Customer portal portal.html có quote, order, project/milestone/comment và support ticket. Dữ liệu riêng tư được lọc bằng crm_customer_members; message responses không trả user ID nội bộ.
-- Admin admin.html có CRM, quote, CMS, template, order, project/milestone và support ticket management.
+- Admin admin.html có CRM, quote, CMS, template, media library, order, project/milestone và support ticket management.
+- CMS media library upload ảnh PNG/JPEG/GIF/WebP tối đa 5 MiB, lưu R2 ở chế độ private, hỗ trợ alt text, preview có xác thực, Admin publish/archive; public route chỉ stream asset đã published.
 
 Các endpoint đã có integration tests local với Wrangler D1; đây không thay thế staging/browser E2E. Không chạy SQL gán role trực tiếp trên production khi chưa có xác minh tài khoản, backup và rollback.
 
@@ -107,3 +108,16 @@ Không dùng workflow GitHub Pages production để preview PR vì workflow Page
 
 
 Staging-specific runbook and isolated config template: [CLOUDFLARE_STAGING_RUNBOOK.md](CLOUDFLARE_STAGING_RUNBOOK.md) and [wrangler.staging.example.toml](../backend/wrangler.staging.example.toml). The local `backend/wrangler.staging.toml` is intentionally gitignored.
+
+
+## CMS media và Cloudflare R2
+
+- Tạo bucket riêng cho staging và production; không bật public bucket access. Tên mặc định trong cấu hình: hoiquanweb-media-staging và hoiquanweb-media.
+- Lệnh tạo bucket (chạy bằng tài khoản Cloudflare của chủ dự án):
+  - `npx wrangler r2 bucket create hoiquanweb-media-staging`
+  - `npx wrangler r2 bucket create hoiquanweb-media`
+- Binding `MEDIA_BUCKET` được khai báo trong wrangler.toml, wrangler.staging.example.toml và wrangler.test.toml. Local integration test dùng R2 simulator; production/staging phải có bucket thật đúng tên.
+- Migration `0010_cms_media_assets.sql` tạo metadata và index. Áp dụng trên D1 staging trước khi kiểm tra upload; chỉ áp dụng production sau backup và xác minh database ID.
+- Admin upload tạo asset draft. Chỉ Admin có thể publish/archive; public Worker chỉ stream ảnh published. Bucket object key không xuất hiện trong public response.
+- Không sử dụng CMS public media để lưu hợp đồng, hồ sơ khách hàng hoặc file dự án riêng tư. Những file đó cần endpoint riêng với customer membership/project authorization.
+- Không coi upload/preview local hoặc CI pass là bằng chứng R2 staging/production đã được cấu hình. Ghi lại bucket ID/tên, migration run và kiểm thử runtime trong checklist triển khai.

@@ -23,6 +23,9 @@ assert.ok(await exists(join(root, "en", "index.html")), "English homepage must e
 assert.ok(await exists(join(root, "assets", "css", "site.css")), "Generated CSS must exist");
 assert.ok(await exists(join(root, "assets", "js", "site.js")), "Generated JavaScript must exist");
 assert.ok(await exists(join(root, "portal.html")), "Customer portal page must be generated");
+for (const path of ["blog/index.html", "en/blog/index.html", "blog/post/index.html", "en/blog/post/index.html"]) {
+  assert.ok(await exists(join(root, path)), "Bilingual blog route must be generated: " + path);
+}
 
 const files = (await walk(root)).filter(path => path.endsWith(".html") && !path.endsWith("404.html") && relative(root, path).split(sep).join("/") !== "portal.html");
 assert.ok(files.length >= 30, "Expected a complete bilingual set of public pages");
@@ -116,6 +119,10 @@ assert.ok(css.includes("#155EEF") && css.includes("#0B1F3A") && css.includes("#3
 assert.ok(js.includes("/api/leads"), "Inquiry form must use the existing lead API when configured");
 assert.ok(js.includes("/api/v1/public/pages/"), "Public renderer must fetch published CMS pages when configured");
 assert.ok(js.includes("/api/v1/public/templates"), "Public template catalog must load published templates when configured");
+assert.ok(js.includes("/api/v1/public/posts"), "Public blog must load published posts when configured");
+assert.ok(js.includes("/api/v1/public/post-categories"), "Public blog must load published categories when configured");
+assert.ok(js.includes("data-blog-post"), "Public blog article renderer must be present");
+assert.ok(css.includes(".blog-card") && css.includes(".blog-article-header"), "Responsive blog styles must be generated");
 assert.ok(js.includes('credentials:"omit"'), "Public CMS reads must not send admin session cookies");
 assert.ok(!js.includes("innerHTML"), "Public CMS renderer must not inject stored content as HTML");
 assert.ok(js.includes("hoiquanweb-project-brief.txt"), "Unconfigured API must not report a false successful submission");

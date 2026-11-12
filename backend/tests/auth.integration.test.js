@@ -1308,7 +1308,7 @@ test("in-app notifications are generated for project and ticket events and isola
   const ticketEvents = (await ticketAudit.json()).data;
   const ticketUpdateEvent = ticketEvents.find(item => item.action === "ticket.updated");
   const ticketChanges = JSON.parse(ticketUpdateEvent.metadata_json).changes;
-  assert.deepEqual(ticketChanges.status, { from: "open", to: "in_progress" });
+  assert.deepEqual(ticketChanges.status, { from: "waiting_customer", to: "in_progress" });
   assert.deepEqual(ticketChanges.priority, { from: "normal", to: "high" });
 });
 

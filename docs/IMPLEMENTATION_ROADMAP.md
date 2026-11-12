@@ -6,7 +6,7 @@
 
 ## Baseline đã kiểm tra
 
-- Public website hiện là landing page tĩnh cùng các trang phụ; chưa có CMS nhiều trang hoàn chỉnh.
+- Public website đã có generator tĩnh song ngữ Việt/Anh với 34 trang nội dung, metadata theo trang, hreflang, canonical, sitemap và biểu mẫu tư vấn. CMS nhiều trang có persistence vẫn chưa được triển khai.
 - Có Worker scaffold và D1 migration cho lead, lead events và rate limiting.
 - `backend/wrangler.toml` vẫn chứa database ID placeholder; API base trên frontend hiện để trống.
 - Cổng khách hàng, xác thực/phân quyền, quản lý nội dung có persistence, kho template có dữ liệu thực, đơn hàng/dự án và quy trình xuất bản chưa được triển khai hoàn chỉnh.

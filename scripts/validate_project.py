@@ -76,7 +76,7 @@ admin_parser = MarkupCheck()
 admin_parser.feed(admin_html)
 if 'name="robots" content="noindex,nofollow"' not in admin_html:
     fail("admin page must be marked noindex")
-for required_admin_id in ["connectForm", "apiBase", "adminEmail", "adminPassword", "refreshButton", "leadRows", "memberForm", "memberList", "memberRefresh", "deliveryPanel", "adminOrders", "adminProjects", "adminTickets", "orderCreateForm", "projectCreateForm", "mediaPanel", "mediaUploadForm", "mediaFile", "mediaAlt", "mediaRows", "adminNotificationsCard", "adminNotifications", "adminNotificationCount", "adminNotificationRefresh", "adminNotificationReadAll"]:
+for required_admin_id in ["connectForm", "apiBase", "adminEmail", "adminPassword", "refreshButton", "dashboardPanel", "dashboardKpis", "dashboardLeadStatuses", "dashboardRecentLeads", "dashboardActivity", "dashboardRefresh", "leadRows", "memberForm", "memberList", "memberRefresh", "deliveryPanel", "adminOrders", "adminProjects", "adminTickets", "orderCreateForm", "projectCreateForm", "mediaPanel", "mediaUploadForm", "mediaFile", "mediaAlt", "mediaRows", "adminNotificationsCard", "adminNotifications", "adminNotificationCount", "adminNotificationRefresh", "adminNotificationReadAll"]:
     if required_admin_id not in admin_parser.ids:
         fail("required admin UI ID missing: " + required_admin_id)
 for fragment in admin_parser.fragments:
@@ -88,6 +88,8 @@ if 'accept="image/png,image/jpeg,image/gif,image/webp"' not in admin_html:
     fail("admin media upload must restrict the browser picker to supported image types")
 if "/api/v1/me/notifications" not in admin_html or "/api/v1/me/notifications" not in portal_html:
     fail("admin and customer portal must use the authenticated in-app notification API")
+if "/api/v1/admin/dashboard" not in admin_html:
+    fail("admin CRM dashboard must use the role-protected metrics API")
 if not parser.scripts or not any("briefForm" in chunk for script_type, chunk in parser.scripts if script_type in ("", "text/javascript", "application/javascript", "module")):
     fail("inline form handler not found")
 for fragment in parser.fragments:

@@ -1269,3 +1269,41 @@ test("in-app notifications are generated for project and ticket events and isola
   assert.equal((await getNotifications(admin.cookie).then(response => response.json())).meta.unread_count, 0);
 });
 
+
+
+test("CRM dashboard reports database-backed KPIs and requires staff/admin role", async () => {
+  const userA = await createSignedInUser("Dashboard Customer A");
+  const userB = await createSignedInUser("Dashboard Customer B");
+  const admin = await createSignedInUser("Dashboard Admin");
+  const ordinary = await createSignedInUser("Dashboard Ordinary");
+  const seed = await authRequest("/_test/seed-identity", { userA: userA.id, userB: userB.id, adminUser: admin.id });
+  assert.equal(seed.status, 200, await seed.clone().text());
+
+  const beforeResponse = await server.fetch(origin + "/api/v1/admin/dashboard", { headers: { origin, cookie: admin.cookie } });
+  assert.equal(beforeResponse.status, 200, await beforeResponse.clone().text());
+  const before = (await beforeResponse.json()).data;
+
+  const lead = await authRequest("/_test/seed-lead", {
+    id: "dashboard-lead-test",
+    name: "Dashboard Test Lead",
+    email: "dashboard-lead@example.test",
+    service: "Website Design",
+    status: "new"
+  });
+  assert.equal(lead.status, 201, await lead.clone().text());
+
+  const forbidden = await server.fetch(origin + "/api/v1/admin/dashboard", { headers: { origin, cookie: ordinary.cookie } });
+  assert.equal(forbidden.status, 403, "ordinary authenticated users cannot view the CRM dashboard");
+
+  const dashboard = await server.fetch(origin + "/api/v1/admin/dashboard", { headers: { origin, cookie: admin.cookie } });
+  assert.equal(dashboard.status, 200, await dashboard.clone().text());
+  const data = (await dashboard.json()).data;
+  assert.equal(data.kpis.total_leads, before.kpis.total_leads + 1, "dashboard lead KPI must reflect the newly inserted D1 row");
+  assert.equal(data.kpis.new_leads_7d, before.kpis.new_leads_7d + 1, "seven-day lead KPI must reflect the newly inserted D1 row");
+  const beforeNew = before.lead_statuses.find(item => item.status === "new")?.count || 0;
+  assert.equal(data.lead_statuses.find(item => item.status === "new")?.count, beforeNew + 1, "lead status breakdown must reflect the new row");
+  assert.equal(data.kpis.active_customers, before.kpis.active_customers, "creating a lead must not change active customer count");
+  assert.equal(data.recent_leads[0].id, "dashboard-lead-test");
+  assert.equal(Object.hasOwn(data.recent_activity[0] || {}, "metadata_json"), false, "dashboard must not expose raw audit metadata");
+});
+

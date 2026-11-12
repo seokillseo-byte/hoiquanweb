@@ -73,6 +73,12 @@ Never accept a client-provided customer ID as proof of ownership. Resolve member
 
 | Method | Route | Purpose | Access |
 |---|---|---|---|
+| GET | `/api/v1/admin/dashboard` | Read CRM KPI aggregates, lead status counts, recent leads and safe audit activity summaries | Admin or staff |
+
+## Admin/staff endpoints
+
+| Method | Route | Purpose | Access |
+|---|---|---|---|
 | GET/POST | `/api/v1/admin/pages` | List/create pages | Admin or staff; creates are drafts |
 | GET/PATCH/DELETE | `/api/v1/admin/pages/:id` | Read/update/archive page | Admin or staff for read/update; admin for archive |
 | POST | `/api/v1/admin/pages/:id/publish` | Publish a page and record a revision | Admin |
@@ -191,3 +197,8 @@ Project files are stored in the private R2 bucket under server-generated `projec
 ### In-app notifications
 
 Notifications are created for customer-visible project status/milestone changes and staff ticket replies, and for staff/admin when customers create tickets or post project/ticket messages. Payloads contain generic summaries and resource identifiers only; private comment/message bodies and other customer details are not copied into notifications. Every inbox query and read mutation is scoped by the authenticated `user_id`; cross-user read attempts return 404. This implementation is in-app only; Resend email delivery remains separately configurable and is not implied by an in-app notification.
+
+
+### CRM dashboard metrics
+
+Dashboard values are calculated from D1 on each request; they are not hard-coded or cached as synthetic values. KPIs cover total/new leads, active customers, quote states, active orders/projects, overdue projects and open/urgent tickets. Recent activity exposes only action/resource identifiers/timestamps and never raw audit metadata or message bodies. Metrics are operational summaries, not financial accounting or revenue-recognition reports.

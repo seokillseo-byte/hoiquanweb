@@ -585,6 +585,50 @@ async function notifySafely(env, recipientsPromise, notification) {
     console.error("Notification persistence failed", error?.message || "unknown");
   }
 }
+async function adminDashboardRoutes(request, env, url) {
+  if (url.pathname !== "/api/v1/admin/dashboard") return null;
+  if (request.method !== "GET") return json({ error: { code: "METHOD_NOT_ALLOWED", message: "Phương thức không được hỗ trợ." } }, 405, { allow: "GET" });
+  const principal = await authenticatedPrincipal(request, env);
+  if (principal.error) return principal.error;
+  if (!hasAnyRole(principal, ["admin", "staff"])) return json({ error: { code: "FORBIDDEN", message: "Bạn không có quyền xem CRM dashboard." } }, 403);
+
+  const [
+    leads, newLeads, customers, draftQuotes, sentQuotes, acceptedQuotes,
+    activeOrders, activeProjects, overdueProjects, openTickets, urgentTickets,
+    leadStatuses, recentLeads, recentActivity
+  ] = await Promise.all([
+    env.DB.prepare("SELECT COUNT(*) AS count FROM leads").first(),
+    env.DB.prepare("SELECT COUNT(*) AS count FROM leads WHERE julianday(created_at) >= julianday('now','-7 days')").first(),
+    env.DB.prepare("SELECT COUNT(*) AS count FROM crm_customers WHERE status = 'active'").first(),
+    env.DB.prepare("SELECT COUNT(*) AS count FROM crm_quotes WHERE status = 'draft'").first(),
+    env.DB.prepare("SELECT COUNT(*) AS count FROM crm_quotes WHERE status = 'sent'").first(),
+    env.DB.prepare("SELECT COUNT(*) AS count FROM crm_quotes WHERE status = 'accepted'").first(),
+    env.DB.prepare("SELECT COUNT(*) AS count FROM crm_orders WHERE status NOT IN ('cancelled','completed')").first(),
+    env.DB.prepare("SELECT COUNT(*) AS count FROM crm_projects WHERE status IN ('planning','in_progress','review','on_hold')").first(),
+    env.DB.prepare("SELECT COUNT(*) AS count FROM crm_projects WHERE due_date IS NOT NULL AND due_date < date('now') AND status NOT IN ('completed','cancelled')").first(),
+    env.DB.prepare("SELECT COUNT(*) AS count FROM crm_tickets WHERE status IN ('open','in_progress','waiting_customer')").first(),
+    env.DB.prepare("SELECT COUNT(*) AS count FROM crm_tickets WHERE priority = 'urgent' AND status NOT IN ('resolved','closed')").first(),
+    env.DB.prepare("SELECT status, COUNT(*) AS count FROM leads GROUP BY status ORDER BY status").all(),
+    env.DB.prepare("SELECT id, name, service, status, created_at FROM leads ORDER BY created_at DESC, id DESC LIMIT 6").all(),
+    env.DB.prepare("SELECT action, resource_type, resource_id, created_at FROM crm_audit_events ORDER BY created_at DESC, id DESC LIMIT 10").all()
+  ]);
+  const count = row => Number(row?.count || 0);
+  return json({
+    data: {
+      kpis: {
+        total_leads: count(leads), new_leads_7d: count(newLeads), active_customers: count(customers),
+        draft_quotes: count(draftQuotes), sent_quotes: count(sentQuotes), accepted_quotes: count(acceptedQuotes),
+        active_orders: count(activeOrders), active_projects: count(activeProjects), overdue_projects: count(overdueProjects),
+        open_tickets: count(openTickets), urgent_tickets: count(urgentTickets)
+      },
+      lead_statuses: leadStatuses.results || [],
+      recent_leads: recentLeads.results || [],
+      recent_activity: recentActivity.results || []
+    },
+    meta: { generated_at: new Date().toISOString(), source: "crm_d1" }
+  });
+}
+
 async function notificationRoutes(request, env, url) {
   if (!url.pathname.startsWith("/api/v1/me/notifications")) return null;
   const principal = await authenticatedPrincipal(request, env);
@@ -1726,6 +1770,7 @@ export default { async fetch(request, env) {
     else if (url.pathname === "/api/health" && request.method === "GET") response = json({ ok: true, service: "hoiquanweb-api", version: "phase-2" });
     else if (url.pathname.startsWith("/api/v1/admin/pages") || url.pathname.startsWith("/api/v1/admin/posts") || url.pathname.startsWith("/api/v1/admin/services")) response = await adminContent(request, env, url);
     else if (url.pathname.startsWith("/api/v1/me/orders") || url.pathname.startsWith("/api/v1/me/projects") || url.pathname.startsWith("/api/v1/me/tickets")) response = await customerProjectRoutes(request, env, url);
+    else if (url.pathname === "/api/v1/admin/dashboard") response = await adminDashboardRoutes(request, env, url);
     else if (url.pathname.startsWith("/api/v1/me/notifications")) response = await notificationRoutes(request, env, url);
     else if (url.pathname.startsWith("/api/v1/admin/orders") || url.pathname.startsWith("/api/v1/admin/projects") || url.pathname.startsWith("/api/v1/admin/milestones") || url.pathname.startsWith("/api/v1/admin/tickets")) response = await adminProjectRoutes(request, env, url);
     else if (url.pathname === "/api/v1/admin/media" || url.pathname.startsWith("/api/v1/admin/media/")) response = await adminMedia(request, env, url);

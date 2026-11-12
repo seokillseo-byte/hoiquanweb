@@ -2,7 +2,7 @@
 
 Hội Quán Web được định hướng thành nền tảng vận hành công ty thiết kế website: website dịch vụ nhiều trang, CMS riêng, kho mẫu WordPress + HTML/CSS, quản trị kinh doanh và cổng khách hàng.
 
-**Tình trạng hiện tại:** repository vẫn chủ yếu là frontend tĩnh và backend scaffold. CMS, template marketplace có dữ liệu thật, xác thực/phân quyền và cổng khách hàng chưa được triển khai hoặc nghiệm thu production. Không coi CI xanh là bằng chứng các chức năng này đang chạy.
+**Tình trạng hiện tại:** website công khai song ngữ đã có bộ sinh trang tĩnh gồm 34 trang nội dung, SEO metadata, sitemap và biểu mẫu tư vấn có chế độ dự phòng. Worker/D1, Better Auth, phân quyền và các kiểm thử tích hợp đã có mã nguồn nền tảng; tuy nhiên chưa được cấu hình và nghiệm thu trên Cloudflare staging/production. CMS có persistence, template marketplace có dữ liệu thật và customer portal chưa hoàn thiện. Không coi CI xanh là bằng chứng các chức năng backend đang chạy thực tế.
 
 ## Tài liệu dự án
 

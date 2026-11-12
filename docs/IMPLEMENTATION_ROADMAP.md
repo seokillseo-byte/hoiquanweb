@@ -6,10 +6,10 @@
 
 ## Baseline đã kiểm tra
 
-- Public website đã có generator tĩnh song ngữ Việt/Anh với 34 trang nội dung, metadata theo trang, hreflang, canonical, sitemap và biểu mẫu tư vấn. CMS nhiều trang có persistence vẫn chưa được triển khai.
+- Public website đã có generator tĩnh song ngữ Việt/Anh với 34 trang nội dung, metadata theo trang, hreflang, canonical, sitemap và biểu mẫu tư vấn. CMS pages/posts/services có admin UI + API, draft-first workflow và revision history đã có mã nguồn; public renderer chưa lấy nội dung động từ CMS.
 - Có Worker scaffold và D1 migration cho lead, lead events và rate limiting.
 - `backend/wrangler.toml` vẫn chứa database ID placeholder; API base trên frontend hiện để trống.
-- Cổng khách hàng, xác thực/phân quyền, quản lý nội dung có persistence, kho template có dữ liệu thực, đơn hàng/dự án và quy trình xuất bản chưa được triển khai hoàn chỉnh.
+- Better Auth và role checks có integration tests; CMS API/UI cho pages/posts/services có kiểm thử. D1 migrations chưa deploy; public CMS rendering, media library, template marketplace có dữ liệu thực, customer portal đầy đủ, đơn hàng/dự án và các tích hợp production chưa hoàn thiện.
 - GitHub Pages chỉ deploy frontend tĩnh. Backend Cloudflare và database cần cấu hình/deploy riêng.
 - Vì vậy Phase 2 trước đây không được coi là production-ready; roadmap này thay thế thứ tự ưu tiên cũ.
 
@@ -27,7 +27,7 @@
 
 Mục tiêu: dựng nền tảng có thể mở rộng, không chỉ thêm HTML tĩnh.
 
-**Đã thực hiện trên nhánh feature (chưa merge):** thêm khung Vite + React + TypeScript riêng trong `frontend/`, scripts `npm run typecheck`/`npm run build`, CI chạy validator + typecheck + build, và tài liệu API contract. Đây chỉ là application shell; chưa có đăng nhập, persistence CMS hay customer portal hoạt động. CI đã xanh tại [run #25](https://github.com/seokillseo-byte/hoiquanweb/actions/runs/40677460814).
+**Đã merge vào `main`:** frontend Vite + React + TypeScript shell, Better Auth email/password, role checks phía server, Worker/D1 schema nền, CRM identity/customer read APIs, CMS pages/posts/services API và admin UI. CI hiện kiểm tra public API, Better Auth integration, typecheck/build và public-site validation. Backend vẫn chưa được deploy lên Cloudflare staging/production.
 
 - Thiết lập cấu trúc frontend có routing, layout chung, design system và môi trường local/test/staging.
 - Chọn và cấu hình xác thực/session an toàn; phân quyền admin, staff và customer ở backend.
@@ -38,7 +38,8 @@ Mục tiêu: dựng nền tảng có thể mở rộng, không chỉ thêm HTML 
 
 **Acceptance gates**
 - [x] Validator hiện có, typecheck và production build của frontend chạy thành công trong CI.
-- [ ] Bổ sung unit/integration tests cho API và các domain services.
+- [x] Bổ sung integration tests cho public content API, Better Auth, role checks, customer isolation và CMS publication lifecycle.
+- [ ] Bổ sung unit/integration tests cho các domain services còn lại.
 - [ ] Migration được chạy trên môi trường test sạch và có hướng rollback.
 - [ ] Backend kiểm tra quyền trên từng API; test xác nhận user không thể đọc dữ liệu của user khác.
 - [ ] Không có secret trong source/frontend/logs.
@@ -47,13 +48,14 @@ Mục tiêu: dựng nền tảng có thể mở rộng, không chỉ thêm HTML 
 ## Phase 2 — Website dịch vụ nhiều trang + CMS nội dung
 
 - Các trang riêng: home, giới thiệu, dịch vụ, trang dịch vụ chi tiết, giải pháp theo ngành, portfolio/case study, bảng giá, blog/kiến thức, FAQ, liên hệ và pháp lý.
-- CMS cho pages, posts, categories/tags, navigation, footer, reusable content blocks, media, metadata SEO, revisions, draft/preview/publish/unpublish.
+- CMS cho pages/posts/services có draft, edit, publish/archive và revision snapshots đã có API/UI. Còn thiếu categories/tags, navigation/footer, reusable block library, media, scheduling, revision restore và tích hợp public renderer.
 - Nội dung công khai được đọc từ API/database; có fallback lỗi rõ ràng, không âm thầm hiển thị dữ liệu giả.
 - Sitemap và canonical phản ánh các URL thực; metadata và structured data chỉ dùng thông tin đã xác minh.
 - Chuyển các section hiện tại thành nội dung/khối tái sử dụng khi phù hợp, tránh viết lại không cần thiết.
 
 **Acceptance gates**
-- [ ] Admin tạo/sửa/xem trước/xuất bản nội dung và nội dung được lưu qua reload.
+- [x] Admin/staff tạo và sửa bản nháp; Admin xuất bản/lưu trữ; dữ liệu được lưu qua API/D1 schema và có integration tests.
+- [ ] CMS content được nối vào public renderer để thay đổi đã xuất bản tự phản ánh trên website.
 - [ ] Public routes hoạt động trực tiếp khi mở URL, gồm refresh và 404.
 - [ ] Test quyền xuất bản, XSS-safe rendering, validation, media upload và revision/restore.
 - [ ] Kiểm tra link, SEO metadata, sitemap, accessibility, mobile, Lighthouse và lỗi API.
@@ -89,7 +91,7 @@ Mục tiêu: dựng nền tảng có thể mở rộng, không chỉ thêm HTML 
 
 ## Phase 5 — CRM và vận hành kinh doanh
 
-**Đã bắt đầu trên nhánh feature (chưa merge):** migration `0003_crm_foundation.sql` bổ sung bảng khách hàng CRM, timeline hoạt động, báo giá, dòng báo giá và audit events; validator kiểm tra schema/foreign keys/ràng buộc tính tổng. Đây mới là nền dữ liệu, chưa có API CRM bảo vệ bằng tài khoản người dùng và chưa deploy production.
+**Đã merge vào `main`:** migration `0003_crm_foundation.sql` bổ sung bảng khách hàng CRM, timeline hoạt động, báo giá, dòng báo giá và audit events; validator kiểm tra schema/foreign keys/ràng buộc tính tổng. Identity/customer read APIs đã có; CRM pipeline, activities, quote management UI/API đầy đủ vẫn chưa hoàn thiện và chưa deploy production.
 
 - Lead pipeline, nguồn lead, lịch sử liên hệ, assignment, khách hàng, báo giá theo hạng mục, đơn hàng, hợp đồng/tài liệu, dự án, tasks, milestone và ticket hỗ trợ.
 - Thông báo email khi provider và sender được cấu hình; lỗi gửi thông báo không làm mất giao dịch đã lưu.

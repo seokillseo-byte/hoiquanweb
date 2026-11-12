@@ -412,6 +412,279 @@ async function identityRoutes(request, env, url) {
   return null;
 }
 
+function validDateOnly(value) {
+  if (value == null || value === "") return true;
+  if (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+  const parsed = Date.parse(value + "T00:00:00Z");
+  return Number.isFinite(parsed) && new Date(parsed).toISOString().slice(0, 10) === value;
+}
+async function customerProjectRoutes(request, env, url) {
+  const path = url.pathname;
+  if (!path.startsWith("/api/v1/me/orders") && !path.startsWith("/api/v1/me/projects") && !path.startsWith("/api/v1/me/tickets")) return null;
+  const principal = await authenticatedPrincipal(request, env);
+  if (principal.error) return principal.error;
+  if (path === "/api/v1/me/orders" && request.method === "GET") {
+    const result = await env.DB.prepare(
+      "SELECT o.id, o.customer_id, o.order_number, o.status, o.currency, o.total_minor, o.created_at, o.updated_at FROM crm_orders o INNER JOIN crm_customer_members m ON m.customer_id = o.customer_id WHERE m.user_id = ? ORDER BY o.created_at DESC LIMIT 100"
+    ).bind(principal.user.id).all();
+    return json({ data: result.results || [] });
+  }
+  if (path === "/api/v1/me/projects" && request.method === "GET") {
+    const result = await env.DB.prepare(
+      "SELECT p.id, p.customer_id, p.order_id, p.name, p.description, p.status, p.start_date, p.due_date, p.created_at, p.updated_at, (SELECT COUNT(*) FROM crm_project_milestones ms WHERE ms.project_id = p.id) AS milestone_count FROM crm_projects p INNER JOIN crm_customer_members m ON m.customer_id = p.customer_id WHERE m.user_id = ? ORDER BY p.updated_at DESC LIMIT 100"
+    ).bind(principal.user.id).all();
+    return json({ data: result.results || [] });
+  }
+  const projectMatch = path.match(/^\/api\/v1\/me\/projects\/([^/]+)(?:\/(comments))?$/);
+  if (projectMatch) {
+    let projectId;
+    try { projectId = decodeURIComponent(projectMatch[1]); }
+    catch { return json({ error: { code: "NOT_FOUND", message: "Không tìm thấy dự án." } }, 404); }
+    if (!projectId || projectId.length > 80 || projectId.includes("/")) return json({ error: { code: "NOT_FOUND", message: "Không tìm thấy dự án." } }, 404);
+    const project = await env.DB.prepare(
+      "SELECT p.id, p.customer_id, p.order_id, p.name, p.description, p.status, p.start_date, p.due_date, p.created_at, p.updated_at FROM crm_projects p INNER JOIN crm_customer_members m ON m.customer_id = p.customer_id WHERE p.id = ? AND m.user_id = ? LIMIT 1"
+    ).bind(projectId, principal.user.id).first();
+    if (!project) return json({ error: { code: "NOT_FOUND", message: "Không tìm thấy dự án." } }, 404);
+    if (projectMatch[2] === "comments") {
+      if (request.method === "GET") {
+        const result = await env.DB.prepare("SELECT id, actor_id, actor_type, body, created_at FROM crm_project_comments WHERE project_id = ? AND visibility = 'customer' ORDER BY created_at ASC LIMIT 200").bind(projectId).all();
+        return json({ data: result.results || [] });
+      }
+      if (request.method === "POST") {
+        const body = await readJson(request), message = clean(body?.body, 10000);
+        if (!message) return json({ error: { code: "VALIDATION_ERROR", message: "Nội dung bình luận không được để trống." } }, 400);
+        const now = new Date().toISOString(), id = crypto.randomUUID();
+        const comment = { id, project_id: projectId, actor_id: principal.user.id, actor_type: "customer", visibility: "customer", body: message, created_at: now };
+        await env.DB.batch([
+          env.DB.prepare("INSERT INTO crm_project_comments (id, project_id, actor_id, actor_type, visibility, body, created_at) VALUES (?, ?, ?, 'customer', 'customer', ?, ?)").bind(id, projectId, principal.user.id, message, now),
+          env.DB.prepare("INSERT INTO crm_audit_events (id, actor_id, action, resource_type, resource_id, metadata_json, created_at) VALUES (?, ?, 'project.comment.created', 'project', ?, ?, ?)").bind(crypto.randomUUID(), principal.user.id, projectId, JSON.stringify({ comment_id: id }), now)
+        ]);
+        return json({ data: comment }, 201);
+      }
+      return json({ error: { code: "METHOD_NOT_ALLOWED", message: "Phương thức không được hỗ trợ." } }, 405);
+    }
+    if (request.method !== "GET") return json({ error: { code: "METHOD_NOT_ALLOWED", message: "Phương thức không được hỗ trợ." } }, 405);
+    const milestones = await env.DB.prepare("SELECT id, title, description, status, due_date, sort_order, created_at, updated_at FROM crm_project_milestones WHERE project_id = ? ORDER BY sort_order ASC, due_date ASC, id ASC").bind(projectId).all();
+    return json({ data: { ...project, milestones: milestones.results || [] } });
+  }
+  if (path === "/api/v1/me/tickets" && request.method === "GET") {
+    const result = await env.DB.prepare("SELECT t.id, t.customer_id, t.ticket_number, t.subject, t.description, t.status, t.priority, t.created_at, t.updated_at FROM crm_tickets t INNER JOIN crm_customer_members m ON m.customer_id = t.customer_id WHERE m.user_id = ? ORDER BY t.updated_at DESC LIMIT 100").bind(principal.user.id).all();
+    return json({ data: result.results || [] });
+  }
+  if (path === "/api/v1/me/tickets" && request.method === "POST") {
+    const body = await readJson(request), customerId = clean(body?.customer_id, 80), subject = clean(body?.subject, 180), description = clean(body?.description, 10000);
+    if (!customerId || subject.length < 2) return json({ error: { code: "VALIDATION_ERROR", message: "Vui lòng chọn khách hàng và nhập tiêu đề yêu cầu." } }, 400);
+    const membership = await env.DB.prepare("SELECT customer_id FROM crm_customer_members WHERE customer_id = ? AND user_id = ? LIMIT 1").bind(customerId, principal.user.id).first();
+    if (!membership) return json({ error: { code: "NOT_FOUND", message: "Không tìm thấy khách hàng." } }, 404);
+    const now = new Date().toISOString(), id = crypto.randomUUID(), ticketNumber = "HQ-T-" + now.slice(0, 10).replace(/-/g, "") + "-" + crypto.randomUUID().slice(0, 5).toUpperCase();
+    const ticket = { id, customer_id: customerId, ticket_number: ticketNumber, subject, description, status: "open", priority: "normal", created_by: principal.user.id, created_at: now, updated_at: now };
+    const statements = [
+      env.DB.prepare("INSERT INTO crm_tickets (id, customer_id, ticket_number, subject, description, status, priority, created_by, created_at, updated_at) VALUES (?, ?, ?, ?, ?, 'open', 'normal', ?, ?, ?)").bind(id, customerId, ticketNumber, subject, description, principal.user.id, now, now),
+      env.DB.prepare("INSERT INTO crm_audit_events (id, actor_id, action, resource_type, resource_id, metadata_json, created_at) VALUES (?, ?, 'ticket.created', 'ticket', ?, ?, ?)").bind(crypto.randomUUID(), principal.user.id, id, JSON.stringify({ customer_id: customerId, ticket_number: ticketNumber }), now)
+    ];
+    if (description) statements.splice(1, 0, env.DB.prepare("INSERT INTO crm_ticket_messages (id, ticket_id, actor_id, actor_type, body, created_at) VALUES (?, ?, ?, 'customer', ?, ?)").bind(crypto.randomUUID(), id, principal.user.id, description, now));
+    await env.DB.batch(statements);
+    return json({ data: ticket }, 201);
+  }
+  const ticketMatch = path.match(/^\/api\/v1\/me\/tickets\/([^/]+)\/messages$/);
+  if (ticketMatch) {
+    let ticketId;
+    try { ticketId = decodeURIComponent(ticketMatch[1]); }
+    catch { return json({ error: { code: "NOT_FOUND", message: "Không tìm thấy yêu cầu hỗ trợ." } }, 404); }
+    const ticket = await env.DB.prepare("SELECT t.id, t.status FROM crm_tickets t INNER JOIN crm_customer_members m ON m.customer_id = t.customer_id WHERE t.id = ? AND m.user_id = ? LIMIT 1").bind(ticketId, principal.user.id).first();
+    if (!ticket) return json({ error: { code: "NOT_FOUND", message: "Không tìm thấy yêu cầu hỗ trợ." } }, 404);
+    if (request.method === "GET") {
+      const result = await env.DB.prepare("SELECT id, actor_id, actor_type, body, created_at FROM crm_ticket_messages WHERE ticket_id = ? ORDER BY created_at ASC LIMIT 200").bind(ticketId).all();
+      return json({ data: result.results || [] });
+    }
+    if (request.method === "POST") {
+      if (["resolved", "closed"].includes(ticket.status)) return json({ error: { code: "INVALID_STATE", message: "Yêu cầu đã đóng; vui lòng tạo yêu cầu mới." } }, 409);
+      const body = await readJson(request), message = clean(body?.body, 10000);
+      if (!message) return json({ error: { code: "VALIDATION_ERROR", message: "Nội dung phản hồi không được để trống." } }, 400);
+      const now = new Date().toISOString(), id = crypto.randomUUID();
+      await env.DB.batch([
+        env.DB.prepare("INSERT INTO crm_ticket_messages (id, ticket_id, actor_id, actor_type, body, created_at) VALUES (?, ?, ?, 'customer', ?, ?)").bind(id, ticketId, principal.user.id, message, now),
+        env.DB.prepare("UPDATE crm_tickets SET status = 'open', updated_at = ? WHERE id = ? AND status NOT IN ('resolved','closed')").bind(now, ticketId),
+        env.DB.prepare("INSERT INTO crm_audit_events (id, actor_id, action, resource_type, resource_id, metadata_json, created_at) VALUES (?, ?, 'ticket.message.created', 'ticket', ?, ?, ?)").bind(crypto.randomUUID(), principal.user.id, ticketId, JSON.stringify({ message_id: id, actor_type: "customer" }), now)
+      ]);
+      return json({ data: { id, ticket_id: ticketId, actor_id: principal.user.id, actor_type: "customer", body: message, created_at: now } }, 201);
+    }
+    return json({ error: { code: "METHOD_NOT_ALLOWED", message: "Phương thức không được hỗ trợ." } }, 405);
+  }
+  return json({ error: { code: "NOT_FOUND", message: "Không tìm thấy tài nguyên." } }, 404);
+}
+
+async function adminProjectRoutes(request, env, url) {
+  const path = url.pathname;
+  if (!path.startsWith("/api/v1/admin/orders") && !path.startsWith("/api/v1/admin/projects") && !path.startsWith("/api/v1/admin/milestones") && !path.startsWith("/api/v1/admin/tickets")) return null;
+  const principal = await authenticatedPrincipal(request, env);
+  if (principal.error) return principal.error;
+  if (!hasAnyRole(principal, ["admin", "staff"])) return json({ error: { code: "FORBIDDEN", message: "Bạn không có quyền quản lý dự án và hỗ trợ." } }, 403);
+  if (path === "/api/v1/admin/orders" && request.method === "GET") {
+    const result = await env.DB.prepare("SELECT o.id, o.customer_id, c.display_name AS customer_name, o.order_number, o.status, o.currency, o.total_minor, o.quote_id, o.created_at, o.updated_at FROM crm_orders o INNER JOIN crm_customers c ON c.id = o.customer_id ORDER BY o.created_at DESC LIMIT 100").all();
+    return json({ data: result.results || [] });
+  }
+  if (path === "/api/v1/admin/orders" && request.method === "POST") {
+    const body = await readJson(request), quoteId = clean(body?.quote_id, 80);
+    if (!quoteId) return json({ error: { code: "VALIDATION_ERROR", message: "Mã báo giá là bắt buộc." } }, 400);
+    const existing = await env.DB.prepare("SELECT id, order_number, customer_id FROM crm_orders WHERE quote_id = ? LIMIT 1").bind(quoteId).first();
+    if (existing) return json({ data: { ...existing, already_created: true } });
+    const quote = await env.DB.prepare("SELECT id, customer_id, quote_number, status, currency, total_minor FROM crm_quotes WHERE id = ? LIMIT 1").bind(quoteId).first();
+    if (!quote) return json({ error: { code: "NOT_FOUND", message: "Không tìm thấy báo giá." } }, 404);
+    if (quote.status !== "accepted") return json({ error: { code: "INVALID_STATE", message: "Chỉ báo giá đã được khách hàng chấp nhận mới có thể tạo đơn hàng." } }, 409);
+    const now = new Date().toISOString(), id = crypto.randomUUID(), orderNumber = "HQ-O-" + now.slice(0, 10).replace(/-/g, "") + "-" + crypto.randomUUID().slice(0, 5).toUpperCase();
+    const order = { id, customer_id: quote.customer_id, quote_id: quote.id, order_number: orderNumber, status: "confirmed", currency: quote.currency, total_minor: quote.total_minor, created_by: principal.user.id, created_at: now, updated_at: now };
+    const results = await env.DB.batch([
+      env.DB.prepare("INSERT INTO crm_orders (id, customer_id, quote_id, order_number, status, currency, total_minor, created_by, created_at, updated_at) VALUES (?, ?, ?, ?, 'confirmed', ?, ?, ?, ?, ?)").bind(id, quote.customer_id, quote.id, orderNumber, quote.currency, quote.total_minor, principal.user.id, now, now),
+      env.DB.prepare("INSERT INTO crm_audit_events (id, actor_id, action, resource_type, resource_id, metadata_json, created_at) VALUES (?, ?, 'order.created', 'order', ?, ?, ?)").bind(crypto.randomUUID(), principal.user.id, id, JSON.stringify({ quote_id: quote.id, order_number: orderNumber }), now)
+    ]);
+    if (!results?.[0]?.meta?.changes) {
+      const raced = await env.DB.prepare("SELECT id, order_number, customer_id FROM crm_orders WHERE quote_id = ? LIMIT 1").bind(quoteId).first();
+      if (raced) return json({ data: { ...raced, already_created: true } });
+      return json({ error: { code: "ORDER_CONFLICT", message: "Không thể tạo đơn hàng. Vui lòng tải lại." } }, 409);
+    }
+    return json({ data: order }, 201);
+  }
+  if (path === "/api/v1/admin/projects" && request.method === "GET") {
+    const result = await env.DB.prepare("SELECT p.id, p.customer_id, c.display_name AS customer_name, p.order_id, p.name, p.description, p.status, p.start_date, p.due_date, p.created_at, p.updated_at FROM crm_projects p INNER JOIN crm_customers c ON c.id = p.customer_id ORDER BY p.updated_at DESC LIMIT 100").all();
+    return json({ data: result.results || [] });
+  }
+  if (path === "/api/v1/admin/projects" && request.method === "POST") {
+    const body = await readJson(request), customerId = clean(body?.customer_id, 80), orderId = body?.order_id ? clean(body.order_id, 80) : null;
+    const name = clean(body?.name, 180), description = clean(body?.description, 10000);
+    const startDate = body?.start_date == null || body.start_date === "" ? null : clean(body.start_date, 10);
+    const dueDate = body?.due_date == null || body.due_date === "" ? null : clean(body.due_date, 10);
+    const milestones = body?.milestones === undefined ? [] : body.milestones;
+    if (!customerId || name.length < 2 || !validDateOnly(startDate) || !validDateOnly(dueDate) || (startDate && dueDate && dueDate < startDate) || !Array.isArray(milestones) || milestones.length > 50) {
+      return json({ error: { code: "VALIDATION_ERROR", message: "Thông tin dự án, ngày hoặc danh sách milestone không hợp lệ." } }, 400);
+    }
+    const customer = await env.DB.prepare("SELECT id FROM crm_customers WHERE id = ? AND status = 'active' LIMIT 1").bind(customerId).first();
+    if (!customer) return json({ error: { code: "CUSTOMER_NOT_FOUND", message: "Không tìm thấy khách hàng đang hoạt động." } }, 404);
+    if (orderId) {
+      const order = await env.DB.prepare("SELECT id FROM crm_orders WHERE id = ? AND customer_id = ? LIMIT 1").bind(orderId, customerId).first();
+      if (!order) return json({ error: { code: "ORDER_NOT_FOUND", message: "Đơn hàng không thuộc khách hàng đã chọn." } }, 404);
+    }
+    const now = new Date().toISOString(), id = crypto.randomUUID();
+    const project = { id, customer_id: customerId, order_id: orderId, name, description, status: "planning", start_date: startDate, due_date: dueDate, created_by: principal.user.id, created_at: now, updated_at: now };
+    const statements = [env.DB.prepare("INSERT INTO crm_projects (id, customer_id, order_id, name, description, status, start_date, due_date, created_by, created_at, updated_at) VALUES (?, ?, ?, ?, ?, 'planning', ?, ?, ?, ?, ?)").bind(id, customerId, orderId, name, description, startDate, dueDate, principal.user.id, now, now)];
+    const milestoneRows = [];
+    for (const [index, milestone] of milestones.entries()) {
+      const title = clean(milestone?.title, 180), milestoneDescription = clean(milestone?.description, 5000), milestoneDue = milestone?.due_date == null || milestone.due_date === "" ? null : clean(milestone.due_date, 10);
+      if (title.length < 2 || !validDateOnly(milestoneDue)) return json({ error: { code: "VALIDATION_ERROR", message: "Tiêu đề hoặc ngày milestone không hợp lệ." } }, 400);
+      const row = { id: crypto.randomUUID(), project_id: id, title, description: milestoneDescription, status: "pending", due_date: milestoneDue, sort_order: Number.isInteger(milestone.sort_order) ? Math.max(0, Math.min(100000, milestone.sort_order)) : index, created_at: now, updated_at: now };
+      milestoneRows.push(row);
+      statements.push(env.DB.prepare("INSERT INTO crm_project_milestones (id, project_id, title, description, status, due_date, sort_order, created_at, updated_at) VALUES (?, ?, ?, ?, 'pending', ?, ?, ?, ?)").bind(row.id, id, title, milestoneDescription, milestoneDue, row.sort_order, now, now));
+    }
+    statements.push(env.DB.prepare("INSERT INTO crm_audit_events (id, actor_id, action, resource_type, resource_id, metadata_json, created_at) VALUES (?, ?, 'project.created', 'project', ?, ?, ?)").bind(crypto.randomUUID(), principal.user.id, id, JSON.stringify({ customer_id: customerId, order_id: orderId, milestone_count: milestoneRows.length }), now));
+    await env.DB.batch(statements);
+    return json({ data: { ...project, milestones: milestoneRows } }, 201);
+  }
+  const projectMatch = path.match(/^\/api\/v1\/admin\/projects\/([^/]+)(?:\/(milestones))?$/);
+  if (projectMatch) {
+    let projectId;
+    try { projectId = decodeURIComponent(projectMatch[1]); }
+    catch { return json({ error: { code: "NOT_FOUND", message: "Không tìm thấy dự án." } }, 404); }
+    const project = await env.DB.prepare("SELECT id, customer_id, order_id, name, description, status, start_date, due_date, created_by, created_at, updated_at FROM crm_projects WHERE id = ? LIMIT 1").bind(projectId).first();
+    if (!project) return json({ error: { code: "NOT_FOUND", message: "Không tìm thấy dự án." } }, 404);
+    if (projectMatch[2] === "milestones") {
+      if (request.method === "GET") {
+        const result = await env.DB.prepare("SELECT id, title, description, status, due_date, sort_order, created_at, updated_at FROM crm_project_milestones WHERE project_id = ? ORDER BY sort_order ASC, due_date ASC, id ASC").bind(projectId).all();
+        return json({ data: result.results || [] });
+      }
+      if (request.method === "POST") {
+        const body = await readJson(request), title = clean(body?.title, 180), description = clean(body?.description, 5000), dueDate = body?.due_date == null || body.due_date === "" ? null : clean(body.due_date, 10);
+        if (title.length < 2 || !validDateOnly(dueDate)) return json({ error: { code: "VALIDATION_ERROR", message: "Tiêu đề hoặc ngày milestone không hợp lệ." } }, 400);
+        const now = new Date().toISOString(), id = crypto.randomUUID();
+        const row = { id, project_id: projectId, title, description, status: "pending", due_date: dueDate, sort_order: Number.isInteger(body.sort_order) ? Math.max(0, Math.min(100000, body.sort_order)) : 0, created_at: now, updated_at: now };
+        await env.DB.batch([
+          env.DB.prepare("INSERT INTO crm_project_milestones (id, project_id, title, description, status, due_date, sort_order, created_at, updated_at) VALUES (?, ?, ?, ?, 'pending', ?, ?, ?, ?)").bind(id, projectId, title, description, dueDate, row.sort_order, now, now),
+          env.DB.prepare("INSERT INTO crm_audit_events (id, actor_id, action, resource_type, resource_id, metadata_json, created_at) VALUES (?, ?, 'project.milestone.created', 'project', ?, ?, ?)").bind(crypto.randomUUID(), principal.user.id, projectId, JSON.stringify({ milestone_id: id }), now)
+        ]);
+        return json({ data: row }, 201);
+      }
+      return json({ error: { code: "METHOD_NOT_ALLOWED", message: "Phương thức không được hỗ trợ." } }, 405);
+    }
+    if (request.method === "GET") {
+      const milestones = await env.DB.prepare("SELECT id, title, description, status, due_date, sort_order, created_at, updated_at FROM crm_project_milestones WHERE project_id = ? ORDER BY sort_order ASC, due_date ASC, id ASC").bind(projectId).all();
+      return json({ data: { ...project, milestones: milestones.results || [] } });
+    }
+    if (request.method === "PATCH") {
+      const body = await readJson(request), name = clean(body.name ?? project.name, 180), description = clean(body.description ?? project.description, 10000);
+      const status = clean(body.status ?? project.status, 20), startDate = body.start_date === undefined ? project.start_date : body.start_date == null || body.start_date === "" ? null : clean(body.start_date, 10), dueDate = body.due_date === undefined ? project.due_date : body.due_date == null || body.due_date === "" ? null : clean(body.due_date, 10);
+      if (name.length < 2 || !["planning","in_progress","review","completed","on_hold","cancelled"].includes(status) || !validDateOnly(startDate) || !validDateOnly(dueDate) || (startDate && dueDate && dueDate < startDate)) return json({ error: { code: "VALIDATION_ERROR", message: "Thông tin hoặc trạng thái dự án không hợp lệ." } }, 400);
+      const now = new Date().toISOString();
+      await env.DB.batch([
+        env.DB.prepare("UPDATE crm_projects SET name = ?, description = ?, status = ?, start_date = ?, due_date = ?, updated_at = ? WHERE id = ?").bind(name, description, status, startDate, dueDate, now, projectId),
+        env.DB.prepare("INSERT INTO crm_audit_events (id, actor_id, action, resource_type, resource_id, metadata_json, created_at) VALUES (?, ?, 'project.updated', 'project', ?, ?, ?)").bind(crypto.randomUUID(), principal.user.id, projectId, JSON.stringify({ status }), now)
+      ]);
+      const updated = await env.DB.prepare("SELECT id, customer_id, order_id, name, description, status, start_date, due_date, created_by, created_at, updated_at FROM crm_projects WHERE id = ? LIMIT 1").bind(projectId).first();
+      return json({ data: updated });
+    }
+    return json({ error: { code: "METHOD_NOT_ALLOWED", message: "Phương thức không được hỗ trợ." } }, 405);
+  }
+  const milestoneMatch = path.match(/^\/api\/v1\/admin\/milestones\/([^/]+)$/);
+  if (milestoneMatch && request.method === "PATCH") {
+    let milestoneId;
+    try { milestoneId = decodeURIComponent(milestoneMatch[1]); } catch { return json({ error: { code: "NOT_FOUND", message: "Không tìm thấy milestone." } }, 404); }
+    const current = await env.DB.prepare("SELECT id, project_id, title, description, status, due_date, sort_order FROM crm_project_milestones WHERE id = ? LIMIT 1").bind(milestoneId).first();
+    if (!current) return json({ error: { code: "NOT_FOUND", message: "Không tìm thấy milestone." } }, 404);
+    const body = await readJson(request), title = clean(body.title ?? current.title, 180), description = clean(body.description ?? current.description, 5000), status = clean(body.status ?? current.status, 20), dueDate = body.due_date === undefined ? current.due_date : body.due_date == null || body.due_date === "" ? null : clean(body.due_date, 10);
+    if (title.length < 2 || !["pending","in_progress","review","approved","blocked"].includes(status) || !validDateOnly(dueDate)) return json({ error: { code: "VALIDATION_ERROR", message: "Thông tin milestone không hợp lệ." } }, 400);
+    const now = new Date().toISOString();
+    await env.DB.batch([
+      env.DB.prepare("UPDATE crm_project_milestones SET title = ?, description = ?, status = ?, due_date = ?, updated_at = ? WHERE id = ?").bind(title, description, status, dueDate, now, milestoneId),
+      env.DB.prepare("INSERT INTO crm_audit_events (id, actor_id, action, resource_type, resource_id, metadata_json, created_at) VALUES (?, ?, 'project.milestone.updated', 'project', ?, ?, ?)").bind(crypto.randomUUID(), principal.user.id, current.project_id, JSON.stringify({ milestone_id: milestoneId, status }), now)
+    ]);
+    return json({ data: { ...current, title, description, status, due_date: dueDate, updated_at: now } });
+  }
+  if (path === "/api/v1/admin/tickets" && request.method === "GET") {
+    const status = clean(url.searchParams.get("status"), 20);
+    if (status && !["open","in_progress","waiting_customer","resolved","closed"].includes(status)) return json({ error: { code: "VALIDATION_ERROR", message: "Trạng thái ticket không hợp lệ." } }, 400);
+    const result = status
+      ? await env.DB.prepare("SELECT t.id, t.customer_id, c.display_name AS customer_name, t.ticket_number, t.subject, t.description, t.status, t.priority, t.created_at, t.updated_at FROM crm_tickets t INNER JOIN crm_customers c ON c.id = t.customer_id WHERE t.status = ? ORDER BY t.updated_at DESC LIMIT 100").bind(status).all()
+      : await env.DB.prepare("SELECT t.id, t.customer_id, c.display_name AS customer_name, t.ticket_number, t.subject, t.description, t.status, t.priority, t.created_at, t.updated_at FROM crm_tickets t INNER JOIN crm_customers c ON c.id = t.customer_id ORDER BY t.updated_at DESC LIMIT 100").all();
+    return json({ data: result.results || [] });
+  }
+  const adminTicketMatch = path.match(/^\/api\/v1\/admin\/tickets\/([^/]+)(?:\/messages)?$/);
+  if (adminTicketMatch) {
+    let ticketId;
+    try { ticketId = decodeURIComponent(adminTicketMatch[1]); } catch { return json({ error: { code: "NOT_FOUND", message: "Không tìm thấy ticket." } }, 404); }
+    const ticket = await env.DB.prepare("SELECT id, customer_id, ticket_number, subject, description, status, priority, created_at, updated_at FROM crm_tickets WHERE id = ? LIMIT 1").bind(ticketId).first();
+    if (!ticket) return json({ error: { code: "NOT_FOUND", message: "Không tìm thấy ticket." } }, 404);
+    if (path.endsWith("/messages")) {
+      if (request.method === "GET") {
+        const result = await env.DB.prepare("SELECT id, actor_id, actor_type, body, created_at FROM crm_ticket_messages WHERE ticket_id = ? ORDER BY created_at ASC LIMIT 200").bind(ticketId).all();
+        return json({ data: result.results || [] });
+      }
+      if (request.method === "POST") {
+        const body = await readJson(request), message = clean(body?.body, 10000);
+        if (!message) return json({ error: { code: "VALIDATION_ERROR", message: "Nội dung phản hồi không được để trống." } }, 400);
+        const now = new Date().toISOString(), id = crypto.randomUUID();
+        await env.DB.batch([
+          env.DB.prepare("INSERT INTO crm_ticket_messages (id, ticket_id, actor_id, actor_type, body, created_at) VALUES (?, ?, ?, 'staff', ?, ?)").bind(id, ticketId, principal.user.id, message, now),
+          env.DB.prepare("UPDATE crm_tickets SET status = 'waiting_customer', updated_at = ? WHERE id = ?").bind(now, ticketId),
+          env.DB.prepare("INSERT INTO crm_audit_events (id, actor_id, action, resource_type, resource_id, metadata_json, created_at) VALUES (?, ?, 'ticket.message.created', 'ticket', ?, ?, ?)").bind(crypto.randomUUID(), principal.user.id, ticketId, JSON.stringify({ message_id: id, actor_type: "staff" }), now)
+        ]);
+        return json({ data: { id, ticket_id: ticketId, actor_id: principal.user.id, actor_type: "staff", body: message, created_at: now } }, 201);
+      }
+      return json({ error: { code: "METHOD_NOT_ALLOWED", message: "Phương thức không được hỗ trợ." } }, 405);
+    }
+    if (request.method === "PATCH") {
+      const body = await readJson(request), status = clean(body.status ?? ticket.status, 20), priority = clean(body.priority ?? ticket.priority, 20);
+      if (!["open","in_progress","waiting_customer","resolved","closed"].includes(status) || !["low","normal","high","urgent"].includes(priority)) return json({ error: { code: "VALIDATION_ERROR", message: "Trạng thái hoặc độ ưu tiên không hợp lệ." } }, 400);
+      const now = new Date().toISOString();
+      await env.DB.batch([
+        env.DB.prepare("UPDATE crm_tickets SET status = ?, priority = ?, updated_at = ? WHERE id = ?").bind(status, priority, now, ticketId),
+        env.DB.prepare("INSERT INTO crm_audit_events (id, actor_id, action, resource_type, resource_id, metadata_json, created_at) VALUES (?, ?, 'ticket.updated', 'ticket', ?, ?, ?)").bind(crypto.randomUUID(), principal.user.id, ticketId, JSON.stringify({ status, priority }), now)
+      ]);
+      return json({ data: { ...ticket, status, priority, updated_at: now } });
+    }
+    if (request.method === "GET") return json({ data: ticket });
+    return json({ error: { code: "METHOD_NOT_ALLOWED", message: "Phương thức không được hỗ trợ." } }, 405);
+  }
+  return json({ error: { code: "NOT_FOUND", message: "Không tìm thấy tài nguyên." } }, 404);
+}
+
 const CMS_RESOURCES = {
   pages: {
     table: "cms_pages", kind: "page",

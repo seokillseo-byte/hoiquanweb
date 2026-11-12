@@ -819,4 +819,22 @@ test("customer portal scopes orders, projects, milestones, comments and support 
     body: JSON.stringify({ body: "Another reply after resolution." })
   });
   assert.equal(closedReply.status, 409, "resolved tickets must not accept new customer replies");
+
+  const linkMember = await server.fetch(origin + "/api/v1/admin/customers/test-customer-a/members", {
+    method: "POST", headers: { origin, cookie: admin.cookie, "content-type": "application/json" },
+    body: JSON.stringify({ email: userB.email, membership_role: "member" })
+  });
+  assert.equal(linkMember.status, 201, await linkMember.clone().text());
+  assert.equal((await linkMember.json()).data.membership_role, "member");
+  const linkedProjects = await getFor("/api/v1/me/projects", userB.cookie);
+  assert.ok((await linkedProjects.json()).data.some(item => item.id === project.id),
+    "a newly linked customer member must gain access only after staff links the account");
+  const members = await getFor("/api/v1/admin/customers/test-customer-a/members", admin.cookie);
+  assert.equal(members.status, 200);
+  assert.ok((await members.json()).data.some(item => item.email === userB.email));
+  const missingAccount = await server.fetch(origin + "/api/v1/admin/customers/test-customer-a/members", {
+    method: "POST", headers: { origin, cookie: admin.cookie, "content-type": "application/json" },
+    body: JSON.stringify({ email: "not-registered@example.test", membership_role: "member" })
+  });
+  assert.equal(missingAccount.status, 404, "staff must not create a membership for an unknown identity");
 });

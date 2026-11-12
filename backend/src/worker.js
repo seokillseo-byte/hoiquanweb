@@ -350,7 +350,7 @@ async function identityRoutes(request, env, url) {
     }
     return json({ error: { code: "METHOD_NOT_ALLOWED", message: "Phương thức không được hỗ trợ." } }, 405);
   }
-  const customerMatch = url.pathname.match(/^\/api\/v1\/admin\/customers\/([^/]+)(?:\/(activities))?$/);
+  const customerMatch = url.pathname.match(/^\/api\/v1\/admin\/customers\/([^/]+)(?:\/(activities|members))?$/);
   if (customerMatch) {
     const principal = await authenticatedPrincipal(request, env);
     if (principal.error) return principal.error;
@@ -364,6 +364,29 @@ async function identityRoutes(request, env, url) {
     const isActivities = customerMatch[2] === "activities";
     const customer = await env.DB.prepare("SELECT id, display_name, organization_name, contact_email, phone, status, notes, created_at, updated_at FROM crm_customers WHERE id = ? LIMIT 1").bind(customerId).first();
     if (!customer) return json({ error: { code: "NOT_FOUND", message: "Không tìm thấy khách hàng." } }, 404);
+    if (customerMatch[2] === "members") {
+      if (request.method === "GET") {
+        const result = await env.DB.prepare("SELECT m.user_id, u.email, u.name, m.membership_role, m.created_at FROM crm_customer_members m INNER JOIN user u ON u.id = m.user_id WHERE m.customer_id = ? ORDER BY m.created_at ASC").bind(customerId).all();
+        return json({ data: result.results || [] });
+      }
+      if (request.method === "POST") {
+        const body = await readJson(request);
+        const email = clean(body?.email, 254).toLowerCase();
+        const membershipRole = clean(body?.membership_role || "member", 20);
+        if (!validEmail(email) || !["owner", "member", "billing"].includes(membershipRole)) {
+          return json({ error: { code: "VALIDATION_ERROR", message: "Email hoặc vai trò thành viên không hợp lệ." } }, 400);
+        }
+        const account = await env.DB.prepare("SELECT id, email, name FROM user WHERE lower(email) = ? LIMIT 1").bind(email).first();
+        if (!account) return json({ error: { code: "USER_NOT_FOUND", message: "Chưa có tài khoản với email này. Khách hàng cần đăng ký tài khoản trước." } }, 404);
+        const now = new Date().toISOString();
+        await env.DB.batch([
+          env.DB.prepare("INSERT INTO crm_customer_members (customer_id, user_id, membership_role, created_at) VALUES (?, ?, ?, ?) ON CONFLICT(customer_id, user_id) DO UPDATE SET membership_role = excluded.membership_role").bind(customerId, account.id, membershipRole, now),
+          env.DB.prepare("INSERT INTO crm_audit_events (id, actor_id, action, resource_type, resource_id, metadata_json, created_at) VALUES (?, ?, 'customer.member.linked', 'customer', ?, ?, ?)").bind(crypto.randomUUID(), principal.user.id, customerId, JSON.stringify({ user_id: account.id, email: account.email, membership_role: membershipRole }), now)
+        ]);
+        return json({ data: { user_id: account.id, email: account.email, name: account.name, membership_role: membershipRole } }, 201);
+      }
+      return json({ error: { code: "METHOD_NOT_ALLOWED", message: "Phương thức không được hỗ trợ." } }, 405);
+    }
     if (isActivities && request.method === "GET") {
       const limit = Math.max(1, Math.min(100, Number.parseInt(url.searchParams.get("limit") || "50", 10) || 50));
       const result = await env.DB.prepare("SELECT id, activity_type, subject, body, actor_id, occurred_at, created_at FROM crm_activities WHERE customer_id = ? ORDER BY occurred_at DESC, id DESC LIMIT ?").bind(customerId, limit).all();

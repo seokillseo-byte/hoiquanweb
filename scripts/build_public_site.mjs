@@ -1,4 +1,4 @@
-import { mkdir, rm, writeFile } from "node:fs/promises";
+import { copyFile, mkdir, rm, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 
 const OUT = join(process.cwd(), "public-site", "dist");
@@ -145,6 +145,8 @@ for(const page of pages){
 }
 await mkdir(join(OUT,"assets","css"),{recursive:true});
 await mkdir(join(OUT,"assets","js"),{recursive:true});
+await copyFile(join(process.cwd(),"public-site","src","site.css"),join(OUT,"assets","css","site.css"));
+await copyFile(join(process.cwd(),"public-site","src","site.js"),join(OUT,"assets","js","site.js"));
 await writeFile(join(OUT,"robots.txt"),"User-agent: *\nAllow: /\nDisallow: /admin.html\nSitemap: "+DOMAIN+"/sitemap.xml\n","utf8");
 const urls=pages.map(p=>'<url><loc>'+DOMAIN+p.path+'</loc><lastmod>'+new Date().toISOString().slice(0,10)+'</lastmod><changefreq>monthly</changefreq><priority>'+(p.kind==="home"?"1.0":p.kind==="service"||p.kind==="services"?"0.8":"0.6")+'</priority></url>').join("");
 await writeFile(join(OUT,"sitemap.xml"),'<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">'+urls+'</urlset>',"utf8");

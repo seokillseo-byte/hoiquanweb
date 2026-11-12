@@ -17,9 +17,12 @@ assert.ok(await exists(join(root,"assets","js","site.js")),"Generated JavaScript
 const files=(await walk(root)).filter(path=>path.endsWith(".html")&&!path.endsWith("404.html"));
 assert.ok(files.length>=30,"Expected a complete bilingual set of public pages");
 const errors=[];
+const canonicalPaths=new Set();
 for(const file of files){
   const html=await readFile(file,"utf8");
   const name=relative(root,file).split(sep).join("/");
+  const pagePath=name==="index.html"?"/":"/"+name.replace(/index\\.html$/,"");
+  const canonical=html.match(/<link rel="canonical" href="([^"]+)">/);\n  if(canonical){const url=new URL(canonical[1]);canonicalPaths.add(url.pathname);if(url.pathname!==pagePath)errors.push(name+": canonical does not match its route");}
   for(const [label,pattern] of [
     ["doctype",/^<!doctype html>/i],
     ["language",/<html lang="(vi|en)">/],
@@ -39,7 +42,11 @@ assert.ok(notFound.includes('name="robots" content="noindex,follow"'),"404 page 
 assert.ok(notFound.includes('href="/">Về trang chủ'),"404 page must link back to the homepage");
 const sitemap=await readFile(join(root,"sitemap.xml"),"utf8");
 assert.ok(sitemap.includes("https://hoiquanweb.io.vn/"),"Sitemap must use the production domain");
-assert.ok((sitemap.match(/<url>/g)||[]).length>=30,"Sitemap must include the bilingual page set");
+const sitemapUrls=[...sitemap.matchAll(/<loc>([^<]+)<\\/loc>/g)].map(([,url])=>new URL(url).pathname);
+assert.equal(sitemapUrls.length,files.length,"Sitemap must include every generated content page exactly once");
+assert.equal(new Set(sitemapUrls).size,sitemapUrls.length,"Sitemap must not contain duplicate URLs");
+assert.equal(canonicalPaths.size,files.length,"Every generated page must have a unique canonical URL");
+for(const path of sitemapUrls)assert.ok(canonicalPaths.has(path),"Sitemap URL must map to a generated canonical page: "+path);
 const css=await readFile(join(root,"assets","css","site.css"),"utf8");
 const js=await readFile(join(root,"assets","js","site.js"),"utf8");
 assert.ok(css.includes("#155EEF")&&css.includes("#0B1F3A")&&css.includes("#38BDF8"),"Brand colors must match the approved palette");

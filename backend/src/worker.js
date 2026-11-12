@@ -136,7 +136,7 @@ async function identityRoutes(request, env, url) {
         return json({ error: { code: "INVALID_STATE", message: "Chỉ báo giá đang chờ xác nhận mới có thể được chấp nhận." } }, 409);
       }
       if (quote.valid_until) {
-        const dateOnly = /^\\d{4}-\\d{2}-\\d{2}$/.test(quote.valid_until);
+        const dateOnly = /^\d{4}-\d{2}-\d{2}$/.test(quote.valid_until);
         const expired = dateOnly
           ? quote.valid_until < new Date().toISOString().slice(0, 10)
           : !Number.isFinite(Date.parse(quote.valid_until)) || Date.parse(quote.valid_until) < Date.now();

@@ -83,7 +83,7 @@ for (const file of files) {
 
 const notFound = await readFile(join(root, "404.html"), "utf8");
 assert.ok(notFound.includes('name="robots" content="noindex,follow"'), "404 page must not be indexed");
-assert.ok(notFound.includes('href="/">Về trang chủ'), "404 page must link back to the homepage");
+assert.ok(notFound.includes('href="' + basePath + '/">Về trang chủ'), "404 page must link back to the homepage");
 
 const sitemap = await readFile(join(root, "sitemap.xml"), "utf8");
 assert.ok(sitemap.includes("https://hoiquanweb.io.vn/"), "Sitemap must use the production domain");

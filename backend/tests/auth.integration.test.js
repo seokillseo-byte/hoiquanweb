@@ -328,6 +328,46 @@ test("customer portal isolates customers and quotes; admin access requires a ser
   const conversion = (await convertedLead.json()).data;
   assert.equal(conversion.lead_id, "test-lead-convert");
   assert.equal(conversion.already_converted, false);
+
+  const staffList = await getFor("/api/v1/admin/staff", admin.cookie);
+  assert.equal(staffList.status, 200, await staffList.clone().text());
+  assert.ok((await staffList.json()).data.some(person => person.id === admin.id), "admin/staff directory must include assignable staff accounts");
+  const forbiddenStaffList = await getFor("/api/v1/admin/staff", ordinaryUser.cookie);
+  assert.equal(forbiddenStaffList.status, 403, "ordinary users must not list assignable staff");
+
+  const assignLead = await server.fetch(origin + "/api/v1/admin/leads", {
+    method: "PATCH",
+    headers: { origin, cookie: admin.cookie, "content-type": "application/json" },
+    body: JSON.stringify({ id: "test-lead-convert", assigned_to: admin.id })
+  });
+  assert.equal(assignLead.status, 200, await assignLead.clone().text());
+  assert.equal((await assignLead.json()).assigned_to, admin.id);
+
+  const invalidAssignment = await server.fetch(origin + "/api/v1/admin/leads", {
+    method: "PATCH",
+    headers: { origin, cookie: admin.cookie, "content-type": "application/json" },
+    body: JSON.stringify({ id: "test-lead-convert", assigned_to: ordinaryUser.id })
+  });
+  assert.equal(invalidAssignment.status, 400, "leads may only be assigned to admin/staff accounts");
+
+  const assignedLeadList = await getFor("/api/v1/admin/leads", admin.cookie);
+  const assignedLead = (await assignedLeadList.json()).leads.find(item => item.id === "test-lead-convert");
+  assert.equal(assignedLead.assigned_to, admin.id);
+  assert.equal(assignedLead.assigned_name, "Test Admin");
+
+  const unassignLead = await server.fetch(origin + "/api/v1/admin/leads", {
+    method: "PATCH",
+    headers: { origin, cookie: admin.cookie, "content-type": "application/json" },
+    body: JSON.stringify({ id: "test-lead-convert", assigned_to: null })
+  });
+  assert.equal(unassignLead.status, 200, await unassignLead.clone().text());
+  assert.equal((await unassignLead.json()).assigned_to, null);
+
+  const leadHistory = await getFor("/api/v1/admin/leads/test-lead-convert/events", admin.cookie);
+  assert.equal(leadHistory.status, 200, await leadHistory.clone().text());
+  const leadHistoryTypes = (await leadHistory.json()).data.map(event => event.event_type);
+  assert.ok(leadHistoryTypes.includes("assigned"));
+  assert.ok(leadHistoryTypes.includes("unassigned"));
   const adminLeadList = await getFor("/api/v1/admin/leads", admin.cookie);
   assert.equal(adminLeadList.status, 200, await adminLeadList.clone().text());
   const convertedLeadInList = (await adminLeadList.json()).leads.find(item => item.id === "test-lead-convert");

@@ -7,7 +7,7 @@
 - Lịch tư vấn trả về từ GET /api/booking; chưa có nhà cung cấp lịch mặc định nên trả 503 cho đến khi cấu hình.
 - API có allowlist CORS, validation, honeypot, rate limit cơ bản theo IP hash, security headers và consent timestamp. Endpoint quản trị yêu cầu Better Auth session và vai trò admin/staff được cấp từ phía máy chủ.
 - Better Auth dùng cookie HttpOnly, Secure, SameSite=Lax; production frontend/API phải ở cùng site tin cậy để tránh third-party cookies.
-- D1 migrations hiện gồm 0001 đến 0008: lead, CMS, CRM/quotes/identity, revisions, template metadata, orders/projects/milestones/comments/tickets và lead assignment.
+- D1 migrations hiện gồm 0001 đến 0009: lead, CMS, CRM/quotes/identity, revisions, template metadata, orders/projects/milestones/comments/tickets, lead assignment và blog post category/tags.
 
 ## Endpoints
 

@@ -166,7 +166,7 @@ function cmsSnapshot(resource, row) {
   return snapshot;
 }
 
-async function recordCmsRevision(env, resourceName, resourceId, action, actorId, snapshot, createdAt) {
+function recordCmsRevision(env, resourceName, resourceId, action, actorId, snapshot, createdAt) {
   return env.DB.prepare(
     "INSERT INTO cms_revisions (id, resource_type, resource_id, action, actor_id, snapshot_json, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)"
   ).bind(crypto.randomUUID(), resourceName, resourceId, action, actorId, JSON.stringify(snapshot), createdAt);

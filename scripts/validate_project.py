@@ -147,6 +147,12 @@ try:
     lead_indexes = {row[1] for row in db.execute("PRAGMA index_list(leads)")}
     if "idx_leads_assigned_status_created" not in lead_indexes:
         fail("lead assignment query index is missing")
+    post_columns = {row[1] for row in db.execute("PRAGMA table_info(cms_posts)")}
+    if not {"category", "tags_json"}.issubset(post_columns):
+        fail("CMS post category/tag columns are missing")
+    post_indexes = {row[1] for row in db.execute("PRAGMA index_list(cms_posts)")}
+    if "idx_cms_posts_category_public" not in post_indexes:
+        fail("CMS post taxonomy query index is missing")
     # Publicly readable content must have an explicit status and publication timestamp.
     page_columns = {row[1] for row in db.execute("PRAGMA table_info(cms_pages)")}
     if not {"status", "published_at", "slug"}.issubset(page_columns):

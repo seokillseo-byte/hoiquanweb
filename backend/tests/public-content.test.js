@@ -17,6 +17,7 @@ function makeEnv(rows = {}) {
           return null;
         },
         async all() {
+          if (sql.includes("GROUP BY category")) return { results: rows.categories ?? [] };
           if (sql.includes("FROM cms_posts")) return { results: rows.posts ?? [] };
           if (sql.includes("FROM cms_services")) return { results: rows.services ?? [] };
           if (sql.includes("FROM cms_templates")) return { results: rows.templates ?? [] };
@@ -62,6 +63,27 @@ test("public posts list is bounded and published-only", async () => {
   assert.equal(body.meta.limit, 50);
   assert.match(calls[0], /status = 'published'/);
   assert.match(calls[0], /LIMIT \?/);
+});
+
+test("public post listing filters by category, tag and search without exposing drafts", async () => {
+  const { env, calls } = makeEnv({ posts: [{ slug: "seo-basics", title: "SEO Basics", category: "SEO", tags_json: '["technical-seo"]', seo_json: "{}" }] });
+  const response = await request("/api/v1/public/posts?category=SEO&tag=technical-seo&q=Basics", env);
+  assert.equal(response.status, 200);
+  const body = await response.json();
+  assert.equal(body.data[0].category, "SEO");
+  assert.deepEqual(body.data[0].tags, ["technical-seo"]);
+  assert.equal("tags_json" in body.data[0], false);
+  assert.match(calls[0], /status = 'published'/);
+  assert.match(calls[0], /EXISTS \(SELECT 1 FROM json_each\(cms_posts\.tags_json\)/);
+  assert.match(calls[0], /title LIKE/);
+});
+
+test("public category directory includes only categories with published posts", async () => {
+  const { env, calls } = makeEnv({ categories: [{ category: "SEO", post_count: 2 }] });
+  const response = await request("/api/v1/public/post-categories", env);
+  assert.equal(response.status, 200);
+  assert.deepEqual((await response.json()).data, [{ category: "SEO", post_count: 2 }]);
+  assert.match(calls[0], /status = 'published'/);
 });
 
 test("public post detail returns 404 when no published slug exists", async () => {

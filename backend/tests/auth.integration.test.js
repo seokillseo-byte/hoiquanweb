@@ -1253,3 +1253,31 @@ test("in-app notifications are generated for project and ticket events and isola
   assert.equal((await getNotifications(admin.cookie).then(response => response.json())).meta.unread_count, 0);
 });
 
+
+
+test("new lead and email outbox event are persisted atomically when email is not configured", async () => {
+  const ip = "198.51.100." + (30 + Math.floor(Math.random() * 100));
+  const response = await server.fetch(origin + "/api/leads", {
+    method: "POST",
+    headers: { origin, "content-type": "application/json", "cf-connecting-ip": ip },
+    body: JSON.stringify({
+      name: "Outbox Test Lead",
+      email: "outbox-test@example.test",
+      service: "Website Design",
+      budget: "20-50 million VND",
+      goals: "Validate durable email event",
+      consent: true
+    })
+  });
+  assert.equal(response.status, 201, await response.clone().text());
+  const body = await response.json();
+  assert.equal(body.notification, "not_configured", "the API must not claim email was sent without provider configuration");
+  const outboxResponse = await server.fetch(origin + "/_test/email-outbox", { headers: { origin } });
+  assert.equal(outboxResponse.status, 200, await outboxResponse.clone().text());
+  const events = (await outboxResponse.json()).data;
+  const event = events.find(item => item.lead_id === body.id);
+  assert.ok(event, "lead creation must enqueue a durable email event");
+  assert.equal(event.event_key, "lead.created/" + body.id);
+  assert.equal(event.status, "pending");
+  assert.equal(event.attempts, 0);
+});

@@ -35,10 +35,13 @@ jobs:
         run: npm ci --no-audit --no-fund
       - name: Typecheck and build frontend
         run: npm run build
+      - name: Generate bilingual public website
+        run: node scripts/build_public_site.mjs
       - name: Assemble isolated static preview
         run: |
           mkdir -p _preview
-          cp index.html privacy.html admin.html 404.html robots.txt sitemap.xml _preview/
+          cp -R public-site/dist/. _preview/
+          cp admin.html _preview/
           if [ -d dist ]; then cp -R dist/. _preview/; fi
           cat > _preview/PREVIEW-README.txt <<'EOF'
           Hội Quán Web isolated PR preview bundle.

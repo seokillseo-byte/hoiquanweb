@@ -6,6 +6,7 @@ const DOMAIN = "https://hoiquanweb.io.vn";
 const BRAND = "HoiQuanWeb";
 const SLOGAN = "Your All-in-One Technology Partner";
 const API_BASE = process.env.HQ_API_BASE || "";
+const BASE_PATH = (process.env.HQ_BASE_PATH || "").replace(/\/+$/, "");
 
 const services = [
   { slug:"thiet-ke-website", enSlug:"website-design", icon:"◈",
@@ -93,6 +94,9 @@ add("en","/en/contact/","/lien-he/","contact",{title:"Contact HoiQuanWeb",descri
 add("vi","/quyen-rieng-tu/","/en/privacy/","privacy",{title:"Quyền riêng tư",description:"Thông tin về cách website HoiQuanWeb xử lý dữ liệu được nhập trên biểu mẫu.",eyebrow:"THÔNG TIN",heading:"Quyền riêng tư và dữ liệu biểu mẫu.",lead:"Website hiện không bật công cụ phân tích bên thứ ba. Biểu mẫu chỉ gửi dữ liệu khi API nhận yêu cầu đã được cấu hình; nếu chưa cấu hình, dữ liệu chỉ được xử lý trong trình duyệt để tạo bản tóm tắt tải xuống.",sections:[["Dữ liệu biểu mẫu","Khi API được cấu hình, các trường bạn chủ động gửi như tên, email, dịch vụ quan tâm và mô tả yêu cầu sẽ được gửi đến hệ thống tiếp nhận của HoiQuanWeb để xử lý yêu cầu tư vấn."],["Khi API chưa được cấu hình","Biểu mẫu không gửi dữ liệu đến máy chủ. Bạn có thể tải bản tóm tắt về thiết bị của mình."],["Liên hệ và yêu cầu dữ liệu","Trước khi bật tiếp nhận dữ liệu thật, HoiQuanWeb cần hoàn thiện thông tin pháp lý, đầu mối liên hệ và chính sách lưu trữ/xóa dữ liệu phù hợp."]]});
 add("en","/en/privacy/","/quyen-rieng-tu/","privacy",{title:"Privacy",description:"How the HoiQuanWeb website handles information entered into its inquiry form.",eyebrow:"INFORMATION",heading:"Privacy and form data.",lead:"The website does not currently enable third-party analytics. The form sends data only when an inquiry API is configured; otherwise, information is processed in your browser to create a downloadable brief.",sections:[["Form data","When the API is configured, fields you choose to submit, such as name, email, service interest and project details, are sent to HoiQuanWeb's inquiry system for handling your request."],["When the API is not configured","The form does not send information to a server. You can download the brief to your own device."],["Contact and data requests","Before accepting real submissions, HoiQuanWeb must complete its legal identity, contact channel and applicable data-retention/deletion policy."]]});
 
+function withBasePath(html) {
+  return BASE_PATH ? html.replace(/(href|src)="\/(?!\/)/g, (_, attr) => attr + '="' + BASE_PATH + "/") : html;
+}
 function esc(value=""){return String(value).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
 function url(path){return path;}
 function header(page){
@@ -142,7 +146,7 @@ await mkdir(OUT,{recursive:true});
 for(const page of pages){
  const file=page.path==="/"?join(OUT,"index.html"):join(OUT,page.path.slice(1),"index.html");
  await mkdir(dirname(file),{recursive:true});
- await writeFile(file,render(page),"utf8");
+ await writeFile(file,withBasePath(render(page)),"utf8");
 }
 await mkdir(join(OUT,"assets","css"),{recursive:true});
 await mkdir(join(OUT,"assets","js"),{recursive:true});
@@ -151,5 +155,5 @@ await copyFile(join(process.cwd(),"public-site","src","site.js"),join(OUT,"asset
 await writeFile(join(OUT,"robots.txt"),"User-agent: *\nAllow: /\nDisallow: /admin.html\nSitemap: "+DOMAIN+"/sitemap.xml\n","utf8");
 const urls=pages.map(p=>'<url><loc>'+DOMAIN+p.path+'</loc><lastmod>'+new Date().toISOString().slice(0,10)+'</lastmod><changefreq>monthly</changefreq><priority>'+(p.kind==="home"?"1.0":p.kind==="service"||p.kind==="services"?"0.8":"0.6")+'</priority></url>').join("");
 await writeFile(join(OUT,"sitemap.xml"),'<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">'+urls+'</urlset>',"utf8");
-await writeFile(join(OUT,"404.html"),'<!doctype html><html lang="vi"><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>Không tìm thấy trang | HoiQuanWeb</title><meta name="robots" content="noindex,follow"><link rel="stylesheet" href="/assets/css/site.css"><body><main id="main" class="not-found"><span class="eyebrow">404</span><h1>Không tìm thấy trang.</h1><p>Đường dẫn có thể đã thay đổi hoặc không tồn tại.</p><a class="button button-primary" href="/">Về trang chủ</a></main></body></html>',"utf8");
+await writeFile(join(OUT,"404.html"),withBasePath('<!doctype html><html lang="vi"><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>Không tìm thấy trang | HoiQuanWeb</title><meta name="robots" content="noindex,follow"><link rel="stylesheet" href="/assets/css/site.css"><body><main id="main" class="not-found"><span class="eyebrow">404</span><h1>Không tìm thấy trang.</h1><p>Đường dẫn có thể đã thay đổi hoặc không tồn tại.</p><a class="button button-primary" href="/">Về trang chủ</a></main></body></html>'),"utf8");
 console.log("Generated "+pages.length+" localized pages into "+OUT);

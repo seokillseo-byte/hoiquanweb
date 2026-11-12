@@ -372,6 +372,83 @@ test("customer portal isolates customers and quotes; admin access requires a ser
   assert.equal(customerAuditCounts["customer.updated"], 1);
   assert.equal(customerAuditCounts["customer.activity.created"], 1);
 
+  const leadResponse = await server.fetch(origin + "/api/leads", {
+    method: "POST",
+    headers: { origin, "content-type": "application/json", "cf-connecting-ip": "198.51.100.25" },
+    body: JSON.stringify({
+      name: "Lead to Convert",
+      email: "lead-to-convert@example.test",
+      service: "Website Design",
+      budget: "20-50 triệu",
+      goals: "Build a bilingual company website",
+      consent: true
+    })
+  });
+  assert.equal(leadResponse.status, 201, await leadResponse.clone().text());
+  const createdLead = await leadResponse.json();
+
+  const qualifyLead = await server.fetch(origin + "/api/admin/leads", {
+    method: "PATCH",
+    headers: { origin, cookie: admin.cookie, "content-type": "application/json" },
+    body: JSON.stringify({ id: createdLead.id, status: "qualified" })
+  });
+  assert.equal(qualifyLead.status, 200, await qualifyLead.clone().text());
+
+  const forbiddenConversion = await server.fetch(origin + "/api/admin/leads/" + encodeURIComponent(createdLead.id) + "/convert", {
+    method: "POST",
+    headers: { origin, cookie: ordinaryUser.cookie }
+  });
+  assert.equal(forbiddenConversion.status, 403, "ordinary users must not convert leads");
+
+  const convertLead = await server.fetch(origin + "/api/admin/leads/" + encodeURIComponent(createdLead.id) + "/convert", {
+    method: "POST",
+    headers: { origin, cookie: admin.cookie }
+  });
+  assert.equal(convertLead.status, 201, await convertLead.clone().text());
+  const converted = (await convertLead.json()).data;
+  assert.equal(converted.lead_id, createdLead.id);
+  assert.equal(converted.display_name, "Lead to Convert");
+  assert.equal(converted.contact_email, "lead-to-convert@example.test");
+
+  const conversionEvents = await getFor("/api/admin/leads/" + encodeURIComponent(createdLead.id) + "/events", admin.cookie);
+  assert.equal(conversionEvents.status, 200, await conversionEvents.clone().text());
+  const leadEventTypes = (await conversionEvents.json()).data.map(event => event.event_type);
+  assert.ok(leadEventTypes.includes("status_changed"));
+  assert.ok(leadEventTypes.includes("converted_to_customer"));
+
+  const conversionActivities = await getFor("/api/v1/admin/customers/" + encodeURIComponent(converted.id) + "/activities", admin.cookie);
+  assert.equal(conversionActivities.status, 200, await conversionActivities.clone().text());
+  const convertedActivityList = (await conversionActivities.json()).data;
+  assert.equal(convertedActivityList.length, 1, "conversion must create one system activity");
+  assert.equal(convertedActivityList[0].activity_type, "system");
+
+  const repeatedConversion = await server.fetch(origin + "/api/admin/leads/" + encodeURIComponent(createdLead.id) + "/convert", {
+    method: "POST",
+    headers: { origin, cookie: admin.cookie }
+  });
+  assert.equal(repeatedConversion.status, 200, await repeatedConversion.clone().text());
+  assert.equal((await repeatedConversion.json()).already_converted, true, "repeated conversion must return the existing customer");
+
+  const unqualifiedLeadResponse = await server.fetch(origin + "/api/leads", {
+    method: "POST",
+    headers: { origin, "content-type": "application/json", "cf-connecting-ip": "198.51.100.26" },
+    body: JSON.stringify({
+      name: "Unqualified Lead",
+      email: "unqualified@example.test",
+      service: "Website Design",
+      budget: "",
+      goals: "",
+      consent: true
+    })
+  });
+  assert.equal(unqualifiedLeadResponse.status, 201, await unqualifiedLeadResponse.clone().text());
+  const unqualifiedLead = await unqualifiedLeadResponse.json();
+  const rejectedConversion = await server.fetch(origin + "/api/admin/leads/" + encodeURIComponent(unqualifiedLead.id) + "/convert", {
+    method: "POST",
+    headers: { origin, cookie: admin.cookie }
+  });
+  assert.equal(rejectedConversion.status, 409, "new leads must be qualified before conversion");
+
   const forbiddenQuoteCreate = await server.fetch(origin + "/api/v1/admin/quotes", {
     method: "POST",
     headers: { origin, cookie: ordinaryUser.cookie, "content-type": "application/json" },

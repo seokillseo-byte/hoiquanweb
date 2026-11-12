@@ -6,7 +6,7 @@
 
 ## Baseline đã kiểm tra
 
-- Public website đã có generator tĩnh song ngữ Việt/Anh với 34 trang nội dung, metadata theo trang, hreflang, canonical, sitemap và biểu mẫu tư vấn. CMS pages/posts/services có admin UI + API, draft-first workflow và revision history đã có mã nguồn; public renderer chưa lấy nội dung động từ CMS.
+- Public website đã có generator tĩnh song ngữ Việt/Anh với 34 trang nội dung, metadata theo trang, hreflang, canonical, sitemap và biểu mẫu tư vấn. CMS pages/posts/services có admin UI + API, draft-first workflow và revision history. Public renderer có thể đọc page đã xuất bản để ghi đè route tĩnh cùng slug khi HQ_API_BASE được cấu hình; biến này chưa được cấu hình và chưa xác minh runtime với Worker/D1.
 - Có Worker scaffold và D1 migration cho lead, lead events và rate limiting.
 - `backend/wrangler.toml` vẫn chứa database ID placeholder; API base trên frontend hiện để trống.
 - Better Auth và role checks có integration tests; CMS API/UI cho pages/posts/services có kiểm thử. D1 migrations chưa deploy; public CMS rendering, media library, template marketplace có dữ liệu thực, customer portal đầy đủ, đơn hàng/dự án và các tích hợp production chưa hoàn thiện.
@@ -48,14 +48,16 @@ Mục tiêu: dựng nền tảng có thể mở rộng, không chỉ thêm HTML 
 ## Phase 2 — Website dịch vụ nhiều trang + CMS nội dung
 
 - Các trang riêng: home, giới thiệu, dịch vụ, trang dịch vụ chi tiết, giải pháp theo ngành, portfolio/case study, bảng giá, blog/kiến thức, FAQ, liên hệ và pháp lý.
-- CMS cho pages/posts/services có draft, edit, publish/archive và revision snapshots đã có API/UI. Còn thiếu categories/tags, navigation/footer, reusable block library, media, scheduling, revision restore và tích hợp public renderer.
+- CMS cho pages/posts/services có draft, edit, publish/archive và revision snapshots đã có API/UI. Public renderer hỗ trợ các block an toàn cho route tĩnh khớp slug khi API được cấu hình. Còn thiếu categories/tags, navigation/footer, media, scheduling, revision restore, route động mới và blog publishing.
 - Nội dung công khai được đọc từ API/database; có fallback lỗi rõ ràng, không âm thầm hiển thị dữ liệu giả.
 - Sitemap và canonical phản ánh các URL thực; metadata và structured data chỉ dùng thông tin đã xác minh.
 - Chuyển các section hiện tại thành nội dung/khối tái sử dụng khi phù hợp, tránh viết lại không cần thiết.
 
 **Acceptance gates**
 - [x] Admin/staff tạo và sửa bản nháp; Admin xuất bản/lưu trữ; dữ liệu được lưu qua API/D1 schema và có integration tests.
-- [ ] CMS content được nối vào public renderer để thay đổi đã xuất bản tự phản ánh trên website.
+- [x] Public renderer có API integration tùy chọn cho published CMS page khớp slug route tĩnh, render block bằng textContent.
+- [ ] Cấu hình HQ_API_BASE, deploy Worker/D1 và nghiệm thu thay đổi CMS xuất hiện trên public domain.
+- [ ] Hỗ trợ tạo route CMS mới, blog listing/detail và media preview.
 - [ ] Public routes hoạt động trực tiếp khi mở URL, gồm refresh và 404.
 - [ ] Test quyền xuất bản, XSS-safe rendering, validation, media upload và revision/restore.
 - [ ] Kiểm tra link, SEO metadata, sitemap, accessibility, mobile, Lighthouse và lỗi API.

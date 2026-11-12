@@ -1100,6 +1100,7 @@ test("private project files enforce customer membership and staff-only internal 
   assert.equal(customerFile.filename, "brief.pdf");
   assert.equal(customerFile.sha256.length, 64);
   assert.equal(Object.hasOwn(customerFile, "object_key"), false, "storage keys must never leave the API");
+  assert.equal(Object.hasOwn(customerFile, "uploaded_by"), false, "internal user identifiers must not leave the API");
 
   const customerList = await server.fetch(origin + "/api/v1/me/projects/" + project.id + "/files", { headers: { origin, cookie: userA.cookie } });
   assert.equal(customerList.status, 200, await customerList.clone().text());

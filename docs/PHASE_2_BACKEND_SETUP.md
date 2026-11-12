@@ -141,3 +141,13 @@ Staging-specific runbook and isolated config template: [CLOUDFLARE_STAGING_RUNBO
 - Project status/milestone và staff ticket reply tạo notification cho các customer members; customer project comments, ticket creation và customer ticket replies tạo notification cho staff/admin.
 - Notification payload chỉ chứa summary chung và resource ID; không sao chép nội dung trao đổi, dữ liệu liên hệ hoặc thông tin nhạy cảm.
 - Đây là in-app notification; Resend email chưa được cấu hình bởi migration/API này. Chỉ bật email sau khi xác minh sender domain, secrets, retry/idempotency và consent/policy.
+
+
+## Email outbox và retry
+
+- Migration `0013_crm_email_outbox.sql` tạo durable outbox, khóa duy nhất theo event key và index cho tác vụ đến hạn. Lead và outbox row được ghi cùng một D1 batch để không có lead mới bị mất sự kiện thông báo.
+- Worker scheduled trigger chạy mỗi 5 phút, xử lý tối đa 10 email mỗi lượt. Email chỉ được gửi khi cả `RESEND_API_KEY`, `NOTIFICATION_EMAIL` và `EMAIL_FROM` được cấu hình.
+- Retry tối đa 6 lần với backoff tăng dần; lỗi cuối chuyển trạng thái `failed`. Lease giúp khôi phục các tác vụ bị bỏ dở khi Worker bị dừng.
+- Mỗi lead dùng Resend `Idempotency-Key: lead-created/<lead-id>` để chống gửi trùng khi retry trong thời hạn idempotency của provider. Outbox vẫn giữ event key duy nhất để ngăn enqueue trùng trong ứng dụng.
+- Outbox chỉ lưu lead ID và trạng thái gửi, không nhân bản email/brief vào bảng queue. Log chỉ ghi mã lỗi tổng quát, không ghi nội dung lead hoặc secrets.
+- Trước khi bật: áp dụng migration 0013 lên D1 staging, đặt Worker secrets/vars, xác minh sender domain và test cron + Resend thực tế. Không đánh dấu email production-ready chỉ dựa trên CI.

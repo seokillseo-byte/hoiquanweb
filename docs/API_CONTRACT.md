@@ -19,8 +19,9 @@
 |---|---|---|---|
 | GET | `/health` | Runtime health/readiness without exposing secrets | Public, minimal response |
 | GET | `/api/v1/public/pages/:slug` | Read published page content only | Public |
-| GET | `/api/v1/public/posts` | List published posts with bounded pagination | Public |
-| GET | `/api/v1/public/posts/:slug` | Read a published post | Public |
+| GET | `/api/v1/public/posts` | List published posts with bounded pagination and category/tag/search filters | Public |
+| GET | `/api/v1/public/post-categories` | List categories that contain published posts | Public |
+| GET | `/api/v1/public/posts/:slug` | Read a published post including editorial taxonomy | Public |
 | GET | `/api/v1/public/services` | List active service offerings | Public |
 | GET | `/api/v1/public/templates` | List published templates with filters | Public |
 | GET | `/api/v1/public/templates/:slug` | Read published template metadata | Public |
@@ -114,7 +115,7 @@ The content_json field is stored as a JSON object with a blocks array. The publi
 | faq | items array of objects with question and answer strings |
 | divider | no additional fields |
 
-The public renderer builds DOM nodes and assigns text with textContent; it does not accept raw HTML or inject innerHTML. Unsupported blocks are ignored. Public CMS overrides are loaded only when the build-time API base is configured and a published page slug matches the static route. Current slug mapping is home for /, en for /en/, and the final route segment for other pages.
+The public renderer builds DOM nodes and assigns text with textContent; it does not accept raw HTML or inject innerHTML. Unsupported blocks are ignored. CMS posts store a category string and up to 20 normalized, deduplicated tags. Public post listing accepts bounded `category`, `tag`, and `q` filters; category discovery counts only published posts. The bilingual blog listing and article shell use public APIs with credentials omitted, render approved blocks through the same safe renderer, and update document title/description/canonical/Article JSON-LD after a published article is loaded. The article route currently uses a stable static route plus a `?slug=` parameter; static hosting does not generate a distinct HTML document per database article, so crawler-specific prerendering remains a separate acceptance item. Public CMS overrides are loaded only when the build-time API base is configured and a published page slug matches the static route. Current slug mapping is home for /, en for /en/, and the final route segment for other pages.
 
 SEO JSON may include title, description and robots: "noindex". A missing API, unpublished page or failed request leaves the generated static page unchanged.
 

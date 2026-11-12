@@ -239,6 +239,38 @@ test("customer portal isolates customers and quotes; admin access requires a ser
   assert.equal(quotesB.status, 200, await quotesB.clone().text());
   assert.deepEqual((await quotesB.json()).data.map(item => item.quote_number), ["TEST-B"]);
 
+  const quoteDetail = await getFor("/api/v1/me/quotes/test-quote-a", userA.cookie);
+  assert.equal(quoteDetail.status, 200, await quoteDetail.clone().text());
+  const detail = (await quoteDetail.json()).data;
+  assert.equal(detail.quote_number, "TEST-A");
+  assert.equal(detail.status, "sent");
+  assert.deepEqual(detail.items, []);
+
+  const crossCustomerQuote = await getFor("/api/v1/me/quotes/test-quote-a", userB.cookie);
+  assert.equal(crossCustomerQuote.status, 404, "a customer must not read another customer's quote");
+
+  const accepted = await server.fetch(origin + "/api/v1/me/quotes/test-quote-a/accept", {
+    method: "POST",
+    headers: { origin, cookie: userA.cookie }
+  });
+  assert.equal(accepted.status, 200, await accepted.clone().text());
+  const acceptedQuote = (await accepted.json()).data;
+  assert.equal(acceptedQuote.status, "accepted");
+  assert.equal(acceptedQuote.accepted_by, userA.id);
+  assert.ok(acceptedQuote.accepted_at);
+
+  const repeatedAcceptance = await server.fetch(origin + "/api/v1/me/quotes/test-quote-a/accept", {
+    method: "POST",
+    headers: { origin, cookie: userA.cookie }
+  });
+  assert.equal(repeatedAcceptance.status, 409, "quote acceptance must not be repeated");
+
+  const crossCustomerAcceptance = await server.fetch(origin + "/api/v1/me/quotes/test-quote-b/accept", {
+    method: "POST",
+    headers: { origin, cookie: userA.cookie }
+  });
+  assert.equal(crossCustomerAcceptance.status, 404, "a customer must not accept another customer's quote");
+
   const ordinaryAdminAccess = await getFor("/api/v1/admin/customers", ordinaryUser.cookie);
   assert.equal(ordinaryAdminAccess.status, 403, await ordinaryAdminAccess.clone().text());
 

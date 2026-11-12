@@ -2,7 +2,7 @@ name: Build isolated PR preview
 
 on:
   pull_request:
-    branches: [main]
+    branches: [main, feat/better-auth-worker-d1-integration]
     types: [opened, synchronize, reopened, ready_for_review]
   workflow_dispatch:
 

@@ -87,10 +87,15 @@ async function createLead(request, env) {
   const name = clean(body.name, 120), email = clean(body.email, 254).toLowerCase(), service = clean(body.service, 100), budget = clean(body.budget, 100), goals = clean(body.goals, 3000), consent = body.consent === true;
   if (name.length < 2 || !validEmail(email) || !SERVICES.has(service) || !consent) return json({ error: "VALIDATION_ERROR", message: "Vui lòng kiểm tra họ tên, email, dịch vụ và đồng ý chính sách quyền riêng tư." }, 400);
   const id = crypto.randomUUID(), createdAt = new Date().toISOString(), consentAt = createdAt;
-  await env.DB.batch([
-    env.DB.prepare("INSERT INTO leads (id, name, email, service, budget, goals, status, consent_at, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, 'new', ?, ?, ?)").bind(id, name, email, service, budget, goals, consentAt, createdAt, createdAt),
-    env.DB.prepare("INSERT INTO crm_email_outbox (id, event_key, lead_id, status, attempts, next_attempt_at, created_at, updated_at) VALUES (?, ?, ?, 'pending', 0, ?, ?, ?)").bind(crypto.randomUUID(), "lead.created/" + id, id, createdAt, createdAt, createdAt)
-  ]);
+  try {
+    await env.DB.batch([
+      env.DB.prepare("INSERT INTO leads (id, name, email, service, budget, goals, status, consent_at, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, 'new', ?, ?, ?)").bind(id, name, email, service, budget, goals, consentAt, createdAt, createdAt),
+      env.DB.prepare("INSERT INTO crm_email_outbox (id, event_key, lead_id, status, attempts, next_attempt_at, created_at, updated_at) VALUES (?, ?, ?, 'pending', 0, ?, ?, ?)").bind(crypto.randomUUID(), "lead.created/" + id, id, createdAt, createdAt, createdAt)
+    ]);
+  } catch (error) {
+    if (env.TEST_MODE === "true") return json({ error: "TEST_LEAD_PERSISTENCE_FAILED", detail: clean(error?.message, 240) }, 500);
+    throw error;
+  }
   const notification = env.RESEND_API_KEY && env.NOTIFICATION_EMAIL && env.EMAIL_FROM ? "queued" : "not_configured";
   return json({ ok: true, id, message: "Yêu cầu đã được lưu.", notification }, 201);
 }

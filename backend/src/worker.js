@@ -1254,6 +1254,14 @@ export default { async fetch(request, env) {
       const result = await env.DB.prepare("SELECT COUNT(*) AS count FROM crm_audit_events WHERE action = 'quote.accepted'").first();
       response = json({ count: result?.count || 0 });
     }
+    else if (url.pathname === "/_test/lead-audit" && request.method === "GET" && env.TEST_MODE === "true") {
+      const leadId = clean(url.searchParams.get("lead_id"), 80);
+      if (!leadId) response = json({ error: "VALIDATION_ERROR" }, 400);
+      else {
+        const result = await env.DB.prepare("SELECT action, metadata_json FROM crm_audit_events WHERE resource_type = 'lead' AND resource_id = ? ORDER BY created_at ASC, id ASC").bind(leadId).all();
+        response = json({ data: result.results || [] });
+      }
+    }
     else if (url.pathname === "/_test/quote-audit-count" && request.method === "GET" && env.TEST_MODE === "true") {
       const result = await env.DB.prepare("SELECT action, COUNT(*) AS count FROM crm_audit_events WHERE resource_type = 'quote' GROUP BY action").all();
       response = json({ data: result.results || [] });

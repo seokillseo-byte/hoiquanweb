@@ -38,7 +38,12 @@ jobs:
       - name: Generate bilingual public website
         env:
           HQ_API_BASE: ${{ vars.HQ_API_BASE }}
+          HQ_BASE_PATH: ${{ vars.HQ_BASE_PATH || '/hoiquanweb' }}
         run: node scripts/build_public_site.mjs
+      - name: Validate generated public website
+        env:
+          HQ_BASE_PATH: ${{ vars.HQ_BASE_PATH || '/hoiquanweb' }}
+        run: node scripts/validate_public_site.mjs
       - name: Assemble public website files
         run: |
           mkdir -p _site

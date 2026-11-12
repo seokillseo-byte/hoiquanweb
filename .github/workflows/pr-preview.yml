@@ -42,6 +42,7 @@ jobs:
           mkdir -p _preview
           cp -R public-site/dist/. _preview/
           cp admin.html _preview/
+          cp portal.html _preview/
           if [ -d dist ]; then cp -R dist/. _preview/; fi
           cat > _preview/PREVIEW-README.txt <<'EOF'
           Hội Quán Web isolated PR preview bundle.

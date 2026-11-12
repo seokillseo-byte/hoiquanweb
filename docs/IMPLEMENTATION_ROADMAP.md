@@ -59,7 +59,8 @@ Mục tiêu: dựng nền tảng có thể mở rộng, không chỉ thêm HTML 
 - [ ] Cấu hình HQ_API_BASE, deploy Worker/D1 và nghiệm thu thay đổi CMS xuất hiện trên public domain.
 - [ ] Hỗ trợ tạo route CMS mới, blog listing/detail và media preview.
 - [ ] Public routes hoạt động trực tiếp khi mở URL, gồm refresh và 404.
-- [ ] Test quyền xuất bản, XSS-safe rendering, validation, media upload và revision/restore.
+- [x] Test quyền xuất bản, revision history và restore; restore không tự xuất bản nội dung.
+- [ ] Test XSS-safe rendering, validation, media upload.
 - [ ] Kiểm tra link, SEO metadata, sitemap, accessibility, mobile, Lighthouse và lỗi API.
 
 ## Phase 3 — Kho template WordPress + HTML/CSS

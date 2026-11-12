@@ -211,11 +211,13 @@ test("customer portal isolates customers and quotes; admin access requires a ser
   const userB = await createSignedInUser("Customer B");
   const admin = await createSignedInUser("Test Admin");
   const ordinaryUser = await createSignedInUser("Ordinary User");
+  const memberUser = await createSignedInUser("Customer Member");
 
   const seed = await authRequest("/_test/seed-identity", {
     userA: userA.id,
     userB: userB.id,
-    adminUser: admin.id
+    adminUser: admin.id,
+    memberUser: memberUser.id
   });
   assert.equal(seed.status, 200, await seed.clone().text());
 
@@ -249,6 +251,14 @@ test("customer portal isolates customers and quotes; admin access requires a ser
 
   const crossCustomerQuote = await getFor("/api/v1/me/quotes/test-quote-a", userB.cookie);
   assert.equal(crossCustomerQuote.status, 404, "a customer must not read another customer's quote");
+
+  const memberDetail = await getFor("/api/v1/me/quotes/test-quote-a", memberUser.cookie);
+  assert.equal(memberDetail.status, 200, "a customer member may read the shared quote");
+  const memberAcceptance = await server.fetch(origin + "/api/v1/me/quotes/test-quote-a/accept", {
+    method: "POST",
+    headers: { origin, cookie: memberUser.cookie }
+  });
+  assert.equal(memberAcceptance.status, 403, "a non-billing customer member must not accept the quote");
 
   const accepted = await server.fetch(origin + "/api/v1/me/quotes/test-quote-a/accept", {
     method: "POST",

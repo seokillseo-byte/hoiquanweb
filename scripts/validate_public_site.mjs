@@ -3,6 +3,7 @@ import { access, readFile, readdir } from "node:fs/promises";
 import { join, relative, sep } from "node:path";
 
 const root = join(process.cwd(), "public-site", "dist");
+const basePath = (process.env.HQ_BASE_PATH || "").replace(/\/+$/, "");
 async function exists(path) {
   try { await access(path); return true; } catch { return false; }
 }
@@ -69,7 +70,12 @@ for (const file of files) {
     if (!href || href.startsWith("#") || /^(https?:|mailto:|tel:|javascript:|data:|\/\/)/i.test(href)) continue;
     const target = new URL(href, "https://hoiquanweb.io.vn" + pagePath);
     const targetPath = decodeURIComponent(target.pathname);
-    let targetFile = join(root, targetPath.replace(/^\/+/, ""));
+    if (basePath && !targetPath.startsWith(basePath + "/")) {
+      errors.push(name + ": internal URL is missing the configured base path: " + href);
+      continue;
+    }
+    const sitePath = basePath ? targetPath.slice(basePath.length) || "/" : targetPath;
+    let targetFile = join(root, sitePath.replace(/^\/+/, ""));
     if (targetPath.endsWith("/")) targetFile = join(targetFile, "index.html");
     if (!(await exists(targetFile))) errors.push(name + ": broken internal link or asset " + href);
   }

@@ -60,4 +60,4 @@ Repository hiện có migration CRM `0003_crm_foundation.sql`, CMS revisions `00
 
 ### Customer workspace
 
-The static `portal.html` now includes customer quote access, order history, project milestones/comments and support ticket conversations. Customer data is scoped by server-side customer membership. The portal is noindex and requires a configured Worker API plus provisioned customer membership; self-registration alone does not create customer access. Admin order/project/ticket UI, attachments, notifications, payments and production Worker/D1 deployment remain incomplete.
+The static `portal.html` now includes customer quote access, order history, project milestones/comments and support ticket conversations. Customer data is scoped by server-side customer membership. The portal is noindex and requires a configured Worker API plus provisioned customer membership; self-registration alone does not create customer access. Admin order/project/ticket management UI is implemented. Private attachments, notifications, payments and production Worker/D1 deployment remain incomplete.

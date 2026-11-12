@@ -65,17 +65,20 @@ Mục tiêu: dựng nền tảng có thể mở rộng, không chỉ thêm HTML 
 
 ## Phase 3 — Kho template WordPress + HTML/CSS
 
-- Catalog có category, search/filter, tags, preview/demo, chi tiết, phiên bản, tương thích, giá/loại phí, license/quyền sử dụng và trạng thái xuất bản.
-- Quản trị viên thêm/sửa/ẩn mẫu và quản lý ảnh, demo URL, package metadata.
-- Phân loại rõ template WordPress và HTML/CSS; không gộp chúng thành cùng một cơ chế cài đặt.
-- Quy định quy trình kiểm tra mã nguồn, phụ thuộc, license, cập nhật, sao lưu và rollback.
+- **Đã có catalog công khai song ngữ:** trang `/templates/` và `/en/templates/` đọc template đã xuất bản từ API, hỗ trợ tìm kiếm, lọc nền tảng và tải thêm.
+- **Đã có admin catalog:** tạo/sửa/lọc template, tách loại WordPress và HTML/CSS, lưu category/tags/version/description/preview/thumbnail/price/currency/license/compatibility, xem revision history và publish/archive.
+- Publication gate yêu cầu Admin xác nhận đã kiểm tra license và URL demo; sửa template đã xuất bản tự chuyển về draft.
+- Chưa có upload package, malware/source scanning, lưu trữ tài liệu license, tự động cài đặt/provisioning hoặc thanh toán template. Không seed sản phẩm, demo hay license giả.
 - Trước khi có pipeline provisioning cách ly an toàn, CTA là yêu cầu tư vấn/đặt triển khai, không hứa tự động cài đặt một click.
 
 **Acceptance gates**
-- [ ] Catalog/detail/filter lấy dữ liệu thật từ backend.
-- [ ] Không công bố mẫu/demo/license chưa xác minh như sản phẩm sẵn sàng bán.
-- [ ] Test upload, quyền sửa, status, filter, pagination và URL demo.
-- [ ] Có quy trình rà soát package và bản quyền trước phát hành.
+- [x] Catalog/detail/filter lấy dữ liệu đã xuất bản từ backend; public APIs chỉ trả published templates.
+- [x] Admin/staff tạo/sửa và lọc metadata; Admin publish/archive.
+- [x] Phân loại rõ WordPress và HTML/CSS; test quyền, validation, publication gate, draft visibility và revision history.
+- [x] Không cho publish khi chưa xác nhận license và preview; không công bố mẫu/demo/license chưa được quản trị viên kiểm tra.
+- [ ] Upload package/media an toàn, quyền sửa, pagination đầy đủ và quy trình rà soát package/bản quyền trước phát hành.
+- [ ] Malware/source scan, license evidence storage, compatibility test và rollback.
+- [ ] Provisioning riêng biệt cho WordPress và HTML/CSS; chưa hứa one-click installation.
 
 ## Phase 4 — Cổng khách hàng (bắt buộc trong bản phát hành đầu tiên)
 

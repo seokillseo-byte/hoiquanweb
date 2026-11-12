@@ -33,7 +33,7 @@ async function adminLeads(request, env, url) {
     const limit = Math.max(1, Math.min(100, Number.parseInt(url.searchParams.get("limit"), 10) || 50));
     const result = status && LEAD_STATUSES.has(status)
       ? await env.DB.prepare("SELECT l.id,l.name,l.email,l.service,l.budget,l.goals,l.status,l.consent_at,l.created_at,l.updated_at,c.id AS customer_id FROM leads l LEFT JOIN crm_customers c ON c.lead_id = l.id WHERE l.status = ? ORDER BY l.created_at DESC LIMIT ?").bind(status, limit).all()
-      : await env.DB.prepare("SELECT l.id,l.name,l.email,l.service,l.budget,l.goals,l.status,l.consent_at,l.created_at,l.updated_at,c.id AS customer_id FROM leads l LEFT JOIN crm_customers c ON c.lead_id = l.id ORDER BY l.created_at DESC LIMIT ?").bind(limit, limit).all();
+      : await env.DB.prepare("SELECT l.id,l.name,l.email,l.service,l.budget,l.goals,l.status,l.consent_at,l.created_at,l.updated_at,c.id AS customer_id FROM leads l LEFT JOIN crm_customers c ON c.lead_id = l.id ORDER BY l.created_at DESC LIMIT ?").bind(limit).all();
     return json({ leads: result.results || [] });
   }
   if (request.method === "PATCH") {
@@ -104,11 +104,11 @@ async function identityRoutes(request, env, url) {
     if (!leadId || leadId.length > 80 || leadId.includes("/")) return json({ error: { code: "NOT_FOUND", message: "Không tìm thấy lead." } }, 404);
     const lead = await env.DB.prepare("SELECT id, name, email, service, budget, goals, status FROM leads WHERE id = ? LIMIT 1").bind(leadId).first();
     if (!lead) return json({ error: { code: "NOT_FOUND", message: "Không tìm thấy lead." } }, 404);
+    const existing = await env.DB.prepare("SELECT id FROM crm_customers WHERE lead_id = ? LIMIT 1").bind(leadId).first();
+    if (existing) return json({ data: { customer_id: existing.id, lead_id: leadId, already_converted: true } });
     if (!["qualified", "proposal_sent", "won"].includes(lead.status)) {
       return json({ error: { code: "INVALID_LEAD_STAGE", message: "Chỉ lead đã đủ điều kiện, đã gửi đề xuất hoặc thành công mới có thể chuyển vào CRM." } }, 409);
     }
-    const existing = await env.DB.prepare("SELECT id FROM crm_customers WHERE lead_id = ? LIMIT 1").bind(leadId).first();
-    if (existing) return json({ data: { customer_id: existing.id, lead_id: leadId, already_converted: true } });
     if (!validEmail(lead.email)) return json({ error: { code: "LEAD_EMAIL_INVALID", message: "Email của lead không hợp lệ; cần cập nhật lead trước khi chuyển đổi." } }, 409);
     const now = new Date().toISOString(), customerId = crypto.randomUUID(), activityId = crypto.randomUUID();
     const activityBody = ["Dịch vụ quan tâm: " + lead.service, "Ngân sách: " + (lead.budget || "Chưa xác định"), "Mục tiêu: " + (lead.goals || "Chưa cung cấp")].join("\n");

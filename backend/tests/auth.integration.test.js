@@ -828,7 +828,11 @@ test("CMS media uploads validate image signatures, remain private until Admin pu
     body: oversizedBody
   });
   assert.equal(oversizedRequest.headers.get("content-length"), null, "the regression case must omit Content-Length");
-  const oversized = await server.fetch(oversizedRequest);
+  const oversized = await server.fetch(oversizedRequest.url, {
+    method: oversizedRequest.method,
+    headers: oversizedRequest.headers,
+    body: oversizedBody
+  });
   assert.equal(oversized.status, 413, "streamed multipart bodies must be capped before form parsing when Content-Length is absent");
 
   const archive = await server.fetch(origin + "/api/v1/admin/media/" + asset.id + "/archive", {

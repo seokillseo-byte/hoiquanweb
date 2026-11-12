@@ -56,6 +56,9 @@ If a managed identity provider owns login and recovery, document its callback ro
 
 Quote detail and acceptance are implemented for authenticated customer members. `GET /api/v1/me/quotes/:id` returns only quotes belonging to the current user's customer membership, including line items. `POST /api/v1/me/quotes/:id/accept` is limited to owner/billing members, accepts only a non-expired quote in `sent` state, performs a conditional state transition and records `quote.accepted` in `crm_audit_events` atomically. Cross-customer access returns 404; repeated or stale acceptance returns 409.
 | GET | `/api/v1/me/orders` | List own orders | Customer |
+| GET | `/api/v1/me/notifications` | List the current user's notifications and unread count | Authenticated user |
+| POST | `/api/v1/me/notifications/:id/read` | Mark one owned notification as read | Notification owner |
+| POST | `/api/v1/me/notifications/read-all` | Mark all current user's notifications as read | Authenticated user |
 | GET | `/api/v1/me/projects` | List own projects and milestones | Customer |
 | GET | `/api/v1/me/projects/:id/files` | List customer-visible project files | Customer project member |
 | POST | `/api/v1/me/projects/:id/files` | Upload a private customer-visible project file (PDF, PNG, JPEG, WebP, TXT, CSV; max 10 MiB) | Customer project member |
@@ -183,3 +186,8 @@ CMS media uploads use multipart/form-data with a single file and optional alt_te
 ### Private customer project files
 
 Project files are stored in the private R2 bucket under server-generated `projects/{projectId}/` keys. The Worker accepts PDF, PNG, JPEG, WebP, UTF-8 TXT and CSV files up to 10 MiB, validates the declared MIME type against the file signature/content, computes SHA-256 and records metadata/audit events in D1. Storage keys are never returned. All downloads use attachment disposition, `private, no-store` and `nosniff`. Customer endpoints check current `crm_customer_members` membership on every request and expose only `visibility='customer'`; staff/admin endpoints can read both customer and internal files. Customer uploads are always customer-visible. Staff/admin uploads default to customer-visible and can explicitly set `visibility=internal`. No public or signed permanent file URLs are created. The shared R2 binding is used with separate `cms/` and `projects/` prefixes; customer files must never use the public CMS media route.
+
+
+### In-app notifications
+
+Notifications are created for customer-visible project status/milestone changes and staff ticket replies, and for staff/admin when customers create tickets or post project/ticket messages. Payloads contain generic summaries and resource identifiers only; private comment/message bodies and other customer details are not copied into notifications. Every inbox query and read mutation is scoped by the authenticated `user_id`; cross-user read attempts return 404. This implementation is in-app only; Resend email delivery remains separately configurable and is not implied by an in-app notification.

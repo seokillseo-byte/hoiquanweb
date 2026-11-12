@@ -14,14 +14,14 @@ const EMAIL_OUTBOX_BATCH_SIZE = 10;
 function emailRetryDelayMs(attempt) {
   return [60_000, 5 * 60_000, 15 * 60_000, 60 * 60_000, 6 * 60 * 60_000][Math.max(0, Math.min(4, attempt - 1))];
 }
-async function processEmailOutbox(env, now = new Date()) {
+async function processEmailOutbox(env, now = new Date(), providerFetch = fetch, leadIdFilter = null) {
   if (!env.DB || !env.RESEND_API_KEY || !env.NOTIFICATION_EMAIL || !env.EMAIL_FROM) {
     return { processed: 0, skipped: true };
   }
   const nowIso = now.toISOString();
   const due = await env.DB.prepare(
-    "SELECT id, lead_id, attempts FROM crm_email_outbox WHERE (status = 'pending' AND next_attempt_at <= ?) OR (status = 'sending' AND lease_until <= ?) ORDER BY created_at ASC, id ASC LIMIT ?"
-  ).bind(nowIso, nowIso, EMAIL_OUTBOX_BATCH_SIZE).all();
+    "SELECT id, lead_id, attempts FROM crm_email_outbox WHERE ((status = 'pending' AND next_attempt_at <= ?) OR (status = 'sending' AND lease_until <= ?)) AND (? IS NULL OR lead_id = ?) ORDER BY created_at ASC, id ASC LIMIT ?"
+  ).bind(nowIso, nowIso, leadIdFilter, leadIdFilter, EMAIL_OUTBOX_BATCH_SIZE).all();
   let processed = 0;
   for (const item of due.results || []) {
     const leaseUntil = new Date(now.getTime() + 120_000).toISOString();
@@ -39,7 +39,7 @@ async function processEmailOutbox(env, now = new Date()) {
         processed++;
         continue;
       }
-      const response = await fetch("https://api.resend.com/emails", {
+      const response = await providerFetch("https://api.resend.com/emails", {
         method: "POST",
         headers: {
           authorization: "Bearer " + env.RESEND_API_KEY,
@@ -1700,6 +1700,26 @@ export default {
     else if (url.pathname === "/_test/email-outbox" && request.method === "GET" && env.TEST_MODE === "true") {
       const result = await env.DB.prepare("SELECT event_key, lead_id, status, attempts, last_error_code FROM crm_email_outbox ORDER BY created_at DESC, id DESC LIMIT 20").all();
       response = json({ data: result.results || [] });
+    }
+    else if (url.pathname === "/_test/process-email-outbox" && request.method === "POST" && env.TEST_MODE === "true") {
+      const leadId = clean(url.searchParams.get("lead_id"), 80);
+      const status = Number(url.searchParams.get("provider_status") || 200);
+      const requestedNow = url.searchParams.get("now");
+      const now = requestedNow ? new Date(requestedNow) : new Date();
+      if (!leadId || !Number.isFinite(now.getTime()) || !Number.isInteger(status) || status < 200 || status > 599) {
+        response = json({ error: "VALIDATION_ERROR" }, 400);
+      } else {
+        let idempotencyKey = null;
+        const testEnv = { DB: env.DB, RESEND_API_KEY: "test-only", NOTIFICATION_EMAIL: "test@example.test", EMAIL_FROM: "Test <test@example.test>" };
+        const result = await processEmailOutbox(testEnv, now, async (_url, init) => {
+          idempotencyKey = new Headers(init?.headers || {}).get("idempotency-key");
+          return new Response(JSON.stringify(status < 400 ? { id: "test-provider-message" } : { error: "simulated provider failure" }), {
+            status,
+            headers: { "content-type": "application/json" }
+          });
+        }, leadId);
+        response = json({ data: result, idempotency_key: idempotencyKey });
+      }
     }
     else if (url.pathname === "/_test/audit-count" && request.method === "GET" && env.TEST_MODE === "true") {
       const result = await env.DB.prepare("SELECT COUNT(*) AS count FROM crm_audit_events WHERE action = 'quote.accepted'").first();

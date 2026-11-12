@@ -519,6 +519,14 @@ test("customer portal isolates customers and quotes; admin access requires a ser
   assert.equal(assignLead.status, 200, await assignLead.clone().text());
   assert.equal((await assignLead.json()).assigned_to, admin.id);
 
+  const updateLeadStatus = await server.fetch(origin + "/api/v1/admin/leads", {
+    method: "PATCH",
+    headers: { origin, cookie: admin.cookie, "content-type": "application/json" },
+    body: JSON.stringify({ id: "test-lead-assignment", status: "contacted" })
+  });
+  assert.equal(updateLeadStatus.status, 200, await updateLeadStatus.clone().text());
+  assert.equal((await updateLeadStatus.json()).status, "contacted");
+
   const invalidAssignment = await server.fetch(origin + "/api/v1/admin/leads", {
     method: "PATCH",
     headers: { origin, cookie: admin.cookie, "content-type": "application/json" },
@@ -545,7 +553,16 @@ test("customer portal isolates customers and quotes; admin access requires a ser
   const eventTypes = eventRows.map(event => event.event_type);
   assert.ok(eventTypes.includes("assigned"));
   assert.ok(eventTypes.includes("unassigned"));
+  assert.ok(eventTypes.includes("status_changed"));
   assert.ok(eventRows.every(event => JSON.parse(event.details).actorId === admin.id));
+  const forbiddenLeadHistory = await getFor("/api/v1/admin/leads/test-lead-assignment/events", ordinaryUser.cookie);
+  assert.equal(forbiddenLeadHistory.status, 403, "customer accounts cannot read internal lead history");
+  const leadAudit = await getFor("/_test/lead-audit?lead_id=test-lead-assignment", admin.cookie);
+  assert.equal(leadAudit.status, 200, await leadAudit.clone().text());
+  const auditActions = (await leadAudit.json()).data.map(event => event.action);
+  assert.ok(auditActions.includes("lead.assigned"));
+  assert.ok(auditActions.includes("lead.unassigned"));
+  assert.ok(auditActions.includes("lead.status_changed"));
 
   const noMembership = await getFor("/api/v1/me/customers", ordinaryUser.cookie);
   assert.equal(noMembership.status, 200, await noMembership.clone().text());

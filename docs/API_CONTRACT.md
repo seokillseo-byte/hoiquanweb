@@ -74,6 +74,7 @@ Never accept a client-provided customer ID as proof of ownership. Resolve member
 | POST | `/api/v1/admin/services/:id/publish` | Publish a service and record a revision | Admin |
 | GET/POST/PATCH | `/api/v1/admin/templates` | Manage template metadata | Template permission |
 | GET/PATCH | `/api/v1/admin/leads` | Review/assign/update leads | CRM permission |
+| POST | `/api/v1/admin/leads/:id/convert` | Convert a lead into one CRM customer, preserve source attribution and create an initial activity | Admin or staff |
 | GET/POST | `/api/v1/admin/customers` | Manage customer records | CRM permission |
 | GET/PATCH | `/api/v1/admin/customers/:id` | Read or update customer details/status | Admin or staff |
 | GET/POST | `/api/v1/admin/customers/:id/activities` | Read or add customer activity timeline entries | Admin or staff
@@ -82,6 +83,8 @@ Never accept a client-provided customer ID as proof of ownership. Resolve member
 | POST | `/api/v1/admin/quotes/:id/send` | Send a draft quote (state transition; no email is sent yet) | Admin or staff |
 | GET/POST | `/api/v1/admin/projects` | Create/list projects | Project permission |
 | GET/PATCH | `/api/v1/admin/users` | Manage users and role assignments | User-admin permission |
+
+Lead conversion is implemented at `POST /api/v1/admin/leads/:id/convert`. It requires an authenticated admin/staff session, validates the source lead and email, creates a CRM customer linked through `crm_customers.lead_id`, records a system activity containing the original service/budget/goals and writes customer/lead audit events in one D1 batch. Repeating the conversion returns the existing customer instead of creating a duplicate. It does not automatically mark the lead won or send email.
 
 The table is a target contract, not a claim of route availability. Add request/response schemas and error cases alongside each implementation PR. Avoid generic endpoints that permit mass assignment of protected fields.
 

@@ -141,6 +141,12 @@ try:
     expected = {"leads", "lead_events", "rate_limits", "cms_pages", "cms_posts", "cms_services", "cms_templates", "cms_revisions", "crm_customers", "crm_activities", "crm_quotes", "crm_quote_items", "crm_audit_events", "crm_orders", "crm_projects", "crm_project_milestones", "crm_project_comments", "crm_tickets", "crm_ticket_messages"}
     if not expected.issubset(tables):
         fail("database migrations did not create all required tables: " + ", ".join(sorted(expected - tables)))
+    lead_columns = {row[1] for row in db.execute("PRAGMA table_info(leads)")}
+    if "assigned_to" not in lead_columns:
+        fail("lead assignment column is missing")
+    lead_indexes = {row[1] for row in db.execute("PRAGMA index_list(leads)")}
+    if "idx_leads_assigned_status_created" not in lead_indexes:
+        fail("lead assignment query index is missing")
     # Publicly readable content must have an explicit status and publication timestamp.
     page_columns = {row[1] for row in db.execute("PRAGMA table_info(cms_pages)")}
     if not {"status", "published_at", "slug"}.issubset(page_columns):

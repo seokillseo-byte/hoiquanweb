@@ -11,6 +11,11 @@ database_name = "hoiquanweb-staging"
 database_id = "REPLACE_WITH_STAGING_D1_DATABASE_ID"
 migrations_dir = "migrations"
 
+[[r2_buckets]]
+binding = "MEDIA_BUCKET"
+bucket_name = "hoiquanweb-media-staging"
+preview_bucket_name = "hoiquanweb-media-staging-preview"
+
 [vars]
 # API origin must be the actual HTTPS origin that serves this Worker.
 # Frontend origin must be the exact HTTPS origin of the separate staging frontend.

@@ -1253,3 +1253,35 @@ test("in-app notifications are generated for project and ticket events and isola
   assert.equal((await getNotifications(admin.cookie).then(response => response.json())).meta.unread_count, 0);
 });
 
+
+
+test("CRM dashboard reports database-backed KPIs and requires staff/admin role", async () => {
+  const userA = await createSignedInUser("Dashboard Customer A");
+  const userB = await createSignedInUser("Dashboard Customer B");
+  const admin = await createSignedInUser("Dashboard Admin");
+  const ordinary = await createSignedInUser("Dashboard Ordinary");
+  const seed = await authRequest("/_test/seed-identity", { userA: userA.id, userB: userB.id, adminUser: admin.id });
+  assert.equal(seed.status, 200, await seed.clone().text());
+
+  const lead = await authRequest("/_test/seed-lead", {
+    id: "dashboard-lead-test",
+    name: "Dashboard Test Lead",
+    email: "dashboard-lead@example.test",
+    service: "Website Design",
+    status: "new"
+  });
+  assert.equal(lead.status, 201, await lead.clone().text());
+
+  const forbidden = await server.fetch(origin + "/api/v1/admin/dashboard", { headers: { origin, cookie: ordinary.cookie } });
+  assert.equal(forbidden.status, 403, "ordinary authenticated users cannot view the CRM dashboard");
+
+  const dashboard = await server.fetch(origin + "/api/v1/admin/dashboard", { headers: { origin, cookie: admin.cookie } });
+  assert.equal(dashboard.status, 200, await dashboard.clone().text());
+  const data = (await dashboard.json()).data;
+  assert.equal(data.kpis.total_leads, 1);
+  assert.equal(data.kpis.active_customers, 2);
+  assert.ok(data.lead_statuses.some(item => item.status === "new" && item.count === 1));
+  assert.equal(data.recent_leads[0].id, "dashboard-lead-test");
+  assert.equal(Object.hasOwn(data.recent_activity[0] || {}, "metadata_json"), false, "dashboard must not expose raw audit metadata");
+});
+

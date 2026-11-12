@@ -150,3 +150,12 @@ SEO JSON may include title, description and robots: "noindex". A missing API, un
 Customer-facing project and ticket queries are scoped through `crm_customer_members`. Customer message responses omit internal actor IDs. Project comments returned to customers are filtered to `visibility='customer'`; internal notes are not exposed. Order creation is idempotent per accepted quote. Resolved/closed tickets reject further customer replies.
 
 The static `portal.html` customer workspace is marked `noindex,nofollow`; it includes quote access plus orders, project milestones/comments and support tickets. It requires the API base URL and a production same-site frontend/API origin arrangement for reliable session cookies. A user must already be linked to a customer membership; self-registration does not grant customer access automatically.
+
+
+### Customer membership provisioning
+
+| Method | Endpoint | Purpose | Access |
+|---|---|---|---|
+| GET/POST | `/api/v1/admin/customers/:id/members` | List linked identities; link a registered account by email with owner/member/billing role | Admin or staff |
+
+The endpoint resolves an existing Better Auth user by normalized email and upserts the membership. It never creates an identity or grants membership during public sign-up. Unknown emails return 404; invalid membership roles return 400. The operation is recorded in the CRM audit log. Customer portal access continues to depend on membership, not on the supplied customer ID.

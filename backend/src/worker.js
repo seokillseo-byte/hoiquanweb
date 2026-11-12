@@ -65,7 +65,7 @@ function decodeSlug(path, prefix) {
 function contentRecord(row, kind) {
   if (!row) return null;
   const result = { ...row };
-  for (const key of ["content_json", "body_json", "seo_json", "compatibility_json", "description_json"]) {
+  for (const key of ["content_json", "body_json", "seo_json", "compatibility_json", "description_json", "tags_json"]) {
     if (Object.prototype.hasOwnProperty.call(result, key)) {
       const outputKey = key.replace(/_json$/, "").replace("body", "body");
       result[outputKey] = parseJsonField(result[key]);
@@ -668,6 +668,152 @@ async function adminContent(request, env, url) {
   return json({ error: { code: "METHOD_NOT_ALLOWED", message: "Phương thức không được hỗ trợ." } }, 405);
 }
 
+function templateRecord(row) {
+  if (!row) return null;
+  const result = { ...row };
+  result.tags = parseJsonField(result.tags_json);
+  result.compatibility = parseJsonField(result.compatibility_json);
+  result.license_verified = result.license_verified === 1 || result.license_verified === true;
+  result.preview_verified = result.preview_verified === 1 || result.preview_verified === true;
+  delete result.tags_json;
+  delete result.compatibility_json;
+  return result;
+}
+function safeTemplateUrl(value) {
+  const input = clean(value, 2000);
+  if (!input) return "";
+  try {
+    const parsed = new URL(input);
+    if (!["http:", "https:"].includes(parsed.protocol) || parsed.username || parsed.password) return null;
+    return parsed.toString();
+  } catch {
+    return null;
+  }
+}
+function templateTags(value, fallback = []) {
+  if (value === undefined) return fallback;
+  if (!Array.isArray(value) || value.length > 20) return null;
+  const tags = [...new Set(value.map(item => clean(item, 40).toLowerCase()).filter(Boolean))];
+  return tags;
+}
+async function adminTemplates(request, env, url) {
+  const principal = await authenticatedPrincipal(request, env);
+  if (principal.error) return principal.error;
+  if (!hasAnyRole(principal, ["admin", "staff"])) {
+    return json({ error: { code: "FORBIDDEN", message: "Bạn không có quyền quản lý kho giao diện." } }, 403);
+  }
+  const match = url.pathname.match(/^\/api\/v1\/admin\/templates(?:\/([^/]+)(?:\/(publish|archive|revisions))?)?$/);
+  if (!match) return json({ error: { code: "NOT_FOUND", message: "Không tìm thấy template." } }, 404);
+  let templateId = "";
+  try { templateId = match[1] ? decodeURIComponent(match[1]) : ""; }
+  catch { return json({ error: { code: "NOT_FOUND", message: "Không tìm thấy template." } }, 404); }
+  if (templateId && (templateId.length > 80 || templateId.includes("/"))) return json({ error: { code: "NOT_FOUND", message: "Không tìm thấy template." } }, 404);
+  const action = match[2] || "";
+  const select = "id, slug, name, template_type, category, tags_json, summary, description, thumbnail_url, preview_url, version, price_minor, currency, license_key, license_verified, preview_verified, compatibility_json, status, published_at, created_at, updated_at";
+  const now = new Date().toISOString();
+  if (!templateId && request.method === "GET") {
+    const status = clean(url.searchParams.get("status"), 20);
+    const type = clean(url.searchParams.get("type"), 20);
+    const category = clean(url.searchParams.get("category"), 80);
+    const query = clean(url.searchParams.get("q"), 100);
+    if (status && !["draft", "published", "archived"].includes(status)) return json({ error: { code: "VALIDATION_ERROR", message: "Trạng thái template không hợp lệ." } }, 400);
+    if (type && !["wordpress", "html_css"].includes(type)) return json({ error: { code: "VALIDATION_ERROR", message: "Loại template không hợp lệ." } }, 400);
+    const limit = Math.max(1, Math.min(100, Number.parseInt(url.searchParams.get("limit") || "50", 10) || 50));
+    const offset = Math.max(0, Math.min(10000, Number.parseInt(url.searchParams.get("offset") || "0", 10) || 0));
+    const where = [], values = [];
+    if (status) { where.push("status = ?"); values.push(status); }
+    if (type) { where.push("template_type = ?"); values.push(type); }
+    if (category) { where.push("category = ?"); values.push(category); }
+    if (query) { where.push("(name LIKE ? OR summary LIKE ? OR slug LIKE ?)"); values.push("%" + query + "%", "%" + query + "%", "%" + query + "%"); }
+    const sql = "SELECT " + select + " FROM cms_templates" + (where.length ? " WHERE " + where.join(" AND ") : "") + " ORDER BY updated_at DESC, slug ASC LIMIT ? OFFSET ?";
+    const result = await env.DB.prepare(sql).bind(...values, limit, offset).all();
+    return json({ data: (result.results || []).map(templateRecord), meta: { limit, offset, status: status || "all", type: type || "all", category: category || "all" } });
+  }
+  if (!templateId && request.method === "POST") {
+    const body = await readJson(request);
+    if (!body || typeof body !== "object" || Array.isArray(body)) return json({ error: { code: "VALIDATION_ERROR", message: "Dữ liệu template không hợp lệ." } }, 400);
+    const slug = clean(body.slug, 180), name = clean(body.name, 180), type = clean(body.template_type, 20);
+    const category = clean(body.category, 80), summary = clean(body.summary, 500), description = clean(body.description, 10000);
+    const version = clean(body.version || "1.0.0", 40);
+    const price = body.price_minor === undefined ? 0 : body.price_minor;
+    const currency = clean(body.currency || "VND", 3).toUpperCase();
+    const license = clean(body.license_key || "review_required", 80);
+    const tags = templateTags(body.tags);
+    const compatibility = cmsObject(body.compatibility || {}, 10000);
+    const previewUrl = safeTemplateUrl(body.preview_url);
+    const thumbnailUrl = safeTemplateUrl(body.thumbnail_url);
+    if (!validCmsSlug(slug) || name.length < 2 || !["wordpress", "html_css"].includes(type) || !Number.isSafeInteger(price) || price < 0 || !/^[A-Z]{3}$/.test(currency) || !license || !version || tags === null || compatibility === null || previewUrl === null || thumbnailUrl === null) {
+      return json({ error: { code: "VALIDATION_ERROR", message: "Vui lòng kiểm tra slug, tên, loại, giá, tiền tệ, URL, tags và compatibility JSON." } }, 400);
+    }
+    const id = crypto.randomUUID();
+    const row = { id, slug, name, template_type: type, category, tags, summary, description, thumbnail_url: thumbnailUrl || null, preview_url: previewUrl || null, version, price_minor: price, currency, license_key: license, license_verified: body.license_verified === true, preview_verified: body.preview_verified === true, compatibility, status: "draft", published_at: null, created_at: now, updated_at: now };
+    const insert = env.DB.prepare("INSERT INTO cms_templates (id, slug, name, template_type, category, tags_json, summary, description, thumbnail_url, preview_url, version, price_minor, currency, license_key, license_verified, preview_verified, compatibility_json, status, published_at, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'draft', NULL, ?, ?)")
+      .bind(id, slug, name, type, category, JSON.stringify(tags), summary, description, row.thumbnail_url, row.preview_url, version, price, currency, license, row.license_verified ? 1 : 0, row.preview_verified ? 1 : 0, JSON.stringify(compatibility), now, now);
+    const revision = env.DB.prepare("INSERT INTO cms_template_revisions (id, template_id, action, actor_id, snapshot_json, created_at) VALUES (?, ?, 'created', ?, ?, ?)")
+      .bind(crypto.randomUUID(), id, principal.user.id, JSON.stringify(row), now);
+    await env.DB.batch([insert, revision]);
+    return json({ data: row }, 201);
+  }
+  if (!templateId) return json({ error: { code: "METHOD_NOT_ALLOWED", message: "Phương thức không được hỗ trợ." } }, 405);
+  const existing = await env.DB.prepare("SELECT " + select + " FROM cms_templates WHERE id = ? LIMIT 1").bind(templateId).first();
+  if (!existing) return json({ error: { code: "NOT_FOUND", message: "Không tìm thấy template." } }, 404);
+  const current = templateRecord(existing);
+  if (action === "revisions" && request.method === "GET") {
+    const result = await env.DB.prepare("SELECT id, action, actor_id, created_at FROM cms_template_revisions WHERE template_id = ? ORDER BY created_at DESC, id DESC LIMIT 50").bind(templateId).all();
+    return json({ data: result.results || [] });
+  }
+  if (action === "publish" && request.method === "POST") {
+    if (!hasAnyRole(principal, ["admin"])) return json({ error: { code: "FORBIDDEN", message: "Chỉ Admin được xuất bản template." } }, 403);
+    if (current.status === "archived") return json({ error: { code: "INVALID_STATE", message: "Template đã lưu trữ; hãy sửa và lưu lại thành bản nháp trước khi xuất bản." } }, 409);
+    if (current.status === "published") return json({ data: current });
+    if (!current.preview_url || !current.preview_verified || !current.license_verified || current.license_key === "review_required") {
+      return json({ error: { code: "PUBLISH_REVIEW_REQUIRED", message: "Cần xác minh quyền sử dụng license và kiểm tra URL demo trước khi xuất bản." } }, 409);
+    }
+    const updated = { ...current, status: "published", published_at: now, updated_at: now };
+    const update = env.DB.prepare("UPDATE cms_templates SET status = 'published', published_at = ?, updated_at = ? WHERE id = ? AND status != 'archived'").bind(now, now, templateId);
+    const revision = env.DB.prepare("INSERT INTO cms_template_revisions (id, template_id, action, actor_id, snapshot_json, created_at) VALUES (?, ?, 'published', ?, ?, ?)")
+      .bind(crypto.randomUUID(), templateId, principal.user.id, JSON.stringify(updated), now);
+    await env.DB.batch([update, revision]);
+    return json({ data: updated });
+  }
+  if (action === "archive" && request.method === "POST") {
+    if (!hasAnyRole(principal, ["admin"])) return json({ error: { code: "FORBIDDEN", message: "Chỉ Admin được lưu trữ template." } }, 403);
+    const updated = { ...current, status: "archived", published_at: null, updated_at: now };
+    const update = env.DB.prepare("UPDATE cms_templates SET status = 'archived', published_at = NULL, updated_at = ? WHERE id = ?").bind(now, templateId);
+    const revision = env.DB.prepare("INSERT INTO cms_template_revisions (id, template_id, action, actor_id, snapshot_json, created_at) VALUES (?, ?, 'archived', ?, ?, ?)")
+      .bind(crypto.randomUUID(), templateId, principal.user.id, JSON.stringify(updated), now);
+    await env.DB.batch([update, revision]);
+    return json({ data: updated });
+  }
+  if (action) return json({ error: { code: "METHOD_NOT_ALLOWED", message: "Phương thức không được hỗ trợ." } }, 405);
+  if (request.method === "GET") return json({ data: current });
+  if (request.method === "PATCH") {
+    const body = await readJson(request);
+    if (!body || typeof body !== "object" || Array.isArray(body)) return json({ error: { code: "VALIDATION_ERROR", message: "Dữ liệu template không hợp lệ." } }, 400);
+    const slug = clean(body.slug ?? current.slug, 180), name = clean(body.name ?? current.name, 180), type = clean(body.template_type ?? current.template_type, 20);
+    const category = clean(body.category ?? current.category, 80), summary = clean(body.summary ?? current.summary, 500), description = clean(body.description ?? current.description, 10000);
+    const version = clean(body.version ?? current.version, 40), price = body.price_minor ?? current.price_minor;
+    const currency = clean(body.currency ?? current.currency, 3).toUpperCase(), license = clean(body.license_key ?? current.license_key, 80);
+    const tags = templateTags(body.tags, current.tags);
+    const compatibility = body.compatibility === undefined ? current.compatibility : cmsObject(body.compatibility, 10000);
+    const previewUrl = body.preview_url === undefined ? current.preview_url || "" : safeTemplateUrl(body.preview_url);
+    const thumbnailUrl = body.thumbnail_url === undefined ? current.thumbnail_url || "" : safeTemplateUrl(body.thumbnail_url);
+    const licenseVerified = body.license_verified === undefined ? current.license_verified : body.license_verified === true;
+    const previewVerified = body.preview_verified === undefined ? current.preview_verified : body.preview_verified === true;
+    if (!validCmsSlug(slug) || name.length < 2 || !["wordpress", "html_css"].includes(type) || !Number.isSafeInteger(price) || price < 0 || !/^[A-Z]{3}$/.test(currency) || !license || !version || tags === null || compatibility === null || previewUrl === null || thumbnailUrl === null) {
+      return json({ error: { code: "VALIDATION_ERROR", message: "Vui lòng kiểm tra slug, tên, loại, giá, tiền tệ, URL, tags và compatibility JSON." } }, 400);
+    }
+    const updated = { ...current, slug, name, template_type: type, category, tags, summary, description, thumbnail_url: thumbnailUrl || null, preview_url: previewUrl || null, version, price_minor: price, currency, license_key: license, license_verified: licenseVerified, preview_verified: previewVerified, compatibility, status: "draft", published_at: null, updated_at: now };
+    const update = env.DB.prepare("UPDATE cms_templates SET slug = ?, name = ?, template_type = ?, category = ?, tags_json = ?, summary = ?, description = ?, thumbnail_url = ?, preview_url = ?, version = ?, price_minor = ?, currency = ?, license_key = ?, license_verified = ?, preview_verified = ?, compatibility_json = ?, status = 'draft', published_at = NULL, updated_at = ? WHERE id = ?")
+      .bind(slug, name, type, category, JSON.stringify(tags), summary, description, updated.thumbnail_url, updated.preview_url, version, price, currency, license, licenseVerified ? 1 : 0, previewVerified ? 1 : 0, JSON.stringify(compatibility), now, templateId);
+    const revision = env.DB.prepare("INSERT INTO cms_template_revisions (id, template_id, action, actor_id, snapshot_json, created_at) VALUES (?, ?, 'updated', ?, ?, ?)")
+      .bind(crypto.randomUUID(), templateId, principal.user.id, JSON.stringify(updated), now);
+    await env.DB.batch([update, revision]);
+    return json({ data: updated });
+  }
+  return json({ error: { code: "METHOD_NOT_ALLOWED", message: "Phương thức không được hỗ trợ." } }, 405);
+}
+
 async function publicContent(request, env, url) {
   if (!env.DB) return json({ error: { code: "SERVICE_UNAVAILABLE", message: "Nội dung hiện chưa khả dụng." } }, 503);
   const path = url.pathname;
@@ -696,12 +842,26 @@ async function publicContent(request, env, url) {
     return json({ data: (result.results || []).map(row => contentRecord(row, "service")) });
   }
   if (path === "/api/v1/public/templates" && request.method === "GET") {
-    const type = url.searchParams.get("type");
+    const type = clean(url.searchParams.get("type"), 20);
+    const category = clean(url.searchParams.get("category"), 80);
+    const query = clean(url.searchParams.get("q"), 100);
     if (type && !["wordpress", "html_css"].includes(type)) return json({ error: { code: "VALIDATION_ERROR", message: "Loại template không hợp lệ." } }, 400);
-    const query = "SELECT slug, name, template_type, summary, preview_url, price_minor, currency, license_key, compatibility_json, published_at FROM cms_templates WHERE status = 'published' AND published_at IS NOT NULL" + (type ? " AND template_type = ?" : "") + " ORDER BY published_at DESC, slug ASC LIMIT 100";
-    const statement = env.DB.prepare(query);
-    const result = type ? await statement.bind(type).all() : await statement.all();
-    return json({ data: (result.results || []).map(row => contentRecord(row, "template")) });
+    const limit = Math.max(1, Math.min(50, Number.parseInt(url.searchParams.get("limit") || "20", 10) || 20));
+    const offset = Math.max(0, Math.min(10000, Number.parseInt(url.searchParams.get("offset") || "0", 10) || 0));
+    const where = ["status = 'published'", "published_at IS NOT NULL"], values = [];
+    if (type) { where.push("template_type = ?"); values.push(type); }
+    if (category) { where.push("category = ?"); values.push(category); }
+    if (query) { where.push("(name LIKE ? OR summary LIKE ? OR slug LIKE ?)"); values.push("%" + query + "%", "%" + query + "%", "%" + query + "%"); }
+    const sql = "SELECT slug, name, template_type, category, tags_json, summary, description, thumbnail_url, preview_url, version, price_minor, currency, license_key, compatibility_json, published_at FROM cms_templates WHERE " + where.join(" AND ") + " ORDER BY published_at DESC, slug ASC LIMIT ? OFFSET ?";
+    const result = await env.DB.prepare(sql).bind(...values, limit, offset).all();
+    return json({ data: (result.results || []).map(row => contentRecord(row, "template")), meta: { limit, offset } });
+  }
+  if (path.startsWith("/api/v1/public/templates/") && request.method === "GET") {
+    const slug = decodeSlug(path, "/api/v1/public/templates/");
+    if (!slug) return json({ error: { code: "NOT_FOUND", message: "Không tìm thấy template." } }, 404);
+    const row = await env.DB.prepare("SELECT slug, name, template_type, category, tags_json, summary, description, thumbnail_url, preview_url, version, price_minor, currency, license_key, compatibility_json, published_at FROM cms_templates WHERE slug = ? AND status = 'published' AND published_at IS NOT NULL LIMIT 1").bind(slug).first();
+    if (!row) return json({ error: { code: "NOT_FOUND", message: "Không tìm thấy template." } }, 404);
+    return json({ data: contentRecord(row, "template") });
   }
   return null;
 }
@@ -730,6 +890,8 @@ export default { async fetch(request, env) {
       await env.DB.prepare("CREATE TABLE IF NOT EXISTS cms_pages (id TEXT PRIMARY KEY, slug TEXT NOT NULL UNIQUE, title TEXT NOT NULL, excerpt TEXT NOT NULL DEFAULT '', content_json TEXT NOT NULL DEFAULT '{}', seo_json TEXT NOT NULL DEFAULT '{}', status TEXT NOT NULL DEFAULT 'draft', published_at TEXT, created_at TEXT NOT NULL, updated_at TEXT NOT NULL)").run();
       await env.DB.prepare("CREATE TABLE IF NOT EXISTS cms_posts (id TEXT PRIMARY KEY, slug TEXT NOT NULL UNIQUE, title TEXT NOT NULL, excerpt TEXT NOT NULL DEFAULT '', body_json TEXT NOT NULL DEFAULT '{}', seo_json TEXT NOT NULL DEFAULT '{}', author_name TEXT NOT NULL DEFAULT '', status TEXT NOT NULL DEFAULT 'draft', published_at TEXT, created_at TEXT NOT NULL, updated_at TEXT NOT NULL)").run();
       await env.DB.prepare("CREATE TABLE IF NOT EXISTS cms_services (id TEXT PRIMARY KEY, slug TEXT NOT NULL UNIQUE, name TEXT NOT NULL, summary TEXT NOT NULL DEFAULT '', description_json TEXT NOT NULL DEFAULT '{}', sort_order INTEGER NOT NULL DEFAULT 0, status TEXT NOT NULL DEFAULT 'draft', published_at TEXT, created_at TEXT NOT NULL, updated_at TEXT NOT NULL)").run();
+      await env.DB.prepare("CREATE TABLE IF NOT EXISTS cms_templates (id TEXT PRIMARY KEY, slug TEXT NOT NULL UNIQUE, name TEXT NOT NULL, template_type TEXT NOT NULL, summary TEXT NOT NULL DEFAULT '', thumbnail_key TEXT, preview_url TEXT, price_minor INTEGER NOT NULL DEFAULT 0, currency TEXT NOT NULL DEFAULT 'VND', license_key TEXT NOT NULL DEFAULT 'review_required', compatibility_json TEXT NOT NULL DEFAULT '{}', status TEXT NOT NULL DEFAULT 'draft', published_at TEXT, created_at TEXT NOT NULL, updated_at TEXT NOT NULL, category TEXT NOT NULL DEFAULT '', tags_json TEXT NOT NULL DEFAULT '[]', version TEXT NOT NULL DEFAULT '1.0.0', description TEXT NOT NULL DEFAULT '', thumbnail_url TEXT, license_verified INTEGER NOT NULL DEFAULT 0, preview_verified INTEGER NOT NULL DEFAULT 0)").run();
+      await env.DB.prepare("CREATE TABLE IF NOT EXISTS cms_template_revisions (id TEXT PRIMARY KEY, template_id TEXT NOT NULL REFERENCES cms_templates(id) ON DELETE CASCADE, action TEXT NOT NULL, actor_id TEXT NOT NULL, snapshot_json TEXT NOT NULL, created_at TEXT NOT NULL)").run();
       await env.DB.prepare("CREATE TABLE IF NOT EXISTS cms_revisions (id TEXT PRIMARY KEY, resource_type TEXT NOT NULL, resource_id TEXT NOT NULL, action TEXT NOT NULL, actor_id TEXT NOT NULL, snapshot_json TEXT NOT NULL, created_at TEXT NOT NULL)").run();
       response = new Response(null, { status: 204, headers: { "cache-control": "no-store" } });
     }
@@ -793,6 +955,7 @@ export default { async fetch(request, env) {
     }
     else if (url.pathname === "/api/health" && request.method === "GET") response = json({ ok: true, service: "hoiquanweb-api", version: "phase-2" });
     else if (url.pathname.startsWith("/api/v1/admin/pages") || url.pathname.startsWith("/api/v1/admin/posts") || url.pathname.startsWith("/api/v1/admin/services")) response = await adminContent(request, env, url);
+    else if (url.pathname === "/api/v1/admin/templates" || url.pathname.startsWith("/api/v1/admin/templates/")) response = await adminTemplates(request, env, url);
     else if (url.pathname === "/api/v1/me" || url.pathname.startsWith("/api/v1/me/") || url.pathname === "/api/v1/admin/customers" || url.pathname.startsWith("/api/v1/admin/customers/") || url.pathname === "/api/v1/admin/quotes" || url.pathname.startsWith("/api/v1/admin/quotes/") || url.pathname.startsWith("/api/v1/admin/leads/")) response = await identityRoutes(request, env, url) || json({ error: { code: "NOT_FOUND", message: "Không tìm thấy tài nguyên." } }, 404);
     else if (url.pathname.startsWith("/api/v1/public/")) response = await publicContent(request, env, url) || json({ error: { code: "NOT_FOUND", message: "Không tìm thấy tài nguyên." } }, 404);
     else if (url.pathname === "/api/leads" && request.method === "POST") response = await createLead(request, env);

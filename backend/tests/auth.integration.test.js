@@ -603,3 +603,99 @@ test("CMS content API requires an authenticated admin; drafts stay private and e
   });
   assert.equal(missingRevision.status, 404, "a revision from another or missing resource must not be restorable");
 });
+
+
+test("template catalog requires admin/staff access and verified previews/licenses before publication", async () => {
+  const admin = await createSignedInUser("Template Admin");
+  const ordinary = await createSignedInUser("Template Ordinary User");
+  const userA = await createSignedInUser("Template Fixture A");
+  const userB = await createSignedInUser("Template Fixture B");
+  const seed = await authRequest("/_test/seed-identity", { userA: userA.id, userB: userB.id, adminUser: admin.id });
+  assert.equal(seed.status, 200, await seed.clone().text());
+
+  async function getFor(path, cookie) {
+    return server.fetch(origin + path, { headers: { origin, cookie } });
+  }
+  const anonymous = await server.fetch(origin + "/api/v1/admin/templates", { headers: { origin } });
+  assert.equal(anonymous.status, 401);
+  const forbidden = await getFor("/api/v1/admin/templates", ordinary.cookie);
+  assert.equal(forbidden.status, 403);
+
+  const invalid = await server.fetch(origin + "/api/v1/admin/templates", {
+    method: "POST",
+    headers: { origin, cookie: admin.cookie, "content-type": "application/json" },
+    body: JSON.stringify({ slug: "bad-template", name: "Bad Template", template_type: "php" })
+  });
+  assert.equal(invalid.status, 400, "unsupported template types must be rejected");
+
+  const created = await server.fetch(origin + "/api/v1/admin/templates", {
+    method: "POST",
+    headers: { origin, cookie: admin.cookie, "content-type": "application/json" },
+    body: JSON.stringify({
+      slug: "starter-business-wordpress",
+      name: "Starter Business",
+      template_type: "wordpress",
+      category: "Business",
+      tags: ["corporate", "responsive"],
+      summary: "A starter business theme.",
+      description: "A draft template catalog entry.",
+      version: "1.0.0",
+      preview_url: "https://demo.example.test/starter-business",
+      price_minor: 0,
+      currency: "VND",
+      license_key: "review_required",
+      compatibility: { wordpress: "6.x" }
+    })
+  });
+  assert.equal(created.status, 201, await created.clone().text());
+  const template = (await created.json()).data;
+  assert.equal(template.status, "draft");
+  assert.deepEqual(template.tags, ["corporate", "responsive"]);
+
+  const prematurePublish = await server.fetch(origin + "/api/v1/admin/templates/" + template.id + "/publish", {
+    method: "POST", headers: { origin, cookie: admin.cookie }
+  });
+  assert.equal(prematurePublish.status, 409, "unverified license and preview must block publication");
+
+  const verify = await server.fetch(origin + "/api/v1/admin/templates/" + template.id, {
+    method: "PATCH",
+    headers: { origin, cookie: admin.cookie, "content-type": "application/json" },
+    body: JSON.stringify({ license_key: "single_site", license_verified: true, preview_verified: true })
+  });
+  assert.equal(verify.status, 200, await verify.clone().text());
+  assert.equal((await verify.json()).data.status, "draft", "editing a template must keep it unpublished");
+
+  const publish = await server.fetch(origin + "/api/v1/admin/templates/" + template.id + "/publish", {
+    method: "POST", headers: { origin, cookie: admin.cookie }
+  });
+  assert.equal(publish.status, 200, await publish.clone().text());
+  assert.equal((await publish.json()).data.status, "published");
+
+  const publicDetail = await server.fetch(origin + "/api/v1/public/templates/starter-business-wordpress", { headers: { origin } });
+  assert.equal(publicDetail.status, 200, await publicDetail.clone().text());
+  const publicTemplate = (await publicDetail.json()).data;
+  assert.equal(publicTemplate.name, "Starter Business");
+  assert.deepEqual(publicTemplate.tags, ["corporate", "responsive"]);
+  assert.deepEqual(publicTemplate.compatibility, { wordpress: "6.x" });
+  assert.equal(Object.hasOwn(publicTemplate, "license_verified"), false, "internal verification flags must not be public");
+
+  const publicList = await server.fetch(origin + "/api/v1/public/templates?type=wordpress&q=Starter", { headers: { origin } });
+  assert.equal(publicList.status, 200, await publicList.clone().text());
+  assert.equal((await publicList.json()).data[0].slug, "starter-business-wordpress");
+
+  const edit = await server.fetch(origin + "/api/v1/admin/templates/" + template.id, {
+    method: "PATCH",
+    headers: { origin, cookie: admin.cookie, "content-type": "application/json" },
+    body: JSON.stringify({ summary: "Updated summary." })
+  });
+  assert.equal(edit.status, 200);
+  assert.equal((await edit.json()).data.status, "draft");
+  const hiddenAfterEdit = await server.fetch(origin + "/api/v1/public/templates/starter-business-wordpress", { headers: { origin } });
+  assert.equal(hiddenAfterEdit.status, 404, "editing a published template must require re-publication");
+
+  const revisions = await getFor("/api/v1/admin/templates/" + template.id + "/revisions", admin.cookie);
+  assert.equal(revisions.status, 200, await revisions.clone().text());
+  const revisionActions = (await revisions.json()).data.map(item => item.action);
+  assert.equal(revisionActions.length, 4);
+  for (const action of ["created", "updated", "published"]) assert.ok(revisionActions.includes(action));
+});

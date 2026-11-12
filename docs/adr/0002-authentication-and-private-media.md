@@ -29,3 +29,13 @@ The platform needs staff-only CMS/CRM access and a customer portal. The reposito
 - Staff/customer role boundaries and cross-customer access denial are covered by integration tests.
 - Private object downloads fail without a valid session and authorization.
 - No secrets in repository history, responses or logs.
+
+
+## CMS public media implementation
+
+- CMS public images use the same Cloudflare R2 candidate but are distinct from private customer/project attachments.
+- All R2 objects remain in a non-public bucket. The Worker streams an asset only after checking its D1 publication state; draft previews require an authenticated admin/staff session.
+- Uploads are restricted to PNG, JPEG, GIF and WebP, capped at 5 MiB, with file-signature validation and server-generated object keys. SVG and arbitrary files are not accepted.
+- Admin publication/archive is an explicit state transition. Archiving revokes the public Worker route while retaining the object for controlled retention/deletion.
+- Customer project attachments still require separate project/customer authorization and must never reuse the public CMS media route.
+- Staging and production bucket creation, D1 migration application, and browser/runtime verification remain owner-account deployment steps.

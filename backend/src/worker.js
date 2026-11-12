@@ -69,7 +69,9 @@ async function processEmailOutbox(env, now = new Date()) {
       ).bind(clean(result.id, 100) || null, nowIso, nowIso, item.id).run();
     } catch (error) {
       const errorCode = /^PROVIDER_HTTP_\d{3}$/.test(error?.message || "") ? error.message : "PROVIDER_NETWORK_ERROR";
-      const terminal = attempt >= EMAIL_OUTBOX_MAX_ATTEMPTS;
+      const providerStatus = Number(errorCode.slice("PROVIDER_HTTP_".length));
+      const retryable = errorCode === "PROVIDER_NETWORK_ERROR" || providerStatus >= 500 || [408, 409, 429].includes(providerStatus);
+      const terminal = attempt >= EMAIL_OUTBOX_MAX_ATTEMPTS || !retryable;
       const nextAttemptAt = new Date(now.getTime() + emailRetryDelayMs(attempt)).toISOString();
       await env.DB.prepare(
         "UPDATE crm_email_outbox SET status = ?, next_attempt_at = ?, lease_until = NULL, last_error_code = ?, updated_at = ? WHERE id = ? AND status = 'sending'"

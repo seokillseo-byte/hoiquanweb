@@ -91,7 +91,7 @@ function hasAnyRole(principal, allowed) {
   return principal.roles.some(role => allowed.includes(role));
 }
 async function identityRoutes(request, env, url) {
-  const leadConversionMatch = url.pathname.match(/^\\/api\\/v1\\/admin\\/leads\\/([^/]+)\\/convert$/);
+  const leadConversionMatch = url.pathname.match(/^\/api\/v1\/admin\/leads\/([^/]+)\/convert$/);
   if (leadConversionMatch && request.method === "POST") {
     const principal = await authenticatedPrincipal(request, env);
     if (principal.error) return principal.error;

@@ -28,6 +28,8 @@
 
 Public APIs must never return drafts, private media keys, customer details, internal notes, unpublished templates or staff-only fields.
 
+Template catalog listing supports bounded `type`, `category`, `q`, `limit` and `offset` filters. Public template detail is published-only. The admin publish action requires a non-empty demo URL plus explicit administrator attestations for preview and license review; those flags are never exposed publicly. Editing a published template returns it to draft. These attestations are workflow controls, not automated legal, malware or compatibility verification.
+
 ## Authentication and account endpoints
 
 Final routes depend on the approved identity/session ADR. Do not implement password/session handling until the provider and cookie/token design are selected.
@@ -72,7 +74,11 @@ Never accept a client-provided customer ID as proof of ownership. Resolve member
 | GET/POST | `/api/v1/admin/services` | List/create service content | Admin or staff; creates are drafts |
 | GET/PATCH/DELETE | `/api/v1/admin/services/:id` | Read/update/archive service content | Admin or staff for read/update; admin for archive |
 | POST | `/api/v1/admin/services/:id/publish` | Publish a service and record a revision | Admin |
-| GET/POST/PATCH | `/api/v1/admin/templates` | Manage template metadata | Template permission |
+| GET/POST | `/api/v1/admin/templates` | Filter/list and create template drafts | Admin or staff |
+| GET/PATCH | `/api/v1/admin/templates/:id` | Read/update template; edits return it to draft | Admin or staff |
+| POST | `/api/v1/admin/templates/:id/publish` | Publish after preview and license verification attestations | Admin |
+| POST | `/api/v1/admin/templates/:id/archive` | Archive template | Admin |
+| GET | `/api/v1/admin/templates/:id/revisions` | Read template revision metadata | Admin or staff |
 | GET/PATCH | `/api/v1/admin/leads` | Review/assign/update leads | CRM permission |
 | POST | `/api/v1/admin/leads/:id/convert` | Convert a lead into one CRM customer, preserve source attribution and create an initial activity | Admin or staff |
 | GET/POST | `/api/v1/admin/customers` | Manage customer records | CRM permission |

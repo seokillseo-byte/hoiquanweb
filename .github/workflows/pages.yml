@@ -49,6 +49,7 @@ jobs:
           mkdir -p _site
           cp -R public-site/dist/. _site/
           cp admin.html _site/
+          cp portal.html _site/
       - name: Upload static site
         uses: actions/upload-pages-artifact@v3
         with:

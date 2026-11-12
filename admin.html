@@ -110,7 +110,7 @@
   function cell(row, text) { const td=document.createElement("td"); td.textContent=text || "—"; row.appendChild(td); return td; }
   function renderLeads(leads) {
     const body=$("#leadRows"); body.replaceChildren();
-    if (!leads.length) { const tr=document.createElement("tr"), td=cell(tr,"Chưa có lead phù hợp."); td.colSpan=5; body.appendChild(tr); return; }
+    if (!leads.length) { const tr=document.createElement("tr"), td=cell(tr,"Chưa có lead phù hợp."); td.colSpan=6; body.appendChild(tr); return; }
     for (const lead of leads) {
       const tr=document.createElement("tr");
       cell(tr, new Date(lead.created_at).toLocaleString("vi-VN"));

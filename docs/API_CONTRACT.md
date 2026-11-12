@@ -128,3 +128,25 @@ SEO JSON may include title, description and robots: "noindex". A missing API, un
 8. File uploads require type/size checks, malware/scanning policy where applicable, private storage defaults and server-authorized download.
 9. Tests must prove cross-customer access is denied and public APIs never expose drafts or internal fields.
 10. API schema and contract tests must run in CI before a route is considered accepted.
+
+
+## Customer workspace: orders, projects and support
+
+| Method | Endpoint | Purpose | Access |
+|---|---|---|---|
+| GET | `/api/v1/me/orders` | List orders belonging to the signed-in user's customer memberships | Authenticated customer |
+| GET | `/api/v1/me/projects` | List customer projects and milestone counts | Authenticated customer |
+| GET | `/api/v1/me/projects/:id` | Read one authorized project and its milestones | Project membership |
+| GET/POST | `/api/v1/me/projects/:id/comments` | Read/add customer-visible project comments | Project membership |
+| GET/POST | `/api/v1/me/tickets` | List/create support tickets for a linked customer profile | Authenticated customer + membership |
+| GET/POST | `/api/v1/me/tickets/:id/messages` | Read/reply to an authorized support ticket | Ticket customer membership |
+| GET/POST | `/api/v1/admin/orders` | List orders; create an order from an accepted quote | Admin or staff |
+| GET/POST/PATCH | `/api/v1/admin/projects` | List/create/update projects | Admin or staff |
+| GET/POST | `/api/v1/admin/projects/:id/milestones` | List/add milestones | Admin or staff |
+| PATCH | `/api/v1/admin/milestones/:id` | Update milestone status/details | Admin or staff |
+| GET/PATCH | `/api/v1/admin/tickets/:id` | Read and update support ticket status/priority | Admin or staff |
+| GET/POST | `/api/v1/admin/tickets/:id/messages` | Read/respond to support tickets | Admin or staff |
+
+Customer-facing project and ticket queries are scoped through `crm_customer_members`. Customer message responses omit internal actor IDs. Project comments returned to customers are filtered to `visibility='customer'`; internal notes are not exposed. Order creation is idempotent per accepted quote. Resolved/closed tickets reject further customer replies.
+
+The static `portal.html` customer workspace is marked `noindex,nofollow`; it includes quote access plus orders, project milestones/comments and support tickets. It requires the API base URL and a production same-site frontend/API origin arrangement for reliable session cookies. A user must already be linked to a customer membership; self-registration does not grant customer access automatically.

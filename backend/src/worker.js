@@ -698,6 +698,10 @@ export default { async fetch(request, env) {
       const result = await env.DB.prepare("SELECT action, COUNT(*) AS count FROM crm_audit_events WHERE resource_type = 'quote' GROUP BY action").all();
       response = json({ data: result.results || [] });
     }
+    else if (url.pathname === "/_test/customer-audit-count" && request.method === "GET" && env.TEST_MODE === "true") {
+      const result = await env.DB.prepare("SELECT action, COUNT(*) AS count FROM crm_audit_events WHERE resource_type = 'customer' GROUP BY action").all();
+      response = json({ data: result.results || [] });
+    }
     else if (url.pathname === "/_test/seed-identity" && request.method === "POST" && env.TEST_MODE === "true") {
       const body = await readJson(request);
       const ids = [body?.userA, body?.userB, body?.adminUser].map(value => clean(value, 128));

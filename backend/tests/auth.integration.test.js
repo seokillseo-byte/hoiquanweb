@@ -1160,3 +1160,85 @@ test("private project files enforce customer membership and staff-only internal 
   assert.equal(unsupportedUpload.status, 415, "executable uploads must be rejected");
 });
 
+
+
+test("in-app notifications are generated for project and ticket events and isolated by user", async () => {
+  const customerA = await createSignedInUser("Notification Customer A");
+  const customerB = await createSignedInUser("Notification Customer B");
+  const admin = await createSignedInUser("Notification Admin");
+  const seed = await authRequest("/_test/seed-identity", { userA: customerA.id, userB: customerB.id, adminUser: admin.id });
+  assert.equal(seed.status, 200, await seed.clone().text());
+
+  const projectResponse = await server.fetch(origin + "/api/v1/admin/projects", {
+    method: "POST",
+    headers: { origin, cookie: admin.cookie, "content-type": "application/json" },
+    body: JSON.stringify({ customer_id: "test-customer-a", name: "Notification project", description: "Project updates" })
+  });
+  assert.equal(projectResponse.status, 201, await projectResponse.clone().text());
+  const project = (await projectResponse.json()).data;
+
+  const comment = await server.fetch(origin + "/api/v1/me/projects/" + project.id + "/comments", {
+    method: "POST",
+    headers: { origin, cookie: customerA.cookie, "content-type": "application/json" },
+    body: JSON.stringify({ body: "Sensitive customer comment must not be copied into notification payload." })
+  });
+  assert.equal(comment.status, 201, await comment.clone().text());
+
+  async function getNotifications(cookie) {
+    return server.fetch(origin + "/api/v1/me/notifications", { headers: { origin, cookie } });
+  }
+  const staffInbox = await getNotifications(admin.cookie);
+  assert.equal(staffInbox.status, 200, await staffInbox.clone().text());
+  const staffData = await staffInbox.json();
+  assert.equal(staffData.meta.unread_count, 1);
+  assert.equal(staffData.data[0].type, "project_comment");
+  assert.equal(staffData.data[0].resource_id, project.id);
+  assert.equal(staffData.data[0].body.includes("Sensitive customer comment"), false, "notification payloads must not duplicate private message content");
+
+  const customerInboxBefore = await getNotifications(customerA.cookie);
+  assert.equal((await customerInboxBefore.json()).meta.unread_count, 0, "customers must not be notified about their own action");
+  const otherInbox = await getNotifications(customerB.cookie);
+  assert.equal((await otherInbox.json()).data.length, 0, "notifications must be isolated by authenticated user");
+
+  const update = await server.fetch(origin + "/api/v1/admin/projects/" + project.id, {
+    method: "PATCH",
+    headers: { origin, cookie: admin.cookie, "content-type": "application/json" },
+    body: JSON.stringify({ status: "in_progress" })
+  });
+  assert.equal(update.status, 200, await update.clone().text());
+  const customerInbox = await getNotifications(customerA.cookie);
+  const customerData = await customerInbox.json();
+  assert.equal(customerData.meta.unread_count, 1);
+  assert.equal(customerData.data[0].type, "project_updated");
+
+  const crossRead = await server.fetch(origin + "/api/v1/me/notifications/" + customerData.data[0].id + "/read", {
+    method: "POST", headers: { origin, cookie: customerB.cookie }
+  });
+  assert.equal(crossRead.status, 404, "a user cannot mark another user's notification as read");
+
+  const markRead = await server.fetch(origin + "/api/v1/me/notifications/" + customerData.data[0].id + "/read", {
+    method: "POST", headers: { origin, cookie: customerA.cookie }
+  });
+  assert.equal(markRead.status, 200, await markRead.clone().text());
+  assert.ok((await markRead.json()).data.read_at);
+  const afterRead = await getNotifications(customerA.cookie);
+  assert.equal((await afterRead.json()).meta.unread_count, 0);
+
+  const ticket = await server.fetch(origin + "/api/v1/me/tickets", {
+    method: "POST",
+    headers: { origin, cookie: customerA.cookie, "content-type": "application/json" },
+    body: JSON.stringify({ customer_id: "test-customer-a", subject: "Notification test ticket", description: "Please contact me." })
+  });
+  assert.equal(ticket.status, 201, await ticket.clone().text());
+  const staffAfterTicket = await getNotifications(admin.cookie);
+  const staffAfterTicketData = await staffAfterTicket.json();
+  assert.equal(staffAfterTicketData.meta.unread_count, 2);
+  assert.ok(staffAfterTicketData.data.some(item => item.type === "ticket_created"));
+
+  const readAll = await server.fetch(origin + "/api/v1/me/notifications/read-all", {
+    method: "POST", headers: { origin, cookie: admin.cookie }
+  });
+  assert.equal(readAll.status, 200, await readAll.clone().text());
+  assert.equal((await getNotifications(admin.cookie).then(response => response.json())).meta.unread_count, 0);
+});
+

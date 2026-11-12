@@ -755,8 +755,8 @@ test("CMS media uploads validate image signatures, remain private until Admin pu
   const bytes = new Uint8Array([137,80,78,71,13,10,26,10,0,0,0,0]);
   const makeMultipart = (fileBytes, mime, filename, altText, boundary) => {
     const encoder = new TextEncoder();
-    const head = encoder.encode("--" + boundary + "\\r\\nContent-Disposition: form-data; name=\\"file\\"; filename=\\""+filename+"\\"\\r\\nContent-Type: "+mime+"\\r\\n\\r\\n");
-    const tail = encoder.encode("\\r\\n--" + boundary + "\\r\\nContent-Disposition: form-data; name=\\"alt_text\\"\\r\\n\\r\\n"+altText+"\\r\\n--"+boundary+"--\\r\\n");
+    const head = encoder.encode("--" + boundary + "\r\nContent-Disposition: form-data; name=\"file\"; filename=\"" + filename + "\"\r\nContent-Type: " + mime + "\r\n\r\n");
+    const tail = encoder.encode("\r\n--" + boundary + "\r\nContent-Disposition: form-data; name=\"alt_text\"\r\n\r\n" + altText + "\r\n--" + boundary + "--\r\n");
     const body = new Uint8Array(head.length + fileBytes.length + tail.length);
     body.set(head, 0); body.set(fileBytes, head.length); body.set(tail, head.length + fileBytes.length);
     return body;

@@ -112,7 +112,7 @@ async function identityRoutes(request, env, url) {
     ).bind(principal.user.id).all();
     return json({ data: result.results || [] });
   }
-  const quoteMatch = url.pathname.match(/^\\/api\\/v1\\/me\\/quotes\\/([^/]+)(?:\\/accept)?$/);
+  const quoteMatch = url.pathname.match(/^\/api\/v1\/me\/quotes\/([^/]+)(?:\/accept)?$/);
   if (quoteMatch && ["GET", "POST"].includes(request.method)) {
     const principal = await authenticatedPrincipal(request, env);
     if (principal.error) return principal.error;
@@ -135,8 +135,12 @@ async function identityRoutes(request, env, url) {
       if (quote.status !== "sent") {
         return json({ error: { code: "INVALID_STATE", message: "Chỉ báo giá đang chờ xác nhận mới có thể được chấp nhận." } }, 409);
       }
-      if (quote.valid_until && (!Number.isFinite(Date.parse(quote.valid_until)) || Date.parse(quote.valid_until) < Date.now())) {
-        return json({ error: { code: "QUOTE_EXPIRED", message: "Báo giá đã hết hạn và không thể được chấp nhận." } }, 409);
+      if (quote.valid_until) {
+        const dateOnly = /^\\d{4}-\\d{2}-\\d{2}$/.test(quote.valid_until);
+        const expired = dateOnly
+          ? quote.valid_until < new Date().toISOString().slice(0, 10)
+          : !Number.isFinite(Date.parse(quote.valid_until)) || Date.parse(quote.valid_until) < Date.now();
+        if (expired) return json({ error: { code: "QUOTE_EXPIRED", message: "Báo giá đã hết hạn và không thể được chấp nhận." } }, 409);
       }
       const acceptedAt = new Date().toISOString();
       const auditId = crypto.randomUUID();
@@ -492,6 +496,10 @@ export default { async fetch(request, env) {
       await env.DB.prepare("CREATE TABLE IF NOT EXISTS cms_revisions (id TEXT PRIMARY KEY, resource_type TEXT NOT NULL, resource_id TEXT NOT NULL, action TEXT NOT NULL, actor_id TEXT NOT NULL, snapshot_json TEXT NOT NULL, created_at TEXT NOT NULL)").run();
       response = new Response(null, { status: 204, headers: { "cache-control": "no-store" } });
     }
+    else if (url.pathname === "/_test/audit-count" && request.method === "GET" && env.TEST_MODE === "true") {
+      const result = await env.DB.prepare("SELECT COUNT(*) AS count FROM crm_audit_events WHERE action = 'quote.accepted'").first();
+      response = json({ count: result?.count || 0 });
+    }
     else if (url.pathname === "/_test/seed-identity" && request.method === "POST" && env.TEST_MODE === "true") {
       const body = await readJson(request);
       const ids = [body?.userA, body?.userB, body?.adminUser].map(value => clean(value, 128));
@@ -507,6 +515,7 @@ export default { async fetch(request, env) {
           await env.DB.prepare("INSERT INTO crm_customers (id, display_name, organization_name, contact_email, phone, status, notes, created_at, updated_at) VALUES (?, ?, '', ?, '', 'active', '', ?, ?) ON CONFLICT(id) DO UPDATE SET display_name = excluded.display_name, contact_email = excluded.contact_email, status = 'active', updated_at = excluded.updated_at").bind(customer.id, customer.name, customer.email, now, now).run();
           await env.DB.prepare("INSERT OR REPLACE INTO crm_customer_members (customer_id, user_id, membership_role, created_at) VALUES (?, ?, 'owner', ?)").bind(customer.id, customer.userId, now).run();
           await env.DB.prepare("INSERT OR REPLACE INTO crm_quotes (id, customer_id, quote_number, status, currency, subtotal_minor, discount_minor, total_minor, created_by, created_at, updated_at) VALUES (?, ?, ?, 'sent', 'VND', 1000000, 0, 1000000, ?, ?, ?)").bind(customer.quoteId, customer.id, customer.quoteNumber, customer.userId, now, now).run();
+          await env.DB.prepare("INSERT OR REPLACE INTO crm_quote_items (id, quote_id, description, quantity, unit_price_minor, line_total_minor, sort_order) VALUES (?, ?, 'Website development', 1, 1000000, 1000000, 0)").bind(customer.quoteId + "-item", customer.quoteId).run();
         }
         await env.DB.prepare("INSERT OR REPLACE INTO app_user_roles (user_id, role, assigned_by, assigned_at) VALUES (?, 'admin', 'test-fixture', ?)").bind(ids[2], now).run();
         response = json({ ok: true });

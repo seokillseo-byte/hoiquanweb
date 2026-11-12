@@ -24,7 +24,7 @@
   </section>
   <section class="panel">
     <div class="topline"><div><h2>Lead gần đây</h2><p class="muted">Tối đa 100 yêu cầu mới nhất. Nội dung do khách hàng nhập được hiển thị dưới dạng văn bản thuần.</p></div><button class="btn" type="button" id="refreshButton">Làm mới</button></div>
-    <div class="table-wrap"><table><thead><tr><th>Thời gian</th><th>Khách hàng</th><th>Yêu cầu</th><th>Ngân sách</th><th>Trạng thái</th></tr></thead><tbody id="leadRows"><tr><td colspan="5">Chưa tải dữ liệu.</td></tr></tbody></table></div>
+    <div class="table-wrap"><table><thead><tr><th>Thời gian</th><th>Khách hàng</th><th>Yêu cầu</th><th>Ngân sách</th><th>Trạng thái</th><th>Thao tác</th></tr></thead><tbody id="leadRows"><tr><td colspan="6">Chưa tải dữ liệu.</td></tr></tbody></table></div>
   </section>
   <section class="panel" id="quotePanel" hidden>
     <div class="topline"><div><h2>Quản lý báo giá</h2><p class="muted">Tạo bản nháp, kiểm tra hạng mục và chuyển trạng thái sang đã gửi. Thao tác này chưa gửi email tự động.</p></div><button class="btn secondary" type="button" id="quoteRefresh">Tải báo giá</button></div>
@@ -119,8 +119,12 @@
       cell(tr,lead.budget);
       const statusCell=cell(tr,""); const select=document.createElement("select"); select.setAttribute("aria-label","Trạng thái lead của "+lead.name);
       for (const status of statuses) { const option=document.createElement("option"); option.value=status; option.textContent=labels[status]; option.selected=status===lead.status; select.appendChild(option); }
-      select.addEventListener("change",async()=>{select.disabled=true;try{await request("/api/v1/admin/leads",{method:"PATCH",body:JSON.stringify({id:lead.id,status:select.value})});lead.status=select.value;message("Đã cập nhật trạng thái lead.");}catch(error){select.value=lead.status;message("Không cập nhật được: "+error.message,true);}finally{select.disabled=false;}});
-      statusCell.appendChild(select); body.appendChild(tr);
+      select.addEventListener("change",async()=>{select.disabled=true;try{await request("/api/v1/admin/leads",{method:"PATCH",body:JSON.stringify({id:lead.id,status:select.value})});lead.status=select.value;message("Đã cập nhật trạng thái lead.");await load();}catch(error){select.value=lead.status;message("Không cập nhật được: "+error.message,true);}finally{select.disabled=false;}});
+      statusCell.appendChild(select);
+       const actionCell=cell(tr,"");
+       if(lead.customer_id){const converted=document.createElement("span");converted.className="muted";converted.textContent="Đã chuyển thành khách hàng";actionCell.appendChild(converted);}
+       else if(["qualified","proposal_sent","won"].includes(lead.status)){const convert=document.createElement("button");convert.type="button";convert.className="btn secondary";convert.textContent="Chuyển thành khách hàng";convert.addEventListener("click",async()=>{if(!confirm("Chuyển lead này thành hồ sơ khách hàng CRM?"))return;convert.disabled=true;try{const result=await request("/api/v1/admin/leads/"+encodeURIComponent(lead.id)+"/convert",{method:"POST"});message("Đã chuyển lead thành khách hàng "+result.data.display_name+".");await load();await loadCustomers();}catch(error){message("Không chuyển được lead: "+error.message,true);convert.disabled=false;}});actionCell.appendChild(convert);}
+       body.appendChild(tr);
     }
   }
 

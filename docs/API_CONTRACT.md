@@ -80,6 +80,8 @@ Never accept a client-provided customer ID as proof of ownership. Resolve member
 The table is a target contract, not a claim of route availability. Add request/response schemas and error cases alongside each implementation PR. Avoid generic endpoints that permit mass assignment of protected fields.
 
 
+CMS revision history is available to authenticated admin/staff users at `GET /api/v1/admin/{pages|posts|services}/:id/revisions`. The endpoint returns revision identifiers, action, actor and timestamp, without exposing the stored snapshot payload. Admin-only restore is available at `POST /api/v1/admin/{pages|posts|services}/:id/restore` with `{ "revision_id": "..." }`. The revision must belong to the same resource and type. Restore creates a new immutable revision and always places the content in draft state with `published_at=null`; a separate admin publish action is required to make it public.
+
 ## CMS page block content schema
 
 The content_json field is stored as a JSON object with a blocks array. The public renderer accepts only these block types:

@@ -51,7 +51,8 @@ for (const file of files) {
     ["main landmark", /<main id="main">/],
     ["site stylesheet", /\/assets\/css\/site\.css/],
     ["site script", /\/assets\/js\/site\.js/],
-    ["API base metadata in head", /<head>[\s\S]*<meta name="hq-api-base" content="">/]
+    ["API base metadata in head", /<head>[\s\S]*<meta name="hq-api-base" content="[^"]*">/],
+    ["CMS page slug hook", /<main id="main" data-cms-page="[^"]+">/]
   ]) {
     if (!pattern.test(html)) errors.push(name + ": missing " + label);
   }

@@ -7,7 +7,7 @@
 - Lịch tư vấn trả về từ GET /api/booking; chưa có nhà cung cấp lịch mặc định nên trả 503 cho đến khi cấu hình.
 - API có allowlist CORS, validation, honeypot, rate limit cơ bản theo IP hash, security headers và consent timestamp. Endpoint quản trị yêu cầu Better Auth session và vai trò admin/staff được cấp từ phía máy chủ.
 - Better Auth dùng cookie HttpOnly, Secure, SameSite=Lax; production frontend/API phải ở cùng site tin cậy để tránh third-party cookies.
-- D1 migrations hiện gồm 0001 đến 0011: lead, CMS, CRM/quotes/identity, revisions, template metadata, orders/projects/milestones/comments/tickets, lead assignment, blog post category/tags, CMS media metadata và private project file metadata.
+- D1 migrations hiện gồm 0001 đến 0012: lead, CMS, CRM/quotes/identity, revisions, template metadata, orders/projects/milestones/comments/tickets, lead assignment, blog post category/tags, CMS media metadata, private project file metadata và CRM in-app notifications.
 
 ## Endpoints
 
@@ -132,3 +132,12 @@ Staging-specific runbook and isolated config template: [CLOUDFLARE_STAGING_RUNBO
 - Customer upload luôn có visibility `customer`; staff/admin có thể chọn `customer` hoặc `internal`. Customer không thể list/download file internal. Admin/staff có thể list/download cả hai loại.
 - Không có direct R2 URL, permanent signed URL hoặc public project-file route. Download đi qua Worker với membership check, `Content-Disposition: attachment`, `Cache-Control: private, no-store` và `X-Content-Type-Options: nosniff`.
 - CI chạy local Wrangler/R2 simulator; staging nghiệm thu cần bucket thật, D1 migration 0011 và kiểm thử hai customer accounts khác nhau trước khi production.
+
+
+## In-app notifications
+
+- Migration `0012_crm_notifications.sql` tạo inbox theo user ID và index cho danh sách/thông báo chưa đọc.
+- API: GET `/api/v1/me/notifications`, POST `/api/v1/me/notifications/:id/read`, POST `/api/v1/me/notifications/read-all`. Tất cả truy vấn/mutation chỉ thao tác notification thuộc session hiện tại.
+- Project status/milestone và staff ticket reply tạo notification cho các customer members; customer project comments, ticket creation và customer ticket replies tạo notification cho staff/admin.
+- Notification payload chỉ chứa summary chung và resource ID; không sao chép nội dung trao đổi, dữ liệu liên hệ hoặc thông tin nhạy cảm.
+- Đây là in-app notification; Resend email chưa được cấu hình bởi migration/API này. Chỉ bật email sau khi xác minh sender domain, secrets, retry/idempotency và consent/policy.

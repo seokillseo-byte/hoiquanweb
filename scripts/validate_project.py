@@ -65,7 +65,7 @@ portal_parser = MarkupCheck()
 portal_parser.feed(portal_html)
 if 'name="robots" content="noindex,nofollow"' not in portal_html:
     fail("customer portal must be marked noindex")
-for required_portal_id in ["loginForm", "apiBase", "email", "password", "portalPanel", "ordersList", "projectsList", "ticketsList", "ticketForm"]:
+for required_portal_id in ["loginForm", "apiBase", "email", "password", "portalPanel", "ordersList", "projectsList", "ticketsList", "ticketForm", "notificationsSection", "notificationsList", "notificationCount", "notificationRefresh", "notificationReadAll"]:
     if required_portal_id not in portal_parser.ids:
         fail("required customer portal UI ID missing: " + required_portal_id)
 admin_path = ROOT / "admin.html"
@@ -76,7 +76,7 @@ admin_parser = MarkupCheck()
 admin_parser.feed(admin_html)
 if 'name="robots" content="noindex,nofollow"' not in admin_html:
     fail("admin page must be marked noindex")
-for required_admin_id in ["connectForm", "apiBase", "adminEmail", "adminPassword", "refreshButton", "leadRows", "memberForm", "memberList", "memberRefresh", "deliveryPanel", "adminOrders", "adminProjects", "adminTickets", "orderCreateForm", "projectCreateForm", "mediaPanel", "mediaUploadForm", "mediaFile", "mediaAlt", "mediaRows"]:
+for required_admin_id in ["connectForm", "apiBase", "adminEmail", "adminPassword", "refreshButton", "leadRows", "memberForm", "memberList", "memberRefresh", "deliveryPanel", "adminOrders", "adminProjects", "adminTickets", "orderCreateForm", "projectCreateForm", "mediaPanel", "mediaUploadForm", "mediaFile", "mediaAlt", "mediaRows", "adminNotificationsCard", "adminNotifications", "adminNotificationCount", "adminNotificationRefresh", "adminNotificationReadAll"]:
     if required_admin_id not in admin_parser.ids:
         fail("required admin UI ID missing: " + required_admin_id)
 for fragment in admin_parser.fragments:
@@ -86,6 +86,8 @@ if "/api/v1/admin/media/" not in admin_html or 'credentials:"include"' not in ad
     fail("admin media library must use the authenticated media preview route")
 if 'accept="image/png,image/jpeg,image/gif,image/webp"' not in admin_html:
     fail("admin media upload must restrict the browser picker to supported image types")
+if "/api/v1/me/notifications" not in admin_html or "/api/v1/me/notifications" not in portal_html:
+    fail("admin and customer portal must use the authenticated in-app notification API")
 if not parser.scripts or not any("briefForm" in chunk for script_type, chunk in parser.scripts if script_type in ("", "text/javascript", "application/javascript", "module")):
     fail("inline form handler not found")
 for fragment in parser.fragments:
@@ -142,7 +144,7 @@ try:
     for migration in migration_files:
         db.executescript(migration.read_text(encoding="utf-8"))
     tables = {row[0] for row in db.execute("SELECT name FROM sqlite_master WHERE type='table'")}
-    expected = {"leads", "lead_events", "rate_limits", "cms_pages", "cms_posts", "cms_services", "cms_templates", "cms_revisions", "crm_customers", "crm_activities", "crm_quotes", "crm_quote_items", "crm_audit_events", "crm_orders", "crm_projects", "crm_project_milestones", "crm_project_comments", "crm_tickets", "crm_ticket_messages", "crm_project_files"}
+    expected = {"leads", "lead_events", "rate_limits", "cms_pages", "cms_posts", "cms_services", "cms_templates", "cms_revisions", "crm_customers", "crm_activities", "crm_quotes", "crm_quote_items", "crm_audit_events", "crm_orders", "crm_projects", "crm_project_milestones", "crm_project_comments", "crm_tickets", "crm_ticket_messages", "crm_project_files", "crm_notifications"}
     if not expected.issubset(tables):
         fail("database migrations did not create all required tables: " + ", ".join(sorted(expected - tables)))
     lead_columns = {row[1] for row in db.execute("PRAGMA table_info(leads)")}
@@ -169,6 +171,12 @@ try:
     project_file_indexes = {row[1] for row in db.execute("PRAGMA index_list(crm_project_files)")}
     if "idx_crm_project_files_project_visibility_created" not in project_file_indexes:
         fail("private project file access index is missing")
+    notification_columns = {row[1] for row in db.execute("PRAGMA table_info(crm_notifications)")}
+    if not {"user_id", "type", "title", "body", "resource_type", "resource_id", "read_at"}.issubset(notification_columns):
+        fail("CRM notification inbox columns are missing")
+    notification_indexes = {row[1] for row in db.execute("PRAGMA index_list(crm_notifications)")}
+    if not {"idx_crm_notifications_user_created", "idx_crm_notifications_user_unread"}.issubset(notification_indexes):
+        fail("CRM notification inbox indexes are missing")
     file_fk_tables = {row[2] for row in db.execute("PRAGMA foreign_key_list(crm_project_files)")}
     if not {"crm_projects", "crm_customers"}.issubset(file_fk_tables):
         fail("private project file customer/project foreign keys are missing")

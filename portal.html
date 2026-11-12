@@ -50,6 +50,10 @@
     </section>
     <section class="panel" id="portalPanel" hidden>
       <div class="section-head"><div><span class="eyebrow" data-i18n="account">YOUR ACCOUNT</span><h2 id="welcome"></h2><p class="quote-meta" id="accountEmail"></p></div><button class="secondary" type="button" id="logoutButton" data-i18n="logout">Đăng xuất</button></div>
+      <section class="portal-section" id="notificationsSection">
+        <div class="section-head"><div><h2>Thông báo / Notifications</h2><p class="quote-meta" id="notificationCount">Chưa có thông báo</p></div><div><button class="secondary" type="button" id="notificationRefresh">Làm mới</button> <button class="secondary" type="button" id="notificationReadAll">Đánh dấu đã đọc</button></div></div>
+        <div class="portal-stack" id="notificationsList"><div class="portal-empty">Chưa có thông báo.</div></div>
+      </section>
       <div class="section-head"><div><h2 data-i18n="quotesTitle">Báo giá của bạn</h2><p class="quote-meta" data-i18n="quotesIntro">Chỉ hiển thị báo giá thuộc quyền truy cập của tài khoản hiện tại.</p></div><button class="secondary" type="button" id="refreshButton" data-i18n="refresh">Làm mới</button></div>
       <div class="quote-list" id="quoteList"><div class="empty" data-i18n="loading">Đang tải dữ liệu…</div></div>
       <nav class="portal-tabs" aria-label="Customer workspace"><button class="secondary" type="button" data-portal-tab="orders" aria-pressed="true">Đơn hàng / Orders</button><button class="secondary" type="button" data-portal-tab="projects" aria-pressed="false">Dự án / Projects</button><button class="secondary" type="button" data-portal-tab="tickets" aria-pressed="false">Hỗ trợ / Support</button></nav>
@@ -119,6 +123,20 @@
   }
   const portalNode=(tag,cls,text)=>{const node=document.createElement(tag);if(cls)node.className=cls;if(text!==undefined)node.textContent=text;return node;};
   const portalMoney=(minor,currency)=>Number(minor||0).toLocaleString(language==="vi"?"vi-VN":"en-US")+" "+(currency||"VND");
+  async function loadNotifications(){
+    const list=$("#notificationsList");list.replaceChildren(portalNode("div","portal-empty",t("loading")));
+    try{
+      const result=await request("/api/v1/me/notifications?limit=50");list.replaceChildren();
+      const unread=Number(result.meta?.unread_count||0);$("#notificationCount").textContent=language==="vi"?(unread+" thông báo chưa đọc"):(unread+" unread notifications");
+      if(!(result.data||[]).length){list.append(portalNode("div","portal-empty",language==="vi"?"Chưa có thông báo.":"No notifications yet."));return;}
+      for(const notification of result.data){
+        const card=portalNode("article","portal-card"),heading=portalNode("h3","",notification.title),body=portalNode("p","",notification.body),meta=portalNode("p","quote-meta",new Date(notification.created_at).toLocaleString(language==="vi"?"vi-VN":"en-US"));
+        card.append(heading,body,meta);
+        if(!notification.read_at){const read=portalNode("button","secondary",language==="vi"?"Đánh dấu đã đọc":"Mark as read");read.type="button";read.addEventListener("click",async()=>{read.disabled=true;try{await request("/api/v1/me/notifications/"+encodeURIComponent(notification.id)+"/read",{method:"POST"});await loadNotifications();}catch(error){status("#portalStatus",error.message,true);}finally{read.disabled=false;}});card.append(read);}
+        list.append(card);
+      }
+    }catch(error){list.replaceChildren(portalNode("div","portal-empty",error.message));}
+  }
   async function loadOrders(){
     const list=$("#ordersList");list.replaceChildren(portalNode("div","portal-empty",t("loading")));
     try{const result=await request("/api/v1/me/orders");list.replaceChildren();if(!result.data?.length){list.append(portalNode("div","portal-empty","Chưa có đơn hàng / No orders yet."));return;}
@@ -162,7 +180,7 @@
   $("#ticketForm").addEventListener("submit",async event=>{event.preventDefault();try{await request("/api/v1/me/tickets",{method:"POST",body:JSON.stringify({customer_id:$("#ticketCustomer").value.trim(),subject:$("#ticketSubject").value.trim(),description:$("#ticketDescription").value.trim()})});$("#ticketForm").reset();status("#portalStatus","Đã gửi yêu cầu hỗ trợ / Support request sent.");await loadTickets();}catch(error){status("#portalStatus",error.message,true);}});
   async function loadPortal(){
     const me=await request("/api/v1/me");$("#welcome").textContent=me.data.name||me.data.email;$("#accountEmail").textContent=me.data.email||"";
-    const customers=await request("/api/v1/me/customers");const customerSelect=$("#ticketCustomer");customerSelect.replaceChildren();for(const customer of customers.data||[]){const option=document.createElement("option");option.value=customer.id;option.textContent=customer.organization_name||customer.display_name;customerSelect.append(option);}if(!customerSelect.options.length){const option=document.createElement("option");option.value="";option.textContent="Chưa có hồ sơ khách hàng được liên kết";customerSelect.append(option);customerSelect.disabled=true;}$("#loginPanel").hidden=true;$("#portalPanel").hidden=false;await Promise.all([loadQuotes(),loadOrders(),loadProjects(),loadTickets()]);
+    const customers=await request("/api/v1/me/customers");const customerSelect=$("#ticketCustomer");customerSelect.replaceChildren();for(const customer of customers.data||[]){const option=document.createElement("option");option.value=customer.id;option.textContent=customer.organization_name||customer.display_name;customerSelect.append(option);}if(!customerSelect.options.length){const option=document.createElement("option");option.value="";option.textContent="Chưa có hồ sơ khách hàng được liên kết";customerSelect.append(option);customerSelect.disabled=true;}$("#loginPanel").hidden=true;$("#portalPanel").hidden=false;await Promise.all([loadQuotes(),loadOrders(),loadProjects(),loadTickets(),loadNotifications()]);
   }
   $("#loginForm").addEventListener("submit",async event=>{
     event.preventDefault();apiBase=$("#apiBase").value.trim().replace(/\/+$/,"");$("#loginButton").disabled=true;status("#loginStatus",t("loading"));
@@ -174,6 +192,8 @@
     finally{$("#loginButton").disabled=false;}
   });
   $("#refreshButton").addEventListener("click",loadQuotes);
+  $("#notificationRefresh").addEventListener("click",loadNotifications);
+  $("#notificationReadAll").addEventListener("click",async()=>{try{await request("/api/v1/me/notifications/read-all",{method:"POST"});await loadNotifications();}catch(error){status("#portalStatus",error.message,true);}});
   $("#logoutButton").addEventListener("click",async()=>{try{await request("/api/v1/auth/sign-out",{method:"POST",body:"{}"});}catch{}signedIn=false;$("#portalPanel").hidden=true;$("#loginPanel").hidden=false;$("#password").value="";status("#loginStatus",t("signedOut"));});
   $("#languageButton").addEventListener("click",()=>{language=language==="vi"?"en":"vi";applyLanguage();if(signedIn)loadQuotes();});
   const configuredApiBase=document.querySelector('meta[name="hq-api-base"]')?.content?.trim();

@@ -568,6 +568,63 @@ async function downloadProjectFile(env, row) {
   return new Response(object.body, { status: 200, headers });
 }
 
+async function createUserNotifications(env, userIds, notification) {
+  const recipients = [...new Set((userIds || []).filter(id => typeof id === "string" && id.length > 0))];
+  if (!recipients.length) return;
+  const now = new Date().toISOString();
+  const statements = recipients.map(userId => env.DB.prepare(
+    "INSERT INTO crm_notifications (id, user_id, type, title, body, resource_type, resource_id, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)"
+  ).bind(crypto.randomUUID(), userId, notification.type, notification.title, notification.body, notification.resource_type, notification.resource_id, now));
+  await env.DB.batch(statements);
+}
+async function notifySafely(env, recipientsPromise, notification) {
+  try {
+    const recipients = await recipientsPromise;
+    await createUserNotifications(env, recipients, notification);
+  } catch (error) {
+    console.error("Notification persistence failed", error?.message || "unknown");
+  }
+}
+async function notifyStaff(env, notification) {
+  const result = await env.DB.prepare("SELECT user_id FROM app_user_roles WHERE role IN ('admin','staff')").all();
+  await createUserNotifications(env, (result.results || []).map(row => row.user_id), notification);
+}
+async function notifyCustomerMembers(env, customerId, notification) {
+  const result = await env.DB.prepare("SELECT user_id FROM crm_customer_members WHERE customer_id = ?").bind(customerId).all();
+  await createUserNotifications(env, (result.results || []).map(row => row.user_id), notification);
+}
+async function notificationRoutes(request, env, url) {
+  if (!url.pathname.startsWith("/api/v1/me/notifications")) return null;
+  const principal = await authenticatedPrincipal(request, env);
+  if (principal.error) return principal.error;
+  if (url.pathname === "/api/v1/me/notifications" && request.method === "GET") {
+    const limit = Math.max(1, Math.min(100, Number.parseInt(url.searchParams.get("limit") || "50", 10) || 50));
+    const result = await env.DB.prepare("SELECT id, type, title, body, resource_type, resource_id, read_at, created_at FROM crm_notifications WHERE user_id = ? ORDER BY created_at DESC, id DESC LIMIT ?").bind(principal.user.id, limit).all();
+    const unread = await env.DB.prepare("SELECT COUNT(*) AS count FROM crm_notifications WHERE user_id = ? AND read_at IS NULL").bind(principal.user.id).first();
+    return json({ data: result.results || [], meta: { unread_count: unread?.count || 0, limit } });
+  }
+  if (url.pathname === "/api/v1/me/notifications/read-all" && request.method === "POST") {
+    const now = new Date().toISOString();
+    const result = await env.DB.prepare("UPDATE crm_notifications SET read_at = ? WHERE user_id = ? AND read_at IS NULL").bind(now, principal.user.id).run();
+    return json({ data: { marked_read: result.meta?.changes || 0, read_at: now } });
+  }
+  const match = url.pathname.match(/^\/api\/v1\/me\/notifications\/([^/]+)\/read$/);
+  if (match && request.method === "POST") {
+    let id;
+    try { id = decodeURIComponent(match[1]); } catch { return json({ error: { code: "NOT_FOUND", message: "Không tìm thấy thông báo." } }, 404); }
+    if (!id || id.length > 80 || id.includes("/")) return json({ error: { code: "NOT_FOUND", message: "Không tìm thấy thông báo." } }, 404);
+    const notification = await env.DB.prepare("SELECT id, type, title, body, resource_type, resource_id, read_at, created_at FROM crm_notifications WHERE id = ? AND user_id = ? LIMIT 1").bind(id, principal.user.id).first();
+    if (!notification) return json({ error: { code: "NOT_FOUND", message: "Không tìm thấy thông báo." } }, 404);
+    if (!notification.read_at) {
+      const now = new Date().toISOString();
+      await env.DB.prepare("UPDATE crm_notifications SET read_at = ? WHERE id = ? AND user_id = ? AND read_at IS NULL").bind(now, id, principal.user.id).run();
+      notification.read_at = now;
+    }
+    return json({ data: notification });
+  }
+  return json({ error: { code: "METHOD_NOT_ALLOWED", message: "Phương thức không được hỗ trợ." } }, 405);
+}
+
 async function customerProjectRoutes(request, env, url) {
   const path = url.pathname;
   if (!path.startsWith("/api/v1/me/orders") && !path.startsWith("/api/v1/me/projects") && !path.startsWith("/api/v1/me/tickets")) return null;
@@ -626,6 +683,9 @@ async function customerProjectRoutes(request, env, url) {
           env.DB.prepare("INSERT INTO crm_project_comments (id, project_id, actor_id, actor_type, visibility, body, created_at) VALUES (?, ?, ?, 'customer', 'customer', ?, ?)").bind(id, projectId, principal.user.id, message, now),
           env.DB.prepare("INSERT INTO crm_audit_events (id, actor_id, action, resource_type, resource_id, metadata_json, created_at) VALUES (?, ?, 'project.comment.created', 'project', ?, ?, ?)").bind(crypto.randomUUID(), principal.user.id, projectId, JSON.stringify({ comment_id: id }), now)
         ]);
+        await notifySafely(env, env.DB.prepare("SELECT user_id FROM app_user_roles WHERE role IN ('admin','staff')").all().then(result => (result.results || []).map(row => row.user_id)), {
+          type: "project_comment", title: "Trao đổi dự án mới", body: "Khách hàng vừa gửi trao đổi trong dự án.", resource_type: "project", resource_id: projectId
+        });
         return json({ data: comment }, 201);
       }
       return json({ error: { code: "METHOD_NOT_ALLOWED", message: "Phương thức không được hỗ trợ." } }, 405);
@@ -651,6 +711,9 @@ async function customerProjectRoutes(request, env, url) {
     ];
     if (description) statements.splice(1, 0, env.DB.prepare("INSERT INTO crm_ticket_messages (id, ticket_id, actor_id, actor_type, body, created_at) VALUES (?, ?, ?, 'customer', ?, ?)").bind(crypto.randomUUID(), id, principal.user.id, description, now));
     await env.DB.batch(statements);
+    await notifySafely(env, env.DB.prepare("SELECT user_id FROM app_user_roles WHERE role IN ('admin','staff')").all().then(result => (result.results || []).map(row => row.user_id)), {
+      type: "ticket_created", title: "Yêu cầu hỗ trợ mới", body: "Khách hàng đã tạo yêu cầu hỗ trợ mới.", resource_type: "ticket", resource_id: id
+    });
     return json({ data: ticket }, 201);
   }
   const ticketMatch = path.match(/^\/api\/v1\/me\/tickets\/([^/]+)\/messages$/);
@@ -674,6 +737,9 @@ async function customerProjectRoutes(request, env, url) {
         env.DB.prepare("UPDATE crm_tickets SET status = 'open', updated_at = ? WHERE id = ? AND status NOT IN ('resolved','closed')").bind(now, ticketId),
         env.DB.prepare("INSERT INTO crm_audit_events (id, actor_id, action, resource_type, resource_id, metadata_json, created_at) VALUES (?, ?, 'ticket.message.created', 'ticket', ?, ?, ?)").bind(crypto.randomUUID(), principal.user.id, ticketId, JSON.stringify({ message_id: id, actor_type: "customer" }), now)
       ]);
+      await notifySafely(env, env.DB.prepare("SELECT user_id FROM app_user_roles WHERE role IN ('admin','staff')").all().then(result => (result.results || []).map(row => row.user_id)), {
+        type: "ticket_message", title: "Phản hồi hỗ trợ mới", body: "Khách hàng vừa gửi phản hồi cho yêu cầu hỗ trợ.", resource_type: "ticket", resource_id: ticketId
+      });
       return json({ data: { id, ticket_id: ticketId, actor_id: principal.user.id, actor_type: "customer", body: message, created_at: now } }, 201);
     }
     return json({ error: { code: "METHOD_NOT_ALLOWED", message: "Phương thức không được hỗ trợ." } }, 405);
@@ -811,6 +877,9 @@ async function adminProjectRoutes(request, env, url) {
         env.DB.prepare("INSERT INTO crm_audit_events (id, actor_id, action, resource_type, resource_id, metadata_json, created_at) VALUES (?, ?, 'project.updated', 'project', ?, ?, ?)").bind(crypto.randomUUID(), principal.user.id, projectId, JSON.stringify({ status }), now)
       ]);
       const updated = await env.DB.prepare("SELECT id, customer_id, order_id, name, description, status, start_date, due_date, created_by, created_at, updated_at FROM crm_projects WHERE id = ? LIMIT 1").bind(projectId).first();
+      await notifySafely(env, env.DB.prepare("SELECT customer_id FROM crm_projects WHERE id = ? LIMIT 1").bind(projectId).first().then(row => row?.customer_id ? env.DB.prepare("SELECT user_id FROM crm_customer_members WHERE customer_id = ?").bind(row.customer_id).all().then(result => (result.results || []).map(member => member.user_id)) : []), {
+        type: "project_updated", title: "Dự án có cập nhật", body: "Trạng thái hoặc thông tin dự án đã được cập nhật.", resource_type: "project", resource_id: projectId
+      });
       return json({ data: updated });
     }
     return json({ error: { code: "METHOD_NOT_ALLOWED", message: "Phương thức không được hỗ trợ." } }, 405);
@@ -828,6 +897,9 @@ async function adminProjectRoutes(request, env, url) {
       env.DB.prepare("UPDATE crm_project_milestones SET title = ?, description = ?, status = ?, due_date = ?, updated_at = ? WHERE id = ?").bind(title, description, status, dueDate, now, milestoneId),
       env.DB.prepare("INSERT INTO crm_audit_events (id, actor_id, action, resource_type, resource_id, metadata_json, created_at) VALUES (?, ?, 'project.milestone.updated', 'project', ?, ?, ?)").bind(crypto.randomUUID(), principal.user.id, current.project_id, JSON.stringify({ milestone_id: milestoneId, status }), now)
     ]);
+    await notifySafely(env, env.DB.prepare("SELECT customer_id FROM crm_projects WHERE id = ? LIMIT 1").bind(current.project_id).first().then(row => row?.customer_id ? env.DB.prepare("SELECT user_id FROM crm_customer_members WHERE customer_id = ?").bind(row.customer_id).all().then(result => (result.results || []).map(member => member.user_id)) : []), {
+      type: "milestone_updated", title: "Tiến độ dự án có cập nhật", body: "Một mốc tiến độ trong dự án đã được cập nhật.", resource_type: "project", resource_id: current.project_id
+    });
     return json({ data: { ...current, title, description, status, due_date: dueDate, updated_at: now } });
   }
   if (path === "/api/v1/admin/tickets" && request.method === "GET") {
@@ -858,6 +930,9 @@ async function adminProjectRoutes(request, env, url) {
           env.DB.prepare("UPDATE crm_tickets SET status = 'waiting_customer', updated_at = ? WHERE id = ?").bind(now, ticketId),
           env.DB.prepare("INSERT INTO crm_audit_events (id, actor_id, action, resource_type, resource_id, metadata_json, created_at) VALUES (?, ?, 'ticket.message.created', 'ticket', ?, ?, ?)").bind(crypto.randomUUID(), principal.user.id, ticketId, JSON.stringify({ message_id: id, actor_type: "staff" }), now)
         ]);
+        await notifySafely(env, env.DB.prepare("SELECT customer_id FROM crm_tickets WHERE id = ? LIMIT 1").bind(ticketId).first().then(row => row?.customer_id ? env.DB.prepare("SELECT user_id FROM crm_customer_members WHERE customer_id = ?").bind(row.customer_id).all().then(result => (result.results || []).map(member => member.user_id)) : []), {
+          type: "ticket_reply", title: "Nhân viên đã phản hồi", body: "Bạn có phản hồi mới cho yêu cầu hỗ trợ.", resource_type: "ticket", resource_id: ticketId
+        });
         return json({ data: { id, ticket_id: ticketId, actor_id: principal.user.id, actor_type: "staff", body: message, created_at: now } }, 201);
       }
       return json({ error: { code: "METHOD_NOT_ALLOWED", message: "Phương thức không được hỗ trợ." } }, 405);
@@ -870,6 +945,9 @@ async function adminProjectRoutes(request, env, url) {
         env.DB.prepare("UPDATE crm_tickets SET status = ?, priority = ?, updated_at = ? WHERE id = ?").bind(status, priority, now, ticketId),
         env.DB.prepare("INSERT INTO crm_audit_events (id, actor_id, action, resource_type, resource_id, metadata_json, created_at) VALUES (?, ?, 'ticket.updated', 'ticket', ?, ?, ?)").bind(crypto.randomUUID(), principal.user.id, ticketId, JSON.stringify({ status, priority }), now)
       ]);
+      await notifySafely(env, env.DB.prepare("SELECT customer_id FROM crm_tickets WHERE id = ? LIMIT 1").bind(ticketId).first().then(row => row?.customer_id ? env.DB.prepare("SELECT user_id FROM crm_customer_members WHERE customer_id = ?").bind(row.customer_id).all().then(result => (result.results || []).map(member => member.user_id)) : []), {
+        type: "ticket_updated", title: "Yêu cầu hỗ trợ được cập nhật", body: "Trạng thái hoặc mức ưu tiên của yêu cầu đã thay đổi.", resource_type: "ticket", resource_id: ticketId
+      });
       return json({ data: { ...ticket, status, priority, updated_at: now } });
     }
     if (request.method === "GET") return json({ data: ticket });

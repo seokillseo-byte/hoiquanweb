@@ -81,14 +81,17 @@ Mục tiêu: dựng nền tảng có thể mở rộng, không chỉ thêm HTML 
 
 - Đăng nhập/đăng xuất, phục hồi tài khoản, quản lý phiên và hồ sơ.
 - Khách xem báo giá, đơn hàng, dự án, milestone, file được phép xem, bình luận và yêu cầu hỗ trợ.
-- Khách xác nhận báo giá/duyệt mốc; backend ghi actor, timestamp và lịch sử thay đổi.
+- Khách xác nhận báo giá/duyệt mốc; backend ghi actor, timestamp và lịch sử thay đổi. **Đã triển khai quote detail API (kèm line items) và quote acceptance cho owner/billing; conditional state transition + audit event cùng D1 batch; CI kiểm tra cross-customer isolation, member role denial, expired/repeated acceptance.** Orders, projects, milestones, files và tickets vẫn chưa hoàn thiện.
 - Nhân viên quản lý khách hàng, công việc, deadline, yêu cầu sửa đổi và bàn giao qua RBAC.
 - File riêng tư chỉ tải qua cơ chế xác thực/ủy quyền; URL khó đoán không thay thế authorization.
 
 **Acceptance gates**
-- [ ] Automated authorization matrix cho admin/staff/customer.
-- [ ] Cross-customer isolation test cho mọi endpoint dữ liệu riêng tư.
-- [ ] Audit log cho quote approval, milestone changes, permissions và thao tác nhạy cảm.
+- [x] Quote detail endpoint chỉ trả dữ liệu thuộc customer membership hiện tại, gồm line items; CI kiểm tra không đọc được quote của customer khác.
+- [x] Quote acceptance chỉ dành cho owner/billing, chỉ nhận quote đang sent và chưa hết hạn; kiểm tra member bị từ chối, expired/repeated acceptance và actor/timestamp.
+- [x] Quote acceptance ghi `quote.accepted` audit event cùng transaction batch với cập nhật trạng thái.
+- [ ] Automated authorization matrix đầy đủ cho admin/staff/customer.
+- [ ] Cross-customer isolation test cho toàn bộ endpoint dữ liệu riêng tư (không chỉ quotes).
+- [ ] Audit log cho milestone changes, permissions và các thao tác nhạy cảm khác.
 - [ ] Test session expiry, recovery, brute-force/rate limit, upload/download và backup/restore.
 - [ ] Kiểm tra end-to-end trên môi trường staging; không chấp nhận chỉ vì UI render được.
 

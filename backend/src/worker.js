@@ -274,16 +274,99 @@ async function identityRoutes(request, env, url) {
     }
     return json({ error: { code: "NOT_FOUND", message: "Không tìm thấy thao tác báo giá." } }, 404);
   }
-  if (url.pathname === "/api/v1/admin/customers" && request.method === "GET") {
+  if (url.pathname === "/api/v1/admin/customers") {
     const principal = await authenticatedPrincipal(request, env);
     if (principal.error) return principal.error;
     if (!hasAnyRole(principal, ["admin", "staff"])) {
-      return json({ error: { code: "FORBIDDEN", message: "Bạn không có quyền truy cập chức năng này." } }, 403);
+      return json({ error: { code: "FORBIDDEN", message: "Bạn không có quyền quản lý khách hàng." } }, 403);
     }
-    const result = await env.DB.prepare(
-      "SELECT id, display_name, organization_name, contact_email, phone, status, created_at, updated_at FROM crm_customers ORDER BY created_at DESC LIMIT 100"
-    ).all();
-    return json({ data: result.results || [] });
+    if (request.method === "GET") {
+      const result = await env.DB.prepare(
+        "SELECT id, display_name, organization_name, contact_email, phone, status, created_at, updated_at FROM crm_customers ORDER BY created_at DESC LIMIT 100"
+      ).all();
+      return json({ data: result.results || [] });
+    }
+    if (request.method === "POST") {
+      const body = await readJson(request);
+      if (!body || typeof body !== "object" || Array.isArray(body)) {
+        return json({ error: { code: "VALIDATION_ERROR", message: "Dữ liệu khách hàng không hợp lệ." } }, 400);
+      }
+      const displayName = clean(body.display_name, 180);
+      const organizationName = clean(body.organization_name, 180);
+      const contactEmail = clean(body.contact_email, 254).toLowerCase();
+      const phone = clean(body.phone, 40);
+      const notes = clean(body.notes, 5000);
+      if (displayName.length < 2 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(contactEmail)) {
+        return json({ error: { code: "VALIDATION_ERROR", message: "Tên khách hàng hoặc email không hợp lệ." } }, 400);
+      }
+      const now = new Date().toISOString(), id = crypto.randomUUID();
+      const customer = { id, display_name: displayName, organization_name: organizationName, contact_email: contactEmail, phone, status: "active", notes, created_at: now, updated_at: now };
+      await env.DB.batch([
+        env.DB.prepare("INSERT INTO crm_customers (id, display_name, organization_name, contact_email, phone, status, notes, created_at, updated_at) VALUES (?, ?, ?, ?, ?, 'active', ?, ?, ?)").bind(id, displayName, organizationName, contactEmail, phone, notes, now, now),
+        env.DB.prepare("INSERT INTO crm_audit_events (id, actor_id, action, resource_type, resource_id, metadata_json, created_at) VALUES (?, ?, 'customer.created', 'customer', ?, ?, ?)").bind(crypto.randomUUID(), principal.user.id, id, JSON.stringify({ contact_email: contactEmail }), now)
+      ]);
+      return json({ data: customer }, 201);
+    }
+    return json({ error: { code: "METHOD_NOT_ALLOWED", message: "Phương thức không được hỗ trợ." } }, 405);
+  }
+  const customerMatch = url.pathname.match(/^\/api\/v1\/admin\/customers\/([^/]+)(?:\/(activities))?$/);
+  if (customerMatch) {
+    const principal = await authenticatedPrincipal(request, env);
+    if (principal.error) return principal.error;
+    if (!hasAnyRole(principal, ["admin", "staff"])) {
+      return json({ error: { code: "FORBIDDEN", message: "Bạn không có quyền quản lý khách hàng." } }, 403);
+    }
+    let customerId;
+    try { customerId = decodeURIComponent(customerMatch[1]); }
+    catch { return json({ error: { code: "NOT_FOUND", message: "Không tìm thấy khách hàng." } }, 404); }
+    if (!customerId || customerId.length > 80 || customerId.includes("/")) return json({ error: { code: "NOT_FOUND", message: "Không tìm thấy khách hàng." } }, 404);
+    const isActivities = customerMatch[2] === "activities";
+    const customer = await env.DB.prepare("SELECT id, display_name, organization_name, contact_email, phone, status, notes, created_at, updated_at FROM crm_customers WHERE id = ? LIMIT 1").bind(customerId).first();
+    if (!customer) return json({ error: { code: "NOT_FOUND", message: "Không tìm thấy khách hàng." } }, 404);
+    if (isActivities && request.method === "GET") {
+      const limit = Math.max(1, Math.min(100, Number.parseInt(url.searchParams.get("limit") || "50", 10) || 50));
+      const result = await env.DB.prepare("SELECT id, activity_type, subject, body, actor_id, occurred_at, created_at FROM crm_activities WHERE customer_id = ? ORDER BY occurred_at DESC, id DESC LIMIT ?").bind(customerId, limit).all();
+      return json({ data: result.results || [], meta: { limit } });
+    }
+    if (isActivities && request.method === "POST") {
+      const body = await readJson(request);
+      if (!body || typeof body !== "object" || Array.isArray(body)) return json({ error: { code: "VALIDATION_ERROR", message: "Dữ liệu hoạt động không hợp lệ." } }, 400);
+      const activityType = clean(body.activity_type, 30);
+      const subject = clean(body.subject, 180);
+      const activityBody = clean(body.body, 10000);
+      if (!["note", "call", "email", "meeting", "status_change"].includes(activityType) || !subject) {
+        return json({ error: { code: "VALIDATION_ERROR", message: "Loại hoạt động hoặc tiêu đề không hợp lệ." } }, 400);
+      }
+      const now = new Date().toISOString(), id = crypto.randomUUID();
+      const activity = { id, customer_id: customerId, activity_type: activityType, subject, body: activityBody, actor_id: principal.user.id, occurred_at: now, created_at: now };
+      await env.DB.batch([
+        env.DB.prepare("INSERT INTO crm_activities (id, customer_id, activity_type, subject, body, actor_id, occurred_at, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)").bind(id, customerId, activityType, subject, activityBody, principal.user.id, now, now),
+        env.DB.prepare("INSERT INTO crm_audit_events (id, actor_id, action, resource_type, resource_id, metadata_json, created_at) VALUES (?, ?, 'customer.activity.created', 'customer', ?, ?, ?)").bind(crypto.randomUUID(), principal.user.id, customerId, JSON.stringify({ activity_id: id, activity_type: activityType }), now)
+      ]);
+      return json({ data: activity }, 201);
+    }
+    if (!isActivities && request.method === "GET") return json({ data: customer });
+    if (!isActivities && request.method === "PATCH") {
+      const body = await readJson(request);
+      if (!body || typeof body !== "object" || Array.isArray(body)) return json({ error: { code: "VALIDATION_ERROR", message: "Dữ liệu khách hàng không hợp lệ." } }, 400);
+      const displayName = body.display_name === undefined ? customer.display_name : clean(body.display_name, 180);
+      const organizationName = body.organization_name === undefined ? customer.organization_name : clean(body.organization_name, 180);
+      const contactEmail = body.contact_email === undefined ? customer.contact_email : clean(body.contact_email, 254).toLowerCase();
+      const phone = body.phone === undefined ? customer.phone : clean(body.phone, 40);
+      const notes = body.notes === undefined ? customer.notes : clean(body.notes, 5000);
+      const status = body.status === undefined ? customer.status : clean(body.status, 20);
+      if (displayName.length < 2 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(contactEmail) || !["active", "inactive", "archived"].includes(status)) {
+        return json({ error: { code: "VALIDATION_ERROR", message: "Thông tin hoặc trạng thái khách hàng không hợp lệ." } }, 400);
+      }
+      const now = new Date().toISOString();
+      await env.DB.batch([
+        env.DB.prepare("UPDATE crm_customers SET display_name = ?, organization_name = ?, contact_email = ?, phone = ?, notes = ?, status = ?, updated_at = ? WHERE id = ?").bind(displayName, organizationName, contactEmail, phone, notes, status, now, customerId),
+        env.DB.prepare("INSERT INTO crm_audit_events (id, actor_id, action, resource_type, resource_id, metadata_json, created_at) VALUES (?, ?, 'customer.updated', 'customer', ?, ?, ?)").bind(crypto.randomUUID(), principal.user.id, customerId, JSON.stringify({ status }), now)
+      ]);
+      const updated = await env.DB.prepare("SELECT id, display_name, organization_name, contact_email, phone, status, notes, created_at, updated_at FROM crm_customers WHERE id = ? LIMIT 1").bind(customerId).first();
+      return json({ data: updated });
+    }
+    return json({ error: { code: "METHOD_NOT_ALLOWED", message: "Phương thức không được hỗ trợ." } }, 405);
   }
   return null;
 }
@@ -596,6 +679,7 @@ export default { async fetch(request, env) {
       await env.DB.prepare("CREATE TABLE IF NOT EXISTS crm_customers (id TEXT PRIMARY KEY, display_name TEXT NOT NULL, organization_name TEXT NOT NULL DEFAULT '', contact_email TEXT NOT NULL, phone TEXT NOT NULL DEFAULT '', status TEXT NOT NULL DEFAULT 'active', notes TEXT NOT NULL DEFAULT '', created_at TEXT NOT NULL, updated_at TEXT NOT NULL)").run();
       await env.DB.prepare("CREATE TABLE IF NOT EXISTS app_user_roles (user_id TEXT NOT NULL, role TEXT NOT NULL CHECK(role IN ('admin','staff','customer')), assigned_by TEXT NOT NULL, assigned_at TEXT NOT NULL, PRIMARY KEY(user_id, role))").run();
       await env.DB.prepare("CREATE TABLE IF NOT EXISTS crm_customer_members (customer_id TEXT NOT NULL REFERENCES crm_customers(id) ON DELETE CASCADE, user_id TEXT NOT NULL, membership_role TEXT NOT NULL DEFAULT 'owner' CHECK(membership_role IN ('owner','member','billing')), created_at TEXT NOT NULL, PRIMARY KEY(customer_id, user_id))").run();
+      await env.DB.prepare("CREATE TABLE IF NOT EXISTS crm_activities (id TEXT PRIMARY KEY, customer_id TEXT NOT NULL REFERENCES crm_customers(id) ON DELETE CASCADE, lead_id TEXT REFERENCES leads(id) ON DELETE SET NULL, activity_type TEXT NOT NULL, subject TEXT NOT NULL, body TEXT NOT NULL DEFAULT '', actor_id TEXT NOT NULL, occurred_at TEXT NOT NULL, created_at TEXT NOT NULL)").run();
       await env.DB.prepare("CREATE TABLE IF NOT EXISTS crm_quotes (id TEXT PRIMARY KEY, customer_id TEXT NOT NULL REFERENCES crm_customers(id) ON DELETE RESTRICT, quote_number TEXT NOT NULL UNIQUE, status TEXT NOT NULL DEFAULT 'draft', currency TEXT NOT NULL DEFAULT 'VND', subtotal_minor INTEGER NOT NULL DEFAULT 0, discount_minor INTEGER NOT NULL DEFAULT 0, total_minor INTEGER NOT NULL DEFAULT 0, valid_until TEXT, notes TEXT NOT NULL DEFAULT '', created_by TEXT NOT NULL, created_at TEXT NOT NULL, updated_at TEXT NOT NULL, accepted_by TEXT, accepted_at TEXT)").run();
       await env.DB.prepare("CREATE TABLE IF NOT EXISTS crm_quote_items (id TEXT PRIMARY KEY, quote_id TEXT NOT NULL REFERENCES crm_quotes(id) ON DELETE CASCADE, description TEXT NOT NULL, quantity INTEGER NOT NULL, unit_price_minor INTEGER NOT NULL, line_total_minor INTEGER NOT NULL, sort_order INTEGER NOT NULL DEFAULT 0)").run();
       await env.DB.prepare("CREATE TABLE IF NOT EXISTS crm_audit_events (id TEXT PRIMARY KEY, actor_id TEXT NOT NULL, action TEXT NOT NULL, resource_type TEXT NOT NULL, resource_id TEXT NOT NULL, metadata_json TEXT NOT NULL DEFAULT '{}', created_at TEXT NOT NULL)").run();
@@ -613,6 +697,10 @@ export default { async fetch(request, env) {
     }
     else if (url.pathname === "/_test/quote-audit-count" && request.method === "GET" && env.TEST_MODE === "true") {
       const result = await env.DB.prepare("SELECT action, COUNT(*) AS count FROM crm_audit_events WHERE resource_type = 'quote' GROUP BY action").all();
+      response = json({ data: result.results || [] });
+    }
+    else if (url.pathname === "/_test/customer-audit-count" && request.method === "GET" && env.TEST_MODE === "true") {
+      const result = await env.DB.prepare("SELECT action, COUNT(*) AS count FROM crm_audit_events WHERE resource_type = 'customer' GROUP BY action").all();
       response = json({ data: result.results || [] });
     }
     else if (url.pathname === "/_test/seed-identity" && request.method === "POST" && env.TEST_MODE === "true") {
@@ -653,7 +741,7 @@ export default { async fetch(request, env) {
     }
     else if (url.pathname === "/api/health" && request.method === "GET") response = json({ ok: true, service: "hoiquanweb-api", version: "phase-2" });
     else if (url.pathname.startsWith("/api/v1/admin/pages") || url.pathname.startsWith("/api/v1/admin/posts") || url.pathname.startsWith("/api/v1/admin/services")) response = await adminContent(request, env, url);
-    else if (url.pathname === "/api/v1/me" || url.pathname.startsWith("/api/v1/me/") || url.pathname === "/api/v1/admin/customers" || url.pathname === "/api/v1/admin/quotes" || url.pathname.startsWith("/api/v1/admin/quotes/")) response = await identityRoutes(request, env, url) || json({ error: { code: "NOT_FOUND", message: "Không tìm thấy tài nguyên." } }, 404);
+    else if (url.pathname === "/api/v1/me" || url.pathname.startsWith("/api/v1/me/") || url.pathname === "/api/v1/admin/customers" || url.pathname.startsWith("/api/v1/admin/customers/") || url.pathname === "/api/v1/admin/quotes" || url.pathname.startsWith("/api/v1/admin/quotes/")) response = await identityRoutes(request, env, url) || json({ error: { code: "NOT_FOUND", message: "Không tìm thấy tài nguyên." } }, 404);
     else if (url.pathname.startsWith("/api/v1/public/")) response = await publicContent(request, env, url) || json({ error: { code: "NOT_FOUND", message: "Không tìm thấy tài nguyên." } }, 404);
     else if (url.pathname === "/api/leads" && request.method === "POST") response = await createLead(request, env);
     else if (url.pathname === "/api/estimate" && request.method === "POST") response = await estimate(request);

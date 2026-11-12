@@ -2,7 +2,7 @@
 
 Hội Quán Web được định hướng thành nền tảng vận hành công ty thiết kế website: website dịch vụ nhiều trang, CMS riêng, kho mẫu WordPress + HTML/CSS, quản trị kinh doanh và cổng khách hàng.
 
-**Tình trạng hiện tại:** website công khai song ngữ có 34 trang nội dung, SEO metadata, sitemap và biểu mẫu tư vấn có chế độ dự phòng. CMS có giao diện/API cho pages/posts/services, revision history và restore. Admin có giao diện tạo/quản lý báo giá; CRM API hỗ trợ tạo/list/detail/gửi quote; customer portal song ngữ có đăng nhập, xem chi tiết và xác nhận báo giá theo membership. Better Auth, phân quyền, Worker/D1 migrations và kiểm thử tích hợp đã có mã nguồn. Tuy nhiên Cloudflare Worker/D1 chưa được cấu hình và nghiệm thu staging/production; HQ_API_BASE chưa được cấu hình; public renderer chỉ ghi đè trang tĩnh có slug tương ứng, chưa tự tạo route mới. Media library, template marketplace, CRM pipeline/activity, đơn hàng/dự án/milestone, email delivery và customer portal đầy đủ vẫn đang phát triển. Không coi CI xanh là bằng chứng backend đang chạy thực tế.
+**Tình trạng hiện tại:** website công khai song ngữ có 34 trang nội dung, SEO metadata, sitemap và biểu mẫu tư vấn có chế độ dự phòng. CMS có giao diện/API cho pages/posts/services, revision history và restore. Admin có giao diện quản lý báo giá và CRM khách hàng, tạo hồ sơ, cập nhật trạng thái, ghi/xem activity timeline; CRM API hỗ trợ tạo/list/detail/update customer và quote workflow. Customer portal song ngữ có đăng nhập, xem chi tiết và xác nhận báo giá theo membership. Better Auth, phân quyền, Worker/D1 migrations và kiểm thử tích hợp đã có mã nguồn. Tuy nhiên Cloudflare Worker/D1 chưa được cấu hình và nghiệm thu staging/production; HQ_API_BASE chưa được cấu hình; public renderer chỉ ghi đè trang tĩnh có slug tương ứng, chưa tự tạo route mới. Media library, template marketplace, lead pipeline/assignment/conversion, CRM dashboard, đơn hàng/dự án/milestone, email delivery và customer portal đầy đủ vẫn đang phát triển. Không coi CI xanh là bằng chứng backend đang chạy thực tế.
 
 ## Tài liệu dự án
 
@@ -38,7 +38,7 @@ Sau đó mở `http://localhost:4173`.
 
 Có Cloudflare Worker scaffold và D1 migration cho lead, lịch sử lead và rate limiting. Cấu hình hiện tại vẫn chứa placeholder D1 database ID, còn API base frontend chưa cấu hình. Không gửi dữ liệu khách hàng thật cho đến khi backend được cấu hình, deploy và kiểm thử.
 
-Repository hiện có migration CRM `0003_crm_foundation.sql`, CMS revisions `0005_cms_revisions.sql`, Better Auth, CMS admin APIs, quote management APIs/UI và customer quote portal. Các migration này chưa được áp dụng lên database thật; CRM pipeline/activity, email delivery, order/project workflows và các phần còn lại của customer portal vẫn chưa hoàn thiện. Xem [docs/PHASE_2_BACKEND_SETUP.md](docs/PHASE_2_BACKEND_SETUP.md). Không commit secrets và không gửi token/password vào chat hoặc mã nguồn.
+Repository hiện có migration CRM `0003_crm_foundation.sql`, CMS revisions `0005_cms_revisions.sql`, Better Auth, CMS admin APIs, CRM customer/activity APIs và UI, quote management APIs/UI và customer quote portal. Các migration này chưa được áp dụng lên database thật; lead pipeline/conversion, CRM dashboard, email delivery, order/project workflows và các phần còn lại của customer portal vẫn chưa hoàn thiện. Xem [docs/PHASE_2_BACKEND_SETUP.md](docs/PHASE_2_BACKEND_SETUP.md). Không commit secrets và không gửi token/password vào chat hoặc mã nguồn.
 
 ## Mục tiêu sản phẩm
 

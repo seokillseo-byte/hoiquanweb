@@ -15,7 +15,7 @@ async function request(path, authorization) {
 }
 
 test("identity-protected routes fail closed when the identity database is unavailable", async () => {
-  for (const path of ["/api/v1/me", "/api/v1/me/customers", "/api/v1/me/quotes", "/api/v1/admin/customers", "/api/v1/admin/customers/test-customer/activities", "/api/v1/admin/quotes"]) {
+  for (const path of ["/api/v1/me", "/api/v1/me/customers", "/api/v1/me/quotes", "/api/v1/admin/customers", "/api/v1/admin/customers/test-customer/activities", "/api/v1/admin/quotes", "/api/v1/admin/staff"]) {
     const response = await request(path);
     assert.equal(response.status, 503, `${path} must fail closed if identity storage is unavailable`);
     const body = await response.json();
@@ -24,7 +24,7 @@ test("identity-protected routes fail closed when the identity database is unavai
 });
 
 test("legacy ADMIN_TOKEN does not bypass identity-protected routes", async () => {
-  for (const path of ["/api/v1/me", "/api/v1/me/customers", "/api/v1/me/quotes", "/api/v1/admin/customers", "/api/v1/admin/customers/test-customer/activities", "/api/v1/admin/quotes"]) {
+  for (const path of ["/api/v1/me", "/api/v1/me/customers", "/api/v1/me/quotes", "/api/v1/admin/customers", "/api/v1/admin/customers/test-customer/activities", "/api/v1/admin/quotes", "/api/v1/admin/staff"]) {
     const response = await request(path, "Bearer test-only-legacy-token");
     assert.equal(response.status, 503, `${path} must not use the legacy token as identity`);
     const body = await response.json();
@@ -73,3 +73,13 @@ test("test-only identity fixture endpoint is unavailable outside TEST_MODE", asy
   assert.equal((await response.json()).error, "NOT_FOUND");
 });
 
+
+
+test("lead history remains protected from anonymous and legacy-token access", async () => {
+  for (const authorization of [undefined, "Bearer test-only-legacy-token"]) {
+    const response = await request("/api/v1/admin/leads/test-lead/events", authorization);
+    assert.equal(response.status, 503, "lead history must fail closed when identity storage is unavailable");
+    const body = await response.json();
+    assert.equal(body.error.code, "SERVICE_UNAVAILABLE");
+  }
+});

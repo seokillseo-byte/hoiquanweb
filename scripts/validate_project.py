@@ -142,7 +142,7 @@ try:
     for migration in migration_files:
         db.executescript(migration.read_text(encoding="utf-8"))
     tables = {row[0] for row in db.execute("SELECT name FROM sqlite_master WHERE type='table'")}
-    expected = {"leads", "lead_events", "rate_limits", "cms_pages", "cms_posts", "cms_services", "cms_templates", "cms_revisions", "crm_customers", "crm_activities", "crm_quotes", "crm_quote_items", "crm_audit_events", "crm_orders", "crm_projects", "crm_project_milestones", "crm_project_comments", "crm_tickets", "crm_ticket_messages", "crm_project_files"}
+    expected = {"leads", "lead_events", "rate_limits", "cms_pages", "cms_posts", "cms_services", "cms_templates", "cms_revisions", "crm_customers", "crm_activities", "crm_quotes", "crm_quote_items", "crm_audit_events", "crm_orders", "crm_projects", "crm_project_milestones", "crm_project_comments", "crm_tickets", "crm_ticket_messages", "crm_project_files", "crm_notifications"}
     if not expected.issubset(tables):
         fail("database migrations did not create all required tables: " + ", ".join(sorted(expected - tables)))
     lead_columns = {row[1] for row in db.execute("PRAGMA table_info(leads)")}
@@ -169,6 +169,12 @@ try:
     project_file_indexes = {row[1] for row in db.execute("PRAGMA index_list(crm_project_files)")}
     if "idx_crm_project_files_project_visibility_created" not in project_file_indexes:
         fail("private project file access index is missing")
+    notification_columns = {row[1] for row in db.execute("PRAGMA table_info(crm_notifications)")}
+    if not {"user_id", "type", "title", "body", "resource_type", "resource_id", "read_at"}.issubset(notification_columns):
+        fail("CRM notification inbox columns are missing")
+    notification_indexes = {row[1] for row in db.execute("PRAGMA index_list(crm_notifications)")}
+    if not {"idx_crm_notifications_user_created", "idx_crm_notifications_user_unread"}.issubset(notification_indexes):
+        fail("CRM notification inbox indexes are missing")
     file_fk_tables = {row[2] for row in db.execute("PRAGMA foreign_key_list(crm_project_files)")}
     if not {"crm_projects", "crm_customers"}.issubset(file_fk_tables):
         fail("private project file customer/project foreign keys are missing")

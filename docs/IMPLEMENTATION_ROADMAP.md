@@ -80,12 +80,13 @@ Mục tiêu: dựng nền tảng có thể mở rộng, không chỉ thêm HTML 
 ## Phase 4 — Cổng khách hàng (bắt buộc trong bản phát hành đầu tiên)
 
 - Đăng nhập/đăng xuất, phục hồi tài khoản, quản lý phiên và hồ sơ.
-- Khách xem báo giá, đơn hàng, dự án, milestone, file được phép xem, bình luận và yêu cầu hỗ trợ.
-- Khách xác nhận báo giá/duyệt mốc; backend ghi actor, timestamp và lịch sử thay đổi. **Đã triển khai quote detail API (kèm line items) và quote acceptance cho owner/billing; conditional state transition + audit event cùng D1 batch; CI kiểm tra cross-customer isolation, member role denial, expired/repeated acceptance.** Orders, projects, milestones, files và tickets vẫn chưa hoàn thiện.
+- **Đã có UI cổng khách hàng song ngữ:** đăng nhập, xem danh sách/chi tiết báo giá và xác nhận báo giá. Khách xem đơn hàng, dự án, milestone, file được phép xem, bình luận và yêu cầu hỗ trợ vẫn chưa hoàn thiện.
+- **Đã triển khai quote detail API (kèm line items) và quote acceptance cho owner/billing:** conditional state transition + audit event cùng D1 batch; CI kiểm tra cross-customer isolation, member role denial, expired/repeated acceptance. UI ẩn ghi chú nội bộ và không cho xác nhận báo giá hết hạn.
 - Nhân viên quản lý khách hàng, công việc, deadline, yêu cầu sửa đổi và bàn giao qua RBAC.
 - File riêng tư chỉ tải qua cơ chế xác thực/ủy quyền; URL khó đoán không thay thế authorization.
 
 **Acceptance gates**
+- [x] Customer portal UI song ngữ hỗ trợ sign-in/sign-out, danh sách và chi tiết báo giá, xác nhận báo giá theo role owner/billing.
 - [x] Quote detail endpoint chỉ trả dữ liệu thuộc customer membership hiện tại, gồm line items; CI kiểm tra không đọc được quote của customer khác.
 - [x] Quote acceptance chỉ dành cho owner/billing, chỉ nhận quote đang sent và chưa hết hạn; kiểm tra member bị từ chối, expired/repeated acceptance và actor/timestamp.
 - [x] Quote acceptance ghi `quote.accepted` audit event cùng transaction batch với cập nhật trạng thái.

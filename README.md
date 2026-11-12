@@ -2,7 +2,7 @@
 
 Hội Quán Web được định hướng thành nền tảng vận hành công ty thiết kế website: website dịch vụ nhiều trang, CMS riêng, kho mẫu WordPress + HTML/CSS, quản trị kinh doanh và cổng khách hàng.
 
-**Tình trạng hiện tại:** website công khai song ngữ đã có bộ sinh trang tĩnh gồm 34 trang nội dung, SEO metadata, sitemap và biểu mẫu tư vấn có chế độ dự phòng. Worker/D1, Better Auth, phân quyền và các kiểm thử tích hợp đã có mã nguồn nền tảng; tuy nhiên chưa được cấu hình và nghiệm thu trên Cloudflare staging/production. CMS có persistence, template marketplace có dữ liệu thật và customer portal chưa hoàn thiện. Không coi CI xanh là bằng chứng các chức năng backend đang chạy thực tế.
+**Tình trạng hiện tại:** website công khai song ngữ có 34 trang nội dung, SEO metadata, sitemap và biểu mẫu tư vấn có chế độ dự phòng. CMS đã có giao diện quản trị và API cho pages/posts/services: staff/admin tạo, sửa bản nháp; admin xuất bản/lưu trữ; có lưu revision. Better Auth, phân quyền, Worker/D1 migrations và kiểm thử tích hợp đã có mã nguồn. Tuy nhiên Cloudflare Worker/D1 chưa được cấu hình và nghiệm thu staging/production; CMS chưa kết nối để tự cập nhật nội dung trên public renderer; media library, template marketplace, customer portal đầy đủ và CRM workflow còn đang phát triển. Không coi CI xanh là bằng chứng backend đang chạy thực tế.
 
 ## Tài liệu dự án
 
@@ -38,7 +38,7 @@ Sau đó mở `http://localhost:4173`.
 
 Có Cloudflare Worker scaffold và D1 migration cho lead, lịch sử lead và rate limiting. Cấu hình hiện tại vẫn chứa placeholder D1 database ID, còn API base frontend chưa cấu hình. Không gửi dữ liệu khách hàng thật cho đến khi backend được cấu hình, deploy và kiểm thử.
 
-Trên nhánh CRM đang phát triển có thêm migration `0003_crm_foundation.sql` cho khách hàng, hoạt động, báo giá và audit log; đây chỉ là schema chưa được áp dụng lên database thật và chưa có CRM API bảo vệ. Xem [docs/PHASE_2_BACKEND_SETUP.md](docs/PHASE_2_BACKEND_SETUP.md). Không commit secrets và không gửi token/password vào chat hoặc mã nguồn.
+Repository hiện có migration CRM `0003_crm_foundation.sql`, CMS revisions `0005_cms_revisions.sql`, Better Auth và CMS admin APIs. Các migration này chưa được áp dụng lên database thật; CRM nghiệp vụ vẫn chưa có đầy đủ API/UI. Xem [docs/PHASE_2_BACKEND_SETUP.md](docs/PHASE_2_BACKEND_SETUP.md). Không commit secrets và không gửi token/password vào chat hoặc mã nguồn.
 
 ## Mục tiêu sản phẩm
 

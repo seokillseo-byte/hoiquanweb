@@ -1,9 +1,9 @@
 name: Validate website and API
 on:
   push:
-    branches: [main]
+    branches: [main, feat/better-auth-worker-d1-integration, feat/hoiquanweb-public-site-v1]
   pull_request:
-    branches: [main]
+    branches: [main, feat/better-auth-worker-d1-integration]
   workflow_dispatch:
 
 permissions:
@@ -23,5 +23,19 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: "22"
-      - name: Validate HTML, JavaScript and database migration
+      - name: Validate existing website and API scaffold
         run: python scripts/validate_project.py
+      - name: Install locked dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Test public content API and authentication boundaries
+        run: npm run test:api
+      - name: Test Better Auth against local Worker and D1
+        run: npm run test:auth
+      - name: Typecheck frontend application
+        run: npm run typecheck
+      - name: Build frontend application
+        run: npm run build
+      - name: Generate bilingual public website
+        run: node scripts/build_public_site.mjs
+      - name: Validate generated public website
+        run: node scripts/validate_public_site.mjs

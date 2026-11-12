@@ -1,0 +1,22 @@
+# ADR-0001: Initial platform stack
+
+- **Status:** Proposed for implementation; production choices must be verified before launch.
+- **Date:** 2026-10-28
+- **Context:** The repository is a static HTML site with an existing Cloudflare Worker/D1 scaffold. The product requires a custom CMS, template catalog for WordPress and HTML/CSS, business operations, and a customer portal.
+- **Decision:** Use an incremental migration rather than a full rewrite in one commit.
+  - Frontend application: Vite + React + TypeScript for routed public pages, admin CMS, and customer portal, with shared components and typed API client.
+  - API runtime: Cloudflare Workers as the initial candidate, reusing the current Worker only after review and tests.
+  - Relational data: Cloudflare D1 as the initial candidate, with versioned migrations and explicit test/staging/production separation.
+  - Media: object storage with private-by-default delivery for customer files; provider selection remains open until cost, signed/private access, lifecycle and backup requirements are evaluated.
+  - Authentication: do not invent a home-grown production authentication scheme. Evaluate a managed identity provider or a well-supported Worker-compatible library and record the final choice in a follow-up ADR before building customer sign-in.
+  - WordPress provisioning: separate future subsystem. The catalog may store packages and demo metadata first; do not execute arbitrary template code on the API Worker or promise one-click provisioning.
+- **Consequences:**
+  - Introduces a build step and TypeScript checks, but enables maintainable routing, typed contracts and testable components.
+  - GitHub Pages may remain a static preview only if the SPA routing and API origin are configured safely. Production host must support required routing, security headers and environment configuration.
+  - Cloudflare account resources, secrets, auth provider configuration and DNS cannot be presumed to exist.
+  - Migrate incrementally and keep existing public preview working until replacement routes pass acceptance tests.
+- **Alternatives considered:**
+  - Continue adding standalone HTML files: rejected as the long-term approach because shared CMS/portal behavior and route-level testing would become brittle.
+  - WordPress as the platform's own CMS: rejected for the central admin product because the user selected a custom CMS; WordPress remains a delivery target for customer websites.
+  - Build custom auth from scratch immediately: rejected due to security and maintenance risk.
+- **Review triggers:** Revisit if production hosting constraints, provider pricing, customer tenancy requirements, or WordPress provisioning needs contradict these assumptions.

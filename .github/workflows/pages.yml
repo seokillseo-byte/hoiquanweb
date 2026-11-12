@@ -35,10 +35,15 @@ jobs:
         run: python scripts/validate_project.py
       - name: Configure Pages
         uses: actions/configure-pages@v5
+      - name: Generate bilingual public website
+        env:
+          HQ_API_BASE: ${{ vars.HQ_API_BASE }}
+        run: node scripts/build_public_site.mjs
       - name: Assemble public website files
         run: |
           mkdir -p _site
-          cp index.html privacy.html admin.html 404.html robots.txt sitemap.xml _site/
+          cp -R public-site/dist/. _site/
+          cp admin.html _site/
       - name: Upload static site
         uses: actions/upload-pages-artifact@v3
         with:

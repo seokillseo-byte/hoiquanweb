@@ -22,7 +22,7 @@ This is not just a static marketing site. Existing lead API scaffolding should b
 - Worker APIs include Better Auth session handling, server-assigned roles, public published-content reads, protected CMS writes, lead intake and the initial CRM identity/customer foundations.
 - D1 migrations include CMS content and revision tables, identity/authorization and CRM foundations. They have not yet been applied to a real Cloudflare database.
 - `backend/wrangler.toml` still contains the placeholder `REPLACE_WITH_CLOUDFLARE_D1_DATABASE_ID`; API base and allowed origins must be configured per environment.
-- The public static renderer does not yet fetch/render CMS-managed content; CMS API and admin UI are implemented foundations, not a fully connected dynamic publishing pipeline.
+- The public renderer can fetch a published CMS page matching an existing static route when HQ_API_BASE is configured, and safely renders structured blocks. HQ_API_BASE is not yet configured on GitHub Pages, arbitrary new CMS routes/blog routes are not generated, and dynamic rendering has not been verified against a deployed Worker/D1.
 - Template marketplace, media library, full CRM workflow, customer portal, order/project management and production integrations remain incomplete.
 - GitHub Pages workflows can deploy static assets; they do not run the Worker or create/configure Cloudflare D1 resources.
 - CI success means the configured repository checks passed; it does not prove that a live API, database, email sender, or customer portal is operational.

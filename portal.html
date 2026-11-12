@@ -82,7 +82,6 @@
       box.appendChild(detailRow(t("subtotal"),money(data.subtotal_minor,data.currency)));
       box.appendChild(detailRow(t("discount"),money(data.discount_minor,data.currency)));
       box.appendChild(detailRow(t("total"),money(data.total_minor,data.currency),true));
-      if(data.notes){const notes=document.createElement("p");notes.className="quote-meta";notes.textContent=data.notes;box.appendChild(notes);}
     }catch(error){box.replaceChildren();const failure=document.createElement("p");failure.textContent=t("loadError")+error.message;box.appendChild(failure);}
   }
   async function acceptQuote(card,quote,button){
@@ -103,7 +102,7 @@
         const total=document.createElement("div");total.className="quote-total";total.textContent=money(quote.total_minor,quote.currency);head.append(info,total);card.appendChild(head);
         const actions=document.createElement("div");actions.className="quote-actions";
         const detail=document.createElement("button");detail.type="button";detail.className="secondary";detail.textContent=t("details");detail.addEventListener("click",()=>showQuoteDetail(card,quote));actions.appendChild(detail);
-        if(quote.status==="sent"&&["owner","billing"].includes(quote.membership_role)){const accept=document.createElement("button");accept.type="button";accept.className="primary";accept.textContent=t("accept");accept.addEventListener("click",()=>acceptQuote(card,quote,accept));actions.appendChild(accept);}
+        const dateOnly=/^\d{4}-\d{2}-\d{2}$/.test(quote.valid_until||"");const expired=!!quote.valid_until&&(dateOnly?quote.valid_until<new Date().toISOString().slice(0,10):!Number.isFinite(Date.parse(quote.valid_until))||Date.parse(quote.valid_until)<Date.now());const displayStatus=quote.status==="sent"&&expired?"expired":quote.status;pill.textContent=translations[language].status[displayStatus]||displayStatus;if(quote.status==="sent"&&!expired&&["owner","billing"].includes(quote.membership_role)){const accept=document.createElement("button");accept.type="button";accept.className="primary";accept.textContent=t("accept");accept.addEventListener("click",()=>acceptQuote(card,quote,accept));actions.appendChild(accept);}
         card.appendChild(actions);list.appendChild(card);
       }
       status("#portalStatus",t("loaded"));

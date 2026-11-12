@@ -443,9 +443,14 @@
       for(const item of items){
         const tr=document.createElement("tr");
         const imageCell=document.createElement("td");
-        if(item.status==="published"&&item.public_url){
-          const image=document.createElement("img");image.src=apiBase+item.public_url;image.alt=item.alt_text||"";image.loading="lazy";image.width=72;image.height=54;image.style.objectFit="cover";image.style.borderRadius="7px";imageCell.appendChild(image);
-        }else{imageCell.textContent="Ảnh chưa xuất bản";}
+        const image=document.createElement("img");image.alt=item.alt_text||"";image.loading="lazy";image.width=72;image.height=54;image.style.objectFit="cover";image.style.borderRadius="7px";image.hidden=true;
+        if(item.status==="published"&&item.public_url){image.src=apiBase+item.public_url;image.hidden=false;}
+        else{
+          const preview=document.createElement("button");preview.type="button";preview.className="btn secondary";preview.textContent="Xem preview";
+          preview.addEventListener("click",async()=>{preview.disabled=true;try{const response=await fetch(apiBase+"/api/v1/admin/media/"+encodeURIComponent(item.id)+"/file",{credentials:"include"});if(!response.ok)throw new Error("HTTP "+response.status);const blob=await response.blob();if(image.dataset.objectUrl)URL.revokeObjectURL(image.dataset.objectUrl);image.dataset.objectUrl=URL.createObjectURL(blob);image.src=image.dataset.objectUrl;image.hidden=false;preview.hidden=true;}catch(error){mediaMessage("Không xem được ảnh: "+error.message,true);}finally{preview.disabled=false;}});
+          imageCell.appendChild(preview);
+        }
+        imageCell.appendChild(image);
         tr.appendChild(imageCell);
         const fileCell=document.createElement("td");const name=document.createElement("strong");name.textContent=item.filename;const details=document.createElement("p");details.textContent=item.content_type+" · "+(Number(item.size_bytes)/1024).toFixed(1)+" KB";fileCell.append(name,details);tr.appendChild(fileCell);
         const altCell=document.createElement("td");altCell.textContent=item.alt_text||"Chưa có alt text";tr.appendChild(altCell);

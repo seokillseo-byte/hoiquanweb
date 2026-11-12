@@ -123,6 +123,9 @@ async function identityRoutes(request, env, url) {
       return json({ error: { code: "NOT_FOUND", message: "Không tìm thấy báo giá." } }, 404);
     }
     const isAccept = url.pathname.endsWith("/accept");
+    if (!isAccept && request.method !== "GET") {
+      return json({ error: { code: "METHOD_NOT_ALLOWED", message: "Phương thức không được hỗ trợ." } }, 405);
+    }
     const quote = await env.DB.prepare(
       "SELECT q.id, q.customer_id, q.quote_number, q.status, q.currency, q.subtotal_minor, q.discount_minor, q.total_minor, q.valid_until, q.notes, q.created_at, q.updated_at, q.accepted_by, q.accepted_at, m.membership_role FROM crm_quotes q INNER JOIN crm_customer_members m ON m.customer_id = q.customer_id WHERE q.id = ? AND m.user_id = ? AND q.status != 'draft' LIMIT 1"
     ).bind(quoteId, principal.user.id).first();
@@ -516,6 +519,9 @@ export default { async fetch(request, env) {
           await env.DB.prepare("INSERT OR REPLACE INTO crm_customer_members (customer_id, user_id, membership_role, created_at) VALUES (?, ?, 'owner', ?)").bind(customer.id, customer.userId, now).run();
           await env.DB.prepare("INSERT OR REPLACE INTO crm_quotes (id, customer_id, quote_number, status, currency, subtotal_minor, discount_minor, total_minor, created_by, created_at, updated_at) VALUES (?, ?, ?, 'sent', 'VND', 1000000, 0, 1000000, ?, ?, ?)").bind(customer.quoteId, customer.id, customer.quoteNumber, customer.userId, now, now).run();
           await env.DB.prepare("INSERT OR REPLACE INTO crm_quote_items (id, quote_id, description, quantity, unit_price_minor, line_total_minor, sort_order) VALUES (?, ?, 'Website development', 1, 1000000, 1000000, 0)").bind(customer.quoteId + "-item", customer.quoteId).run();
+          if (customer.id === "test-customer-a") {
+            await env.DB.prepare("INSERT OR REPLACE INTO crm_quotes (id, customer_id, quote_number, status, currency, subtotal_minor, discount_minor, total_minor, valid_until, created_by, created_at, updated_at) VALUES ('test-quote-expired', ?, 'TEST-EXPIRED', 'sent', 'VND', 1000000, 0, 1000000, '2000-01-01', ?, ?, ?)").bind(customer.id, customer.userId, now, now).run();
+          }
         }
         await env.DB.prepare("INSERT OR REPLACE INTO app_user_roles (user_id, role, assigned_by, assigned_at) VALUES (?, 'admin', 'test-fixture', ?)").bind(ids[2], now).run();
         response = json({ ok: true });

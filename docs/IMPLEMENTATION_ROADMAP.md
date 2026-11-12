@@ -98,7 +98,7 @@ Mục tiêu: dựng nền tảng có thể mở rộng, không chỉ thêm HTML 
 
 ## Phase 5 — CRM và vận hành kinh doanh
 
-**Đã merge vào `main`:** migration `0003_crm_foundation.sql` bổ sung bảng khách hàng CRM, timeline hoạt động, báo giá, dòng báo giá và audit events; validator kiểm tra schema/foreign keys/ràng buộc tính tổng. Admin/staff có API quản lý khách hàng (list/create/detail/update status/profile), activity timeline (list/create) và quote workflow (create/list/detail/send); customer xem quote/line items theo membership và owner/billing xác nhận. Admin UI có CRM workspace để thêm khách hàng, đổi trạng thái vòng đời, xem timeline và ghi nhận note/call/email/meeting; đồng thời quản lý báo giá. Quote totals được tính server-side; customer/activity/quote mutations có audit events và integration tests. Lead conversion/assignment, CRM dashboard, email delivery tự động và các workflow đơn hàng/dự án vẫn chưa hoàn thiện hoặc deploy production.
+**Đã merge vào `main`:** migration `0003_crm_foundation.sql` bổ sung bảng khách hàng CRM, timeline hoạt động, báo giá, dòng báo giá và audit events; validator kiểm tra schema/foreign keys/ràng buộc tính tổng. Admin/staff có API quản lý khách hàng (list/create/detail/update status/profile), activity timeline (list/create), lead conversion và quote workflow (create/list/detail/send); customer xem quote/line items theo membership và owner/billing xác nhận. Admin UI có CRM workspace để thêm khách hàng, đổi trạng thái vòng đời, xem timeline, ghi nhận note/call/email/meeting và chuyển lead thành khách hàng, đồng thời quản lý báo giá. Lead conversion giữ source attribution, ghi activity/audit và idempotent. Quote totals được tính server-side; customer/activity/quote mutations có audit events và integration tests. Lead assignment, CRM dashboard, email delivery tự động và các workflow đơn hàng/dự án vẫn chưa hoàn thiện hoặc deploy production.
 
 - Lead pipeline, nguồn lead, lịch sử liên hệ, assignment, khách hàng, báo giá theo hạng mục, đơn hàng, hợp đồng/tài liệu, dự án, tasks, milestone và ticket hỗ trợ.
 - Thông báo email khi provider và sender được cấu hình; lỗi gửi thông báo không làm mất giao dịch đã lưu.
@@ -112,7 +112,8 @@ Mục tiêu: dựng nền tảng có thể mở rộng, không chỉ thêm HTML 
 - [ ] Idempotency cho các hành động tạo quote/order/duyệt/billing.
 - [x] Admin UI tạo bản nháp, xem danh sách/chi tiết và chuyển báo giá sang trạng thái đã gửi.
 - [x] CRM customer workspace: tạo/list khách hàng, cập nhật trạng thái active/inactive/archived, ghi nhận và xem activity timeline.
-- [ ] Lead conversion/assignment, CRM dashboard và quy trình email thông báo.
+- [x] Lead conversion vào CRM, giữ source attribution, ghi activity/audit và chống tạo khách hàng trùng khi retry.
+- [ ] Lead assignment, CRM dashboard và quy trình email thông báo.
 - [ ] Kiểm thử email/webhook và lỗi mạng; không báo thành công giả.
 - [ ] Kiểm tra quyền, retention, export/delete dữ liệu và báo cáo.
 

@@ -31,23 +31,57 @@ async function adminLeads(request, env, url) {
   if (request.method === "GET") {
     const status = clean(url.searchParams.get("status"), 30);
     const limit = Math.max(1, Math.min(100, Number.parseInt(url.searchParams.get("limit"), 10) || 50));
+    const columns = "l.id,l.name,l.email,l.service,l.budget,l.goals,l.status,l.assigned_to,l.consent_at,l.created_at,l.updated_at,c.id AS customer_id,u.name AS assigned_name,u.email AS assigned_email";
+    const joins = ' FROM leads l LEFT JOIN crm_customers c ON c.lead_id = l.id LEFT JOIN "user" u ON u.id = l.assigned_to';
     const result = status && LEAD_STATUSES.has(status)
-      ? await env.DB.prepare("SELECT l.id,l.name,l.email,l.service,l.budget,l.goals,l.status,l.consent_at,l.created_at,l.updated_at,c.id AS customer_id FROM leads l LEFT JOIN crm_customers c ON c.lead_id = l.id WHERE l.status = ? ORDER BY l.created_at DESC LIMIT ?").bind(status, limit).all()
-      : await env.DB.prepare("SELECT l.id,l.name,l.email,l.service,l.budget,l.goals,l.status,l.consent_at,l.created_at,l.updated_at,c.id AS customer_id FROM leads l LEFT JOIN crm_customers c ON c.lead_id = l.id ORDER BY l.created_at DESC LIMIT ?").bind(limit).all();
+      ? await env.DB.prepare("SELECT " + columns + joins + " WHERE l.status = ? ORDER BY l.created_at DESC LIMIT ?").bind(status, limit).all()
+      : await env.DB.prepare("SELECT " + columns + joins + " ORDER BY l.created_at DESC LIMIT ?").bind(limit).all();
     return json({ leads: result.results || [] });
   }
   if (request.method === "PATCH") {
-    const body = await readJson(request), id = clean(body.id, 80), status = clean(body.status, 30);
-    if (!id || !LEAD_STATUSES.has(status)) return json({ error: "VALIDATION_ERROR", message: "Mã lead hoặc trạng thái không hợp lệ." }, 400);
+    const body = await readJson(request);
+    if (!body || typeof body !== "object" || Array.isArray(body)) return json({ error: "VALIDATION_ERROR", message: "Dữ liệu cập nhật lead không hợp lệ." }, 400);
+    const id = clean(body.id, 80);
+    const hasStatus = Object.prototype.hasOwnProperty.call(body, "status");
+    const hasAssignment = Object.prototype.hasOwnProperty.call(body, "assigned_to");
+    if (!id || (!hasStatus && !hasAssignment)) return json({ error: "VALIDATION_ERROR", message: "Cần mã lead và ít nhất một trường cần cập nhật." }, 400);
+    const current = await env.DB.prepare("SELECT id, status, assigned_to, updated_at FROM leads WHERE id = ? LIMIT 1").bind(id).first();
+    if (!current) return json({ error: "NOT_FOUND" }, 404);
+    const status = hasStatus ? clean(body.status, 30) : current.status;
+    if (hasStatus && !LEAD_STATUSES.has(status)) return json({ error: "VALIDATION_ERROR", message: "Trạng thái lead không hợp lệ." }, 400);
+    let assignedTo = current.assigned_to || null;
+    if (hasAssignment) {
+      assignedTo = body.assigned_to == null || body.assigned_to === "" ? null : clean(body.assigned_to, 128);
+      if (body.assigned_to != null && body.assigned_to !== "" && !assignedTo) return json({ error: "VALIDATION_ERROR", message: "Mã nhân viên không hợp lệ." }, 400);
+      if (assignedTo) {
+        const staff = await env.DB.prepare("SELECT user_id FROM app_user_roles WHERE user_id = ? AND role IN ('admin','staff') LIMIT 1").bind(assignedTo).first();
+        if (!staff) return json({ error: "INVALID_ASSIGNEE", message: "Chỉ có thể giao lead cho tài khoản admin hoặc staff." }, 400);
+      }
+    }
+    const statusChanged = status !== current.status;
+    const assignmentChanged = assignedTo !== (current.assigned_to || null);
+    if (!statusChanged && !assignmentChanged) return json({ ok: true, id, status, assigned_to: assignedTo, updatedAt: current.updated_at });
     const updatedAt = new Date().toISOString();
-    const result = await env.DB.prepare("UPDATE leads SET status = ?, updated_at = ? WHERE id = ?").bind(status, updatedAt, id).run();
-    if (!result.meta?.changes) return json({ error: "NOT_FOUND" }, 404);
-    const auditDetails = JSON.stringify({ status, actorId: principal.user.id });
-    await env.DB.prepare("INSERT INTO lead_events (id,lead_id,event_type,details,created_at) VALUES (?, ?, 'status_changed', ?, ?)").bind(crypto.randomUUID(), id, auditDetails, updatedAt).run();
-    return json({ ok: true, id, status, updatedAt });
+    const statements = [env.DB.prepare("UPDATE leads SET status = ?, assigned_to = ?, updated_at = ? WHERE id = ? AND status = ? AND assigned_to IS ?").bind(status, assignedTo, updatedAt, id, current.status, current.assigned_to || null)];
+    if (statusChanged) {
+      const details = JSON.stringify({ from: current.status, to: status, actorId: principal.user.id });
+      statements.push(env.DB.prepare("INSERT INTO lead_events (id,lead_id,event_type,details,created_at) VALUES (?, ?, 'status_changed', ?, ?)").bind(crypto.randomUUID(), id, details, updatedAt));
+      statements.push(env.DB.prepare("INSERT INTO crm_audit_events (id, actor_id, action, resource_type, resource_id, metadata_json, created_at) VALUES (?, ?, 'lead.status_changed', 'lead', ?, ?, ?)").bind(crypto.randomUUID(), principal.user.id, id, details, updatedAt));
+    }
+    if (assignmentChanged) {
+      const eventType = assignedTo ? "assigned" : "unassigned";
+      const details = JSON.stringify({ from: current.assigned_to || null, to: assignedTo, actorId: principal.user.id });
+      statements.push(env.DB.prepare("INSERT INTO lead_events (id,lead_id,event_type,details,created_at) VALUES (?, ?, ?, ?, ?)").bind(crypto.randomUUID(), id, eventType, details, updatedAt));
+      statements.push(env.DB.prepare("INSERT INTO crm_audit_events (id, actor_id, action, resource_type, resource_id, metadata_json, created_at) VALUES (?, ?, ?, 'lead', ?, ?, ?)").bind(crypto.randomUUID(), principal.user.id, assignedTo ? "lead.assigned" : "lead.unassigned", id, details, updatedAt));
+    }
+    // Commit the lead mutation and every history/audit record atomically in one D1 batch.
+    const results = await env.DB.batch(statements);
+    if (!results?.[0]?.meta?.changes) return json({ error: { code: "LEAD_UPDATE_CONFLICT", message: "Lead vừa được cập nhật bởi người khác. Vui lòng tải lại." } }, 409);
+    return json({ ok: true, id, status, assigned_to: assignedTo, updatedAt });
   }
   return json({ error: "METHOD_NOT_ALLOWED" }, 405, { allow: "GET, PATCH" });
 }
+
 function parseJsonField(value) {
   if (typeof value !== "string" || !value) return {};
   try { return JSON.parse(value); } catch { return {}; }
@@ -91,6 +125,26 @@ function hasAnyRole(principal, allowed) {
   return principal.roles.some(role => allowed.includes(role));
 }
 async function identityRoutes(request, env, url) {
+  if (url.pathname === "/api/v1/admin/staff" && request.method === "GET") {
+    const principal = await authenticatedPrincipal(request, env);
+    if (principal.error) return principal.error;
+    if (!hasAnyRole(principal, ["admin", "staff"])) return json({ error: { code: "FORBIDDEN", message: "Bạn không có quyền xem danh sách nhân viên." } }, 403);
+    const result = await env.DB.prepare("SELECT u.id, u.name, u.email, GROUP_CONCAT(r.role, ',') AS roles FROM \"user\" u INNER JOIN app_user_roles r ON r.user_id = u.id WHERE r.role IN ('admin','staff') GROUP BY u.id, u.name, u.email ORDER BY u.name ASC LIMIT 100").all();
+    return json({ data: result.results || [] });
+  }
+  const leadEventsMatch = url.pathname.match(/^\/api\/v1\/admin\/leads\/([^/]+)\/events$/);
+  if (leadEventsMatch && request.method === "GET") {
+    const principal = await authenticatedPrincipal(request, env);
+    if (principal.error) return principal.error;
+    if (!hasAnyRole(principal, ["admin", "staff"])) return json({ error: { code: "FORBIDDEN", message: "Bạn không có quyền xem lịch sử lead." } }, 403);
+    let leadId;
+    try { leadId = decodeURIComponent(leadEventsMatch[1]); } catch { return json({ error: { code: "NOT_FOUND", message: "Không tìm thấy lead." } }, 404); }
+    if (!leadId || leadId.length > 80 || leadId.includes("/")) return json({ error: { code: "NOT_FOUND", message: "Không tìm thấy lead." } }, 404);
+    const exists = await env.DB.prepare("SELECT id FROM leads WHERE id = ? LIMIT 1").bind(leadId).first();
+    if (!exists) return json({ error: { code: "NOT_FOUND", message: "Không tìm thấy lead." } }, 404);
+    const result = await env.DB.prepare("SELECT id, event_type, details, created_at FROM lead_events WHERE lead_id = ? ORDER BY created_at DESC, id DESC LIMIT 100").bind(leadId).all();
+    return json({ data: result.results || [] });
+  }
   const leadConversionMatch = url.pathname.match(/^\/api\/v1\/admin\/leads\/([^/]+)\/convert$/);
   if (leadConversionMatch && request.method === "POST") {
     const principal = await authenticatedPrincipal(request, env);
@@ -1181,7 +1235,7 @@ export default { async fetch(request, env) {
       await env.DB.prepare("CREATE TABLE IF NOT EXISTS crm_quotes (id TEXT PRIMARY KEY, customer_id TEXT NOT NULL REFERENCES crm_customers(id) ON DELETE RESTRICT, quote_number TEXT NOT NULL UNIQUE, status TEXT NOT NULL DEFAULT 'draft', currency TEXT NOT NULL DEFAULT 'VND', subtotal_minor INTEGER NOT NULL DEFAULT 0, discount_minor INTEGER NOT NULL DEFAULT 0, total_minor INTEGER NOT NULL DEFAULT 0, valid_until TEXT, notes TEXT NOT NULL DEFAULT '', created_by TEXT NOT NULL, created_at TEXT NOT NULL, updated_at TEXT NOT NULL, accepted_by TEXT, accepted_at TEXT)").run();
       await env.DB.prepare("CREATE TABLE IF NOT EXISTS crm_quote_items (id TEXT PRIMARY KEY, quote_id TEXT NOT NULL REFERENCES crm_quotes(id) ON DELETE CASCADE, description TEXT NOT NULL, quantity INTEGER NOT NULL, unit_price_minor INTEGER NOT NULL, line_total_minor INTEGER NOT NULL, sort_order INTEGER NOT NULL DEFAULT 0)").run();
       await env.DB.prepare("CREATE TABLE IF NOT EXISTS crm_audit_events (id TEXT PRIMARY KEY, actor_id TEXT NOT NULL, action TEXT NOT NULL, resource_type TEXT NOT NULL, resource_id TEXT NOT NULL, metadata_json TEXT NOT NULL DEFAULT '{}', created_at TEXT NOT NULL)").run();
-      await env.DB.prepare("CREATE TABLE IF NOT EXISTS leads (id TEXT PRIMARY KEY, name TEXT NOT NULL, email TEXT NOT NULL, service TEXT NOT NULL, budget TEXT NOT NULL DEFAULT '', goals TEXT NOT NULL DEFAULT '', status TEXT NOT NULL DEFAULT 'new', consent_at TEXT, created_at TEXT NOT NULL, updated_at TEXT NOT NULL)").run();
+      await env.DB.prepare("CREATE TABLE IF NOT EXISTS leads (id TEXT PRIMARY KEY, name TEXT NOT NULL, email TEXT NOT NULL, service TEXT NOT NULL, budget TEXT NOT NULL DEFAULT '', goals TEXT NOT NULL DEFAULT '', status TEXT NOT NULL DEFAULT 'new', assigned_to TEXT, consent_at TEXT, created_at TEXT NOT NULL, updated_at TEXT NOT NULL)").run();
       await env.DB.prepare("CREATE TABLE IF NOT EXISTS lead_events (id TEXT PRIMARY KEY, lead_id TEXT NOT NULL REFERENCES leads(id) ON DELETE CASCADE, event_type TEXT NOT NULL, details TEXT NOT NULL DEFAULT '', created_at TEXT NOT NULL)").run();
       await env.DB.prepare("CREATE TABLE IF NOT EXISTS cms_pages (id TEXT PRIMARY KEY, slug TEXT NOT NULL UNIQUE, title TEXT NOT NULL, excerpt TEXT NOT NULL DEFAULT '', content_json TEXT NOT NULL DEFAULT '{}', seo_json TEXT NOT NULL DEFAULT '{}', status TEXT NOT NULL DEFAULT 'draft', published_at TEXT, created_at TEXT NOT NULL, updated_at TEXT NOT NULL)").run();
       await env.DB.prepare("CREATE TABLE IF NOT EXISTS cms_posts (id TEXT PRIMARY KEY, slug TEXT NOT NULL UNIQUE, title TEXT NOT NULL, excerpt TEXT NOT NULL DEFAULT '', body_json TEXT NOT NULL DEFAULT '{}', seo_json TEXT NOT NULL DEFAULT '{}', author_name TEXT NOT NULL DEFAULT '', status TEXT NOT NULL DEFAULT 'draft', published_at TEXT, created_at TEXT NOT NULL, updated_at TEXT NOT NULL)").run();
@@ -1200,6 +1254,14 @@ export default { async fetch(request, env) {
     else if (url.pathname === "/_test/audit-count" && request.method === "GET" && env.TEST_MODE === "true") {
       const result = await env.DB.prepare("SELECT COUNT(*) AS count FROM crm_audit_events WHERE action = 'quote.accepted'").first();
       response = json({ count: result?.count || 0 });
+    }
+    else if (url.pathname === "/_test/lead-audit" && request.method === "GET" && env.TEST_MODE === "true") {
+      const leadId = clean(url.searchParams.get("lead_id"), 80);
+      if (!leadId) response = json({ error: "VALIDATION_ERROR" }, 400);
+      else {
+        const result = await env.DB.prepare("SELECT action, metadata_json FROM crm_audit_events WHERE resource_type = 'lead' AND resource_id = ? ORDER BY created_at ASC, id ASC").bind(leadId).all();
+        response = json({ data: result.results || [] });
+      }
     }
     else if (url.pathname === "/_test/quote-audit-count" && request.method === "GET" && env.TEST_MODE === "true") {
       const result = await env.DB.prepare("SELECT action, COUNT(*) AS count FROM crm_audit_events WHERE resource_type = 'quote' GROUP BY action").all();
@@ -1260,7 +1322,7 @@ export default { async fetch(request, env) {
     else if (url.pathname.startsWith("/api/v1/me/orders") || url.pathname.startsWith("/api/v1/me/projects") || url.pathname.startsWith("/api/v1/me/tickets")) response = await customerProjectRoutes(request, env, url);
     else if (url.pathname.startsWith("/api/v1/admin/orders") || url.pathname.startsWith("/api/v1/admin/projects") || url.pathname.startsWith("/api/v1/admin/milestones") || url.pathname.startsWith("/api/v1/admin/tickets")) response = await adminProjectRoutes(request, env, url);
     else if (url.pathname === "/api/v1/admin/templates" || url.pathname.startsWith("/api/v1/admin/templates/")) response = await adminTemplates(request, env, url);
-    else if (url.pathname === "/api/v1/me" || url.pathname.startsWith("/api/v1/me/") || url.pathname === "/api/v1/admin/customers" || url.pathname.startsWith("/api/v1/admin/customers/") || url.pathname === "/api/v1/admin/quotes" || url.pathname.startsWith("/api/v1/admin/quotes/") || url.pathname.startsWith("/api/v1/admin/leads/")) response = await identityRoutes(request, env, url) || json({ error: { code: "NOT_FOUND", message: "Không tìm thấy tài nguyên." } }, 404);
+    else if (url.pathname === "/api/v1/me" || url.pathname.startsWith("/api/v1/me/") || url.pathname === "/api/v1/admin/staff" || url.pathname === "/api/v1/admin/customers" || url.pathname.startsWith("/api/v1/admin/customers/") || url.pathname === "/api/v1/admin/quotes" || url.pathname.startsWith("/api/v1/admin/quotes/") || url.pathname.startsWith("/api/v1/admin/leads/")) response = await identityRoutes(request, env, url) || json({ error: { code: "NOT_FOUND", message: "Không tìm thấy tài nguyên." } }, 404);
     else if (url.pathname.startsWith("/api/v1/public/")) response = await publicContent(request, env, url) || json({ error: { code: "NOT_FOUND", message: "Không tìm thấy tài nguyên." } }, 404);
     else if (url.pathname === "/api/leads" && request.method === "POST") response = await createLead(request, env);
     else if (url.pathname === "/api/estimate" && request.method === "POST") response = await estimate(request);

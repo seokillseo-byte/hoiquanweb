@@ -166,6 +166,111 @@ async function identityRoutes(request, env, url) {
     ).bind(quoteId).all();
     return json({ data: { ...current, items: items.results || [] } });
   }
+  const adminQuotePath = url.pathname.match(/^\\/api\\/v1\\/admin\\/quotes(?:\\/([^/]+)(?:\\/([^/]+))?)?$/);
+  if (adminQuotePath) {
+    const principal = await authenticatedPrincipal(request, env);
+    if (principal.error) return principal.error;
+    if (!hasAnyRole(principal, ["admin", "staff"])) {
+      return json({ error: { code: "FORBIDDEN", message: "Bạn không có quyền quản lý báo giá." } }, 403);
+    }
+    let quoteId = "";
+    try { quoteId = adminQuotePath[1] ? decodeURIComponent(adminQuotePath[1]) : ""; }
+    catch { return json({ error: { code: "NOT_FOUND", message: "Không tìm thấy báo giá." } }, 404); }
+    const action = adminQuotePath[2] || "";
+    if (quoteId && (quoteId.length > 80 || quoteId.includes("/"))) {
+      return json({ error: { code: "NOT_FOUND", message: "Không tìm thấy báo giá." } }, 404);
+    }
+    if (!quoteId && !action && request.method === "GET") {
+      const status = clean(url.searchParams.get("status"), 20);
+      if (status && !["draft", "sent", "accepted", "rejected", "expired", "cancelled"].includes(status)) {
+        return json({ error: { code: "VALIDATION_ERROR", message: "Trạng thái báo giá không hợp lệ." } }, 400);
+      }
+      const limit = Math.max(1, Math.min(100, Number.parseInt(url.searchParams.get("limit") || "50", 10) || 50));
+      const result = status
+        ? await env.DB.prepare("SELECT q.id, q.customer_id, c.display_name AS customer_name, q.quote_number, q.status, q.currency, q.subtotal_minor, q.discount_minor, q.total_minor, q.valid_until, q.created_at, q.updated_at FROM crm_quotes q INNER JOIN crm_customers c ON c.id = q.customer_id WHERE q.status = ? ORDER BY q.created_at DESC, q.quote_number ASC LIMIT ?").bind(status, limit).all()
+        : await env.DB.prepare("SELECT q.id, q.customer_id, c.display_name AS customer_name, q.quote_number, q.status, q.currency, q.subtotal_minor, q.discount_minor, q.total_minor, q.valid_until, q.created_at, q.updated_at FROM crm_quotes q INNER JOIN crm_customers c ON c.id = q.customer_id ORDER BY q.created_at DESC, q.quote_number ASC LIMIT ?").bind(limit).all();
+      return json({ data: result.results || [], meta: { limit, status: status || "all" } });
+    }
+    if (!quoteId && !action && request.method === "POST") {
+      const body = await readJson(request);
+      if (!body || typeof body !== "object" || Array.isArray(body)) {
+        return json({ error: { code: "VALIDATION_ERROR", message: "Dữ liệu báo giá không hợp lệ." } }, 400);
+      }
+      const customerId = clean(body.customer_id, 80);
+      const customer = await env.DB.prepare("SELECT id FROM crm_customers WHERE id = ? AND status = 'active' LIMIT 1").bind(customerId).first();
+      if (!customer) return json({ error: { code: "CUSTOMER_NOT_FOUND", message: "Không tìm thấy khách hàng đang hoạt động." } }, 404);
+      if (!Array.isArray(body.items) || body.items.length < 1 || body.items.length > 50) {
+        return json({ error: { code: "VALIDATION_ERROR", message: "Báo giá cần có từ 1 đến 50 hạng mục." } }, 400);
+      }
+      const currency = clean(body.currency || "VND", 3).toUpperCase();
+      if (!/^[A-Z]{3}$/.test(currency)) return json({ error: { code: "VALIDATION_ERROR", message: "Mã tiền tệ phải gồm 3 chữ cái." } }, 400);
+      const discount = body.discount_minor === undefined ? 0 : body.discount_minor;
+      if (!Number.isSafeInteger(discount) || discount < 0) return json({ error: { code: "VALIDATION_ERROR", message: "Giảm giá phải là số nguyên không âm." } }, 400);
+      const items = [];
+      let subtotal = 0;
+      for (const [index, item] of body.items.entries()) {
+        if (!item || typeof item !== "object" || Array.isArray(item)) {
+          return json({ error: { code: "VALIDATION_ERROR", message: "Hạng mục báo giá không hợp lệ." } }, 400);
+        }
+        const description = clean(item.description, 500);
+        const quantity = item.quantity;
+        const unitPrice = item.unit_price_minor;
+        if (!description || !Number.isSafeInteger(quantity) || quantity < 1 || quantity > 100000 || !Number.isSafeInteger(unitPrice) || unitPrice < 0) {
+          return json({ error: { code: "VALIDATION_ERROR", message: "Mô tả, số lượng hoặc đơn giá của hạng mục không hợp lệ." } }, 400);
+        }
+        const lineTotal = quantity * unitPrice;
+        if (!Number.isSafeInteger(lineTotal) || !Number.isSafeInteger(subtotal + lineTotal)) {
+          return json({ error: { code: "VALIDATION_ERROR", message: "Tổng giá trị báo giá vượt giới hạn cho phép." } }, 400);
+        }
+        subtotal += lineTotal;
+        items.push({ id: crypto.randomUUID(), description, quantity, unit_price_minor: unitPrice, line_total_minor: lineTotal, sort_order: Number.isInteger(item.sort_order) ? Math.max(0, Math.min(100000, item.sort_order)) : index });
+      }
+      if (discount > subtotal) return json({ error: { code: "VALIDATION_ERROR", message: "Giảm giá không được lớn hơn tạm tính." } }, 400);
+      const validUntil = body.valid_until == null || body.valid_until === "" ? null : clean(body.valid_until, 40);
+      if (validUntil && (!/^\\d{4}-\\d{2}-\\d{2}$/.test(validUntil) && !Number.isFinite(Date.parse(validUntil)))) {
+        return json({ error: { code: "VALIDATION_ERROR", message: "Ngày hết hạn báo giá không hợp lệ." } }, 400);
+      }
+      const notes = clean(body.notes, 5000);
+      const now = new Date().toISOString();
+      const id = crypto.randomUUID();
+      const quoteNumber = "HQ-" + now.slice(0, 10).replace(/-/g, "") + "-" + crypto.randomUUID().slice(0, 6).toUpperCase();
+      const quote = { id, customer_id: customerId, quote_number: quoteNumber, status: "draft", currency, subtotal_minor: subtotal, discount_minor: discount, total_minor: subtotal - discount, valid_until: validUntil, notes, created_by: principal.user.id, created_at: now, updated_at: now, accepted_by: null, accepted_at: null };
+      const statements = [
+        env.DB.prepare("INSERT INTO crm_quotes (id, customer_id, quote_number, status, currency, subtotal_minor, discount_minor, total_minor, valid_until, notes, created_by, created_at, updated_at, accepted_by, accepted_at) VALUES (?, ?, ?, 'draft', ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL, NULL)").bind(id, customerId, quoteNumber, currency, subtotal, discount, subtotal - discount, validUntil, notes, principal.user.id, now, now),
+        ...items.map(item => env.DB.prepare("INSERT INTO crm_quote_items (id, quote_id, description, quantity, unit_price_minor, line_total_minor, sort_order) VALUES (?, ?, ?, ?, ?, ?, ?)").bind(item.id, id, item.description, item.quantity, item.unit_price_minor, item.line_total_minor, item.sort_order)),
+        env.DB.prepare("INSERT INTO crm_audit_events (id, actor_id, action, resource_type, resource_id, metadata_json, created_at) VALUES (?, ?, 'quote.created', 'quote', ?, ?, ?)").bind(crypto.randomUUID(), principal.user.id, id, JSON.stringify({ quote_number: quoteNumber, customer_id: customerId }), now)
+      ];
+      await env.DB.batch(statements);
+      return json({ data: { ...quote, items } }, 201);
+    }
+    if (quoteId && !action && request.method === "GET") {
+      const quote = await env.DB.prepare("SELECT q.id, q.customer_id, c.display_name AS customer_name, q.quote_number, q.status, q.currency, q.subtotal_minor, q.discount_minor, q.total_minor, q.valid_until, q.notes, q.created_by, q.created_at, q.updated_at, q.accepted_by, q.accepted_at FROM crm_quotes q INNER JOIN crm_customers c ON c.id = q.customer_id WHERE q.id = ? LIMIT 1").bind(quoteId).first();
+      if (!quote) return json({ error: { code: "NOT_FOUND", message: "Không tìm thấy báo giá." } }, 404);
+      const items = await env.DB.prepare("SELECT id, description, quantity, unit_price_minor, line_total_minor, sort_order FROM crm_quote_items WHERE quote_id = ? ORDER BY sort_order ASC, id ASC").bind(quoteId).all();
+      return json({ data: { ...quote, items: items.results || [] } });
+    }
+    if (quoteId && action === "send" && request.method === "POST") {
+      const quote = await env.DB.prepare("SELECT id, quote_number, status, valid_until FROM crm_quotes WHERE id = ? LIMIT 1").bind(quoteId).first();
+      if (!quote) return json({ error: { code: "NOT_FOUND", message: "Không tìm thấy báo giá." } }, 404);
+      if (quote.status !== "draft") return json({ error: { code: "INVALID_STATE", message: "Chỉ báo giá nháp mới có thể gửi." } }, 409);
+      if (quote.valid_until) {
+        const dateOnly = /^\\d{4}-\\d{2}-\\d{2}$/.test(quote.valid_until);
+        const expired = dateOnly ? quote.valid_until < new Date().toISOString().slice(0, 10) : !Number.isFinite(Date.parse(quote.valid_until)) || Date.parse(quote.valid_until) < Date.now();
+        if (expired) return json({ error: { code: "QUOTE_EXPIRED", message: "Ngày hết hạn đã qua; không thể gửi báo giá." } }, 409);
+      }
+      const itemCount = await env.DB.prepare("SELECT COUNT(*) AS count FROM crm_quote_items WHERE quote_id = ?").bind(quoteId).first();
+      if (!itemCount?.count) return json({ error: { code: "INVALID_STATE", message: "Báo giá cần có ít nhất một hạng mục." } }, 409);
+      const now = new Date().toISOString();
+      const update = env.DB.prepare("UPDATE crm_quotes SET status = 'sent', updated_at = ? WHERE id = ? AND status = 'draft' AND (valid_until IS NULL OR date(valid_until) >= date(?))").bind(now, quoteId, now);
+      const audit = env.DB.prepare("INSERT INTO crm_audit_events (id, actor_id, action, resource_type, resource_id, metadata_json, created_at) SELECT ?, ?, 'quote.sent', 'quote', id, ?, ? FROM crm_quotes WHERE id = ? AND status = 'sent' AND updated_at = ?").bind(crypto.randomUUID(), principal.user.id, JSON.stringify({ quote_number: quote.quote_number }), now, quoteId, now);
+      const results = await env.DB.batch([update, audit]);
+      if (!results?.[0]?.meta?.changes) return json({ error: { code: "INVALID_STATE", message: "Báo giá đã thay đổi. Vui lòng tải lại." } }, 409);
+      const updated = await env.DB.prepare("SELECT id, quote_number, status, currency, subtotal_minor, discount_minor, total_minor, valid_until, notes, created_at, updated_at FROM crm_quotes WHERE id = ? LIMIT 1").bind(quoteId).first();
+      const items = await env.DB.prepare("SELECT id, description, quantity, unit_price_minor, line_total_minor, sort_order FROM crm_quote_items WHERE quote_id = ? ORDER BY sort_order ASC, id ASC").bind(quoteId).all();
+      return json({ data: { ...updated, items: items.results || [] } });
+    }
+    return json({ error: { code: "NOT_FOUND", message: "Không tìm thấy thao tác báo giá." } }, 404);
+  }
   if (url.pathname === "/api/v1/admin/customers" && request.method === "GET") {
     const principal = await authenticatedPrincipal(request, env);
     if (principal.error) return principal.error;

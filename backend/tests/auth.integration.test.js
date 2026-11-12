@@ -326,4 +326,40 @@ test("CMS content API requires an authenticated admin; drafts stay private and e
   assert.equal((await update.json()).data.status, "draft");
   const hiddenAfterEdit = await server.fetch(origin + "/api/v1/public/pages/cms-security-test", { headers: { origin } });
   assert.equal(hiddenAfterEdit.status, 404, "editing published content must return it to draft until republished");
+
+  const revisionsResponse = await server.fetch(origin + "/api/v1/admin/pages/" + created.id + "/revisions", {
+    headers: { origin, cookie: admin.cookie }
+  });
+  assert.equal(revisionsResponse.status, 200, await revisionsResponse.clone().text());
+  const revisions = (await revisionsResponse.json()).data;
+  assert.ok(revisions.some(revision => revision.action === "created"));
+  const publishedRevision = revisions.find(revision => revision.action === "published");
+  assert.ok(publishedRevision, "publication must create an immutable revision");
+
+  const customerRestore = await server.fetch(origin + "/api/v1/admin/pages/" + created.id + "/restore", {
+    method: "POST",
+    headers: { origin, cookie: customer.cookie, "content-type": "application/json" },
+    body: JSON.stringify({ revision_id: publishedRevision.id })
+  });
+  assert.equal(customerRestore.status, 403, "customers must not restore CMS revisions");
+
+  const restore = await server.fetch(origin + "/api/v1/admin/pages/" + created.id + "/restore", {
+    method: "POST",
+    headers: { origin, cookie: admin.cookie, "content-type": "application/json" },
+    body: JSON.stringify({ revision_id: publishedRevision.id })
+  });
+  assert.equal(restore.status, 200, await restore.clone().text());
+  const restored = (await restore.json()).data;
+  assert.equal(restored.title, "CMS Security Test");
+  assert.equal(restored.status, "draft", "restoring a published revision must never publish it automatically");
+  assert.equal(restored.published_at, null);
+  const hiddenAfterRestore = await server.fetch(origin + "/api/v1/public/pages/cms-security-test", { headers: { origin } });
+  assert.equal(hiddenAfterRestore.status, 404, "restored content must remain private until an admin republishes it");
+
+  const missingRevision = await server.fetch(origin + "/api/v1/admin/pages/" + created.id + "/restore", {
+    method: "POST",
+    headers: { origin, cookie: admin.cookie, "content-type": "application/json" },
+    body: JSON.stringify({ revision_id: "not-a-revision" })
+  });
+  assert.equal(missingRevision.status, 404, "a revision from another or missing resource must not be restorable");
 });

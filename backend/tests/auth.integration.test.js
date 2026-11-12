@@ -497,6 +497,56 @@ test("customer portal isolates customers and quotes; admin access requires a ser
   });
   assert.equal(legacyTokenAccess.status, 401, await legacyTokenAccess.clone().text());
 
+  const leadSeed = await authRequest("/_test/seed-lead", {
+    id: "test-lead-assignment",
+    name: "Lead Assignment",
+    email: "lead-assignment@example.test",
+    service: "Website Design"
+  });
+  assert.equal(leadSeed.status, 201, await leadSeed.clone().text());
+
+  const staffDirectory = await getFor("/api/v1/admin/staff", admin.cookie);
+  assert.equal(staffDirectory.status, 200, await staffDirectory.clone().text());
+  assert.ok((await staffDirectory.json()).data.some(person => person.id === admin.id));
+  const forbiddenStaffDirectory = await getFor("/api/v1/admin/staff", ordinaryUser.cookie);
+  assert.equal(forbiddenStaffDirectory.status, 403);
+
+  const assignLead = await server.fetch(origin + "/api/v1/admin/leads", {
+    method: "PATCH",
+    headers: { origin, cookie: admin.cookie, "content-type": "application/json" },
+    body: JSON.stringify({ id: "test-lead-assignment", assigned_to: admin.id })
+  });
+  assert.equal(assignLead.status, 200, await assignLead.clone().text());
+  assert.equal((await assignLead.json()).assigned_to, admin.id);
+
+  const invalidAssignment = await server.fetch(origin + "/api/v1/admin/leads", {
+    method: "PATCH",
+    headers: { origin, cookie: admin.cookie, "content-type": "application/json" },
+    body: JSON.stringify({ id: "test-lead-assignment", assigned_to: ordinaryUser.id })
+  });
+  assert.equal(invalidAssignment.status, 400, "customer accounts cannot be assigned as lead owners");
+
+  const assignedLeads = await getFor("/api/v1/admin/leads", admin.cookie);
+  const assignedLead = (await assignedLeads.json()).leads.find(lead => lead.id === "test-lead-assignment");
+  assert.equal(assignedLead.assigned_to, admin.id);
+  assert.equal(assignedLead.assigned_name, "Test Admin");
+
+  const unassignLead = await server.fetch(origin + "/api/v1/admin/leads", {
+    method: "PATCH",
+    headers: { origin, cookie: admin.cookie, "content-type": "application/json" },
+    body: JSON.stringify({ id: "test-lead-assignment", assigned_to: null })
+  });
+  assert.equal(unassignLead.status, 200, await unassignLead.clone().text());
+  assert.equal((await unassignLead.json()).assigned_to, null);
+
+  const leadHistory = await getFor("/api/v1/admin/leads/test-lead-assignment/events", admin.cookie);
+  assert.equal(leadHistory.status, 200, await leadHistory.clone().text());
+  const eventRows = (await leadHistory.json()).data;
+  const eventTypes = eventRows.map(event => event.event_type);
+  assert.ok(eventTypes.includes("assigned"));
+  assert.ok(eventTypes.includes("unassigned"));
+  assert.ok(eventRows.every(event => JSON.parse(event.details).actorId === admin.id));
+
   const noMembership = await getFor("/api/v1/me/customers", ordinaryUser.cookie);
   assert.equal(noMembership.status, 200, await noMembership.clone().text());
   assert.deepEqual((await noMembership.json()).data, []);

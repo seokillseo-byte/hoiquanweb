@@ -6,7 +6,7 @@
 
 ## Baseline đã kiểm tra
 
-- Public website đã có generator tĩnh song ngữ Việt/Anh với 34 trang nội dung, metadata theo trang, hreflang, canonical, sitemap và biểu mẫu tư vấn. CMS pages/posts/services có admin UI + API, draft-first workflow và revision history. Public renderer có thể đọc page đã xuất bản để ghi đè route tĩnh cùng slug khi HQ_API_BASE được cấu hình; biến này chưa được cấu hình và chưa xác minh runtime với Worker/D1.
+- Public website đã có generator tĩnh song ngữ Việt/Anh với 38 trang nội dung, metadata theo trang, hreflang, canonical, sitemap, blog listing/detail và biểu mẫu tư vấn. CMS pages/posts/services có admin UI + API, draft-first workflow và revision history; blog có taxonomy; CMS media library upload R2, alt text, preview, publish/archive đang được triển khai trên feature branch. Public renderer có thể đọc page đã xuất bản để ghi đè route tĩnh cùng slug khi HQ_API_BASE được cấu hình; biến này chưa được cấu hình và chưa xác minh runtime với Worker/D1.
 - Có Worker scaffold và D1 migration cho lead, lead events và rate limiting.
 - `backend/wrangler.toml` vẫn chứa database ID placeholder; API base trên frontend hiện để trống.
 - Better Auth và role checks có integration tests; CMS API/UI cho pages/posts/services có kiểm thử. D1 migrations chưa deploy; public CMS rendering, media library và template package/provisioning chưa hoàn thiện. Customer portal đã có báo giá, đơn hàng, dự án/milestone/bình luận và ticket hỗ trợ ở mức nền tảng; CRM order/project/ticket admin UI và membership onboarding đã có. Các tích hợp production, file riêng tư và thanh toán chưa hoàn thiện.
@@ -48,7 +48,7 @@ Mục tiêu: dựng nền tảng có thể mở rộng, không chỉ thêm HTML 
 ## Phase 2 — Website dịch vụ nhiều trang + CMS nội dung
 
 - Các trang riêng: home, giới thiệu, dịch vụ, trang dịch vụ chi tiết, giải pháp theo ngành, portfolio/case study, bảng giá, blog/kiến thức, FAQ, liên hệ và pháp lý.
-- CMS cho pages/posts/services có draft, edit, publish/archive và revision snapshots đã có API/UI. Bài viết đã có category/tags, public API lọc theo danh mục/tag/từ khóa, trang blog và trang chi tiết song ngữ; public renderer chỉ lấy nội dung đã xuất bản. Còn thiếu navigation/footer động từ CMS, media, scheduling, route CMS tùy ý và tối ưu SEO server-render cho bài viết động. CMS revision history + admin-only restore đã được bổ sung ở nhánh feature; restore luôn đưa nội dung về draft và cần publish lại.
+- CMS cho pages/posts/services có draft, edit, publish/archive và revision snapshots đã có API/UI. Bài viết đã có category/tags, public API lọc theo danh mục/tag/từ khóa, trang blog và trang chi tiết song ngữ; public renderer chỉ lấy nội dung đã xuất bản. Còn thiếu navigation/footer động từ CMS, scheduling, route CMS tùy ý và tối ưu SEO server-render cho bài viết động. CMS revision history + admin-only restore đã được bổ sung ở nhánh feature; restore luôn đưa nội dung về draft và cần publish lại.
 - Nội dung công khai được đọc từ API/database; có fallback lỗi rõ ràng, không âm thầm hiển thị dữ liệu giả.
 - Sitemap và canonical phản ánh các URL thực; metadata và structured data chỉ dùng thông tin đã xác minh.
 - Chuyển các section hiện tại thành nội dung/khối tái sử dụng khi phù hợp, tránh viết lại không cần thiết.
@@ -61,7 +61,8 @@ Mục tiêu: dựng nền tảng có thể mở rộng, không chỉ thêm HTML 
 - [ ] Hỗ trợ tạo route CMS mới, media preview và SEO server-render/prerender cho từng bài viết động.
 - [ ] Public routes hoạt động trực tiếp khi mở URL, gồm refresh và 404.
 - [x] Test quyền xuất bản, revision history và restore; restore không tự xuất bản nội dung.
-- [ ] Test XSS-safe rendering, validation, media upload.
+- [x] Test media upload: file type/signature, size cap, draft privacy, admin preview, role boundary, publish and archive.
+- [ ] Test XSS-safe rendering, validation, customer-private file upload/download.
 - [ ] Kiểm tra link, SEO metadata, sitemap, accessibility, mobile, Lighthouse và lỗi API.
 
 ## Phase 3 — Kho template WordPress + HTML/CSS

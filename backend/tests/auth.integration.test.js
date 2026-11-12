@@ -387,20 +387,20 @@ test("customer portal isolates customers and quotes; admin access requires a ser
   assert.equal(leadResponse.status, 201, await leadResponse.clone().text());
   const createdLead = await leadResponse.json();
 
-  const qualifyLead = await server.fetch(origin + "/api/admin/leads", {
+  const qualifyLead = await server.fetch(origin + "/api/v1/admin/leads", {
     method: "PATCH",
     headers: { origin, cookie: admin.cookie, "content-type": "application/json" },
     body: JSON.stringify({ id: createdLead.id, status: "qualified" })
   });
   assert.equal(qualifyLead.status, 200, await qualifyLead.clone().text());
 
-  const forbiddenConversion = await server.fetch(origin + "/api/admin/leads/" + encodeURIComponent(createdLead.id) + "/convert", {
+  const forbiddenConversion = await server.fetch(origin + "/api/v1/admin/leads/" + encodeURIComponent(createdLead.id) + "/convert", {
     method: "POST",
     headers: { origin, cookie: ordinaryUser.cookie }
   });
   assert.equal(forbiddenConversion.status, 403, "ordinary users must not convert leads");
 
-  const convertLead = await server.fetch(origin + "/api/admin/leads/" + encodeURIComponent(createdLead.id) + "/convert", {
+  const convertLead = await server.fetch(origin + "/api/v1/admin/leads/" + encodeURIComponent(createdLead.id) + "/convert", {
     method: "POST",
     headers: { origin, cookie: admin.cookie }
   });
@@ -410,7 +410,7 @@ test("customer portal isolates customers and quotes; admin access requires a ser
   assert.equal(converted.display_name, "Lead to Convert");
   assert.equal(converted.contact_email, "lead-to-convert@example.test");
 
-  const conversionEvents = await getFor("/api/admin/leads/" + encodeURIComponent(createdLead.id) + "/events", admin.cookie);
+  const conversionEvents = await getFor("/api/v1/admin/leads/" + encodeURIComponent(createdLead.id) + "/events", admin.cookie);
   assert.equal(conversionEvents.status, 200, await conversionEvents.clone().text());
   const leadEventTypes = (await conversionEvents.json()).data.map(event => event.event_type);
   assert.ok(leadEventTypes.includes("status_changed"));
@@ -422,7 +422,7 @@ test("customer portal isolates customers and quotes; admin access requires a ser
   assert.equal(convertedActivityList.length, 1, "conversion must create one system activity");
   assert.equal(convertedActivityList[0].activity_type, "system");
 
-  const repeatedConversion = await server.fetch(origin + "/api/admin/leads/" + encodeURIComponent(createdLead.id) + "/convert", {
+  const repeatedConversion = await server.fetch(origin + "/api/v1/admin/leads/" + encodeURIComponent(createdLead.id) + "/convert", {
     method: "POST",
     headers: { origin, cookie: admin.cookie }
   });
@@ -443,7 +443,7 @@ test("customer portal isolates customers and quotes; admin access requires a ser
   });
   assert.equal(unqualifiedLeadResponse.status, 201, await unqualifiedLeadResponse.clone().text());
   const unqualifiedLead = await unqualifiedLeadResponse.json();
-  const rejectedConversion = await server.fetch(origin + "/api/admin/leads/" + encodeURIComponent(unqualifiedLead.id) + "/convert", {
+  const rejectedConversion = await server.fetch(origin + "/api/v1/admin/leads/" + encodeURIComponent(unqualifiedLead.id) + "/convert", {
     method: "POST",
     headers: { origin, cookie: admin.cookie }
   });
@@ -514,13 +514,13 @@ test("customer portal isolates customers and quotes; admin access requires a ser
   assert.equal(quoteAuditCounts["quote.created"], 1);
   assert.equal(quoteAuditCounts["quote.sent"], 1);
 
-  const adminLeadAccess = await getFor("/api/admin/leads?limit=1", admin.cookie);
+  const adminLeadAccess = await getFor("/api/v1/admin/leads?limit=1", admin.cookie);
   assert.equal(adminLeadAccess.status, 200, await adminLeadAccess.clone().text());
 
-  const ordinaryLeadAccess = await getFor("/api/admin/leads?limit=1", ordinaryUser.cookie);
+  const ordinaryLeadAccess = await getFor("/api/v1/admin/leads?limit=1", ordinaryUser.cookie);
   assert.equal(ordinaryLeadAccess.status, 403, await ordinaryLeadAccess.clone().text());
 
-  const legacyTokenAccess = await server.fetch(origin + "/api/admin/leads?limit=1", {
+  const legacyTokenAccess = await server.fetch(origin + "/api/v1/admin/leads?limit=1", {
     headers: { origin, authorization: "Bearer test-only-legacy-token" }
   });
   assert.equal(legacyTokenAccess.status, 401, await legacyTokenAccess.clone().text());

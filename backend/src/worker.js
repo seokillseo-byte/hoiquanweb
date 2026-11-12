@@ -108,7 +108,7 @@ async function identityRoutes(request, env, url) {
     if (existing) return json({ data: { customer_id: existing.id, lead_id: leadId, already_converted: true } });
     if (!validEmail(lead.email)) return json({ error: { code: "LEAD_EMAIL_INVALID", message: "Email của lead không hợp lệ; cần cập nhật lead trước khi chuyển đổi." } }, 409);
     const now = new Date().toISOString(), customerId = crypto.randomUUID(), activityId = crypto.randomUUID();
-    const activityBody = ["Dịch vụ quan tâm: " + lead.service, "Ngân sách: " + (lead.budget || "Chưa xác định"), "Mục tiêu: " + (lead.goals || "Chưa cung cấp")].join("\\n");
+    const activityBody = ["Dịch vụ quan tâm: " + lead.service, "Ngân sách: " + (lead.budget || "Chưa xác định"), "Mục tiêu: " + (lead.goals || "Chưa cung cấp")].join("\n");
     const statements = [
       env.DB.prepare("INSERT INTO crm_customers (id, lead_id, display_name, organization_name, contact_email, phone, status, notes, created_at, updated_at) VALUES (?, ?, ?, '', ?, '', 'active', '', ?, ?)").bind(customerId, leadId, lead.name, lead.email, now, now),
       env.DB.prepare("INSERT INTO crm_activities (id, customer_id, lead_id, activity_type, subject, body, actor_id, occurred_at, created_at) VALUES (?, ?, ?, 'system', 'Lead được chuyển thành khách hàng', ?, ?, ?, ?)").bind(activityId, customerId, leadId, activityBody, principal.user.id, now, now),

@@ -84,7 +84,7 @@ Never accept a client-provided customer ID as proof of ownership. Resolve member
 | GET/POST | `/api/v1/admin/projects` | Create/list projects | Project permission |
 | GET/PATCH | `/api/v1/admin/users` | Manage users and role assignments | User-admin permission |
 
-Lead conversion is implemented at `POST /api/v1/admin/leads/:id/convert`. It requires an authenticated admin/staff session, validates the source lead and email, creates a CRM customer linked through `crm_customers.lead_id`, records a system activity containing the original service/budget/goals and writes customer/lead audit events in one D1 batch. Repeating the conversion returns the existing customer instead of creating a duplicate. It does not automatically mark the lead won or send email.
+Lead conversion is implemented at `POST /api/v1/admin/leads/:id/convert`. It requires an authenticated admin/staff session and only permits leads in `qualified`, `proposal_sent` or `won` status. It validates the source lead and email, creates a CRM customer linked through `crm_customers.lead_id`, records a system activity containing the original service/budget/goals and writes customer/lead audit events in one D1 batch. Repeating the conversion returns the existing customer instead of creating a duplicate. It does not automatically mark the lead won or send email. Admin lead list results include the linked `customer_id` to prevent duplicate conversion actions.
 
 The table is a target contract, not a claim of route availability. Add request/response schemas and error cases alongside each implementation PR. Avoid generic endpoints that permit mass assignment of protected fields.
 

@@ -142,7 +142,7 @@ try:
     for migration in migration_files:
         db.executescript(migration.read_text(encoding="utf-8"))
     tables = {row[0] for row in db.execute("SELECT name FROM sqlite_master WHERE type='table'")}
-    expected = {"leads", "lead_events", "rate_limits", "cms_pages", "cms_posts", "cms_services", "cms_templates", "cms_revisions", "crm_customers", "crm_activities", "crm_quotes", "crm_quote_items", "crm_audit_events", "crm_orders", "crm_projects", "crm_project_milestones", "crm_project_comments", "crm_tickets", "crm_ticket_messages"}
+    expected = {"leads", "lead_events", "rate_limits", "cms_pages", "cms_posts", "cms_services", "cms_templates", "cms_revisions", "crm_customers", "crm_activities", "crm_quotes", "crm_quote_items", "crm_audit_events", "crm_orders", "crm_projects", "crm_project_milestones", "crm_project_comments", "crm_tickets", "crm_ticket_messages", "crm_project_files"}
     if not expected.issubset(tables):
         fail("database migrations did not create all required tables: " + ", ".join(sorted(expected - tables)))
     lead_columns = {row[1] for row in db.execute("PRAGMA table_info(leads)")}
@@ -163,6 +163,15 @@ try:
     media_indexes = {row[1] for row in db.execute("PRAGMA index_list(cms_media_assets)")}
     if "idx_cms_media_status_created" not in media_indexes:
         fail("CMS media library query index is missing")
+    project_file_columns = {row[1] for row in db.execute("PRAGMA table_info(crm_project_files)")}
+    if not {"project_id", "customer_id", "object_key", "content_type", "size_bytes", "sha256", "visibility", "uploaded_by"}.issubset(project_file_columns):
+        fail("private project file metadata columns are missing")
+    project_file_indexes = {row[1] for row in db.execute("PRAGMA index_list(crm_project_files)")}
+    if "idx_crm_project_files_project_visibility_created" not in project_file_indexes:
+        fail("private project file access index is missing")
+    file_fk_tables = {row[2] for row in db.execute("PRAGMA foreign_key_list(crm_project_files)")}
+    if not {"crm_projects", "crm_customers"}.issubset(file_fk_tables):
+        fail("private project file customer/project foreign keys are missing")
     # Publicly readable content must have an explicit status and publication timestamp.
     page_columns = {row[1] for row in db.execute("PRAGMA table_info(cms_pages)")}
     if not {"status", "published_at", "slug"}.issubset(page_columns):

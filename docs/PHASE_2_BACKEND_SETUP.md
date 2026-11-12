@@ -7,7 +7,7 @@
 - Lịch tư vấn trả về từ GET /api/booking; chưa có nhà cung cấp lịch mặc định nên trả 503 cho đến khi cấu hình.
 - API có allowlist CORS, validation, honeypot, rate limit cơ bản theo IP hash, security headers và consent timestamp. Endpoint quản trị yêu cầu Better Auth session và vai trò admin/staff được cấp từ phía máy chủ.
 - Better Auth dùng cookie HttpOnly, Secure, SameSite=Lax; production frontend/API phải ở cùng site tin cậy để tránh third-party cookies.
-- D1 migrations hiện gồm 0001 đến 0010: lead, CMS, CRM/quotes/identity, revisions, template metadata, orders/projects/milestones/comments/tickets, lead assignment, blog post category/tags và CMS media metadata.
+- D1 migrations hiện gồm 0001 đến 0011: lead, CMS, CRM/quotes/identity, revisions, template metadata, orders/projects/milestones/comments/tickets, lead assignment, blog post category/tags, CMS media metadata và private project file metadata.
 
 ## Endpoints
 
@@ -44,7 +44,8 @@ Workflow validate.yml chạy validator, API boundary tests, Better Auth + D1 int
 - GET /api/v1/me trả identity và server-assigned roles; GET /api/v1/me/customers chỉ trả hồ sơ có membership.
 - Admin/staff quản lý liên kết tại GET/POST /api/v1/admin/customers/:id/members. Tài khoản phải đăng ký trước; endpoint tìm Better Auth user theo email đã chuẩn hóa, upsert owner/member/billing và ghi audit event. Email không có tài khoản trả 404.
 - Role admin/staff vẫn phải được gán qua quy trình vận hành được kiểm soát; không có public self-service role assignment.
-- Customer portal portal.html có quote, order, project/milestone/comment và support ticket. Dữ liệu riêng tư được lọc bằng crm_customer_members; message responses không trả user ID nội bộ.
+- Customer portal portal.html có quote, order, project/milestone/comment, support ticket và tải lên/tải xuống tệp dự án riêng tư. Dữ liệu riêng tư được lọc bằng crm_customer_members; message responses không trả user ID nội bộ.
+- Admin admin.html có thể quản lý tệp dự án theo phạm vi customer-visible hoặc internal; mọi lần tải xuống đều đi qua Worker sau khi xác thực staff/admin.
 - Admin admin.html có CRM, quote, CMS, template, media library, order, project/milestone và support ticket management.
 - CMS media library upload ảnh PNG/JPEG/GIF/WebP tối đa 5 MiB, lưu R2 ở chế độ private, hỗ trợ alt text, preview có xác thực, Admin publish/archive; public route chỉ stream asset đã published. API upload dùng multipart/form-data và không đặt thủ công Content-Type ở trình duyệt để giữ boundary do browser sinh.
 
@@ -121,3 +122,13 @@ Staging-specific runbook and isolated config template: [CLOUDFLARE_STAGING_RUNBO
 - Admin upload tạo asset draft. Chỉ Admin có thể publish/archive; public Worker chỉ stream ảnh published. Bucket object key không xuất hiện trong public response.
 - Không sử dụng CMS public media để lưu hợp đồng, hồ sơ khách hàng hoặc file dự án riêng tư. Những file đó cần endpoint riêng với customer membership/project authorization.
 - Không coi upload/preview local hoặc CI pass là bằng chứng R2 staging/production đã được cấu hình. Ghi lại bucket ID/tên, migration run và kiểm thử runtime trong checklist triển khai.
+
+
+## Private project file storage
+
+- Migration `0011_private_project_files.sql` tạo metadata/index; chạy migration trên D1 staging trước khi kiểm thử runtime.
+- Dùng binding R2 `MEDIA_BUCKET` đã khai báo trong Wrangler. Bucket phải để private; không bật public access. CMS media và project files dùng prefix tách biệt `cms/` và `projects/`.
+- Giới hạn upload 10 MiB; loại tệp được hỗ trợ: PDF, PNG, JPEG, WebP, UTF-8 TXT và CSV. API kiểm tra MIME/signature/content, SHA-256, role và project membership.
+- Customer upload luôn có visibility `customer`; staff/admin có thể chọn `customer` hoặc `internal`. Customer không thể list/download file internal. Admin/staff có thể list/download cả hai loại.
+- Không có direct R2 URL, permanent signed URL hoặc public project-file route. Download đi qua Worker với membership check, `Content-Disposition: attachment`, `Cache-Control: private, no-store` và `X-Content-Type-Options: nosniff`.
+- CI chạy local Wrangler/R2 simulator; staging nghiệm thu cần bucket thật, D1 migration 0011 và kiểm thử hai customer accounts khác nhau trước khi production.

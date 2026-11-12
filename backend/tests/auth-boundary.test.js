@@ -44,6 +44,12 @@ test("legacy lead administration no longer accepts the shared ADMIN_TOKEN", asyn
   assert.equal(body.error.code, "SERVICE_UNAVAILABLE");
 });
 
+test("private project file routes fail closed when private object storage is unavailable", async () => {
+  const response = await request("/api/v1/me/projects/test-project/files");
+  assert.equal(response.status, 503);
+  assert.equal((await response.json()).error.code, "SERVICE_UNAVAILABLE");
+});
+
 test("public media delivery fails closed when media storage/database is unavailable", async () => {
   const response = await request("/api/v1/public/media/test-asset");
   assert.equal(response.status, 503);

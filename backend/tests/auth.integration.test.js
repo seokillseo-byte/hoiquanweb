@@ -1234,6 +1234,17 @@ test("in-app notifications are generated for project and ticket events and isola
   const staffAfterTicketData = await staffAfterTicket.json();
   assert.equal(staffAfterTicketData.meta.unread_count, 2);
   assert.ok(staffAfterTicketData.data.some(item => item.type === "ticket_created"));
+  const ticketId = (await ticket.json()).data.id;
+  const staffReply = await server.fetch(origin + "/api/v1/admin/tickets/" + ticketId + "/messages", {
+    method: "POST",
+    headers: { origin, cookie: admin.cookie, "content-type": "application/json" },
+    body: JSON.stringify({ body: "We have received your request." })
+  });
+  assert.equal(staffReply.status, 201, await staffReply.clone().text());
+  const customerAfterReply = await getNotifications(customerA.cookie);
+  const customerAfterReplyData = await customerAfterReply.json();
+  assert.equal(customerAfterReplyData.meta.unread_count, 1);
+  assert.ok(customerAfterReplyData.data.some(item => item.type === "ticket_reply"));
 
   const readAll = await server.fetch(origin + "/api/v1/me/notifications/read-all", {
     method: "POST", headers: { origin, cookie: admin.cookie }

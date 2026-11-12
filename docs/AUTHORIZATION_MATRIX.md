@@ -28,7 +28,7 @@ This document records the server-side authorization contract currently implement
 ## Enforcement notes
 
 - Customer owner and billing memberships may accept a quote; ordinary customer members may read it but cannot accept it.
-- Admin/staff may link or revoke customer memberships. A customer must retain at least one owner; attempts to remove the final owner return a conflict. Revocation is audited.
+- Admin/staff may link or revoke customer memberships. A customer must retain at least one owner; attempts to remove or demote the final owner return a conflict. The owner-count condition is enforced in the D1 write statement/batch to prevent concurrent changes from removing the last owner. Membership changes are audited.
 - Browser-supplied customer IDs are not proof of ownership. The Worker derives access from the authenticated user and customer membership table.
 - Cross-customer resource reads return 404 where implemented to avoid resource-existence disclosure.
 - Membership revocation removes the customer association in D1 and subsequent customer resource reads re-evaluate membership.
@@ -40,7 +40,7 @@ This document records the server-side authorization contract currently implement
 
 ## Automated coverage
 
-The integration suite exercises anonymous, ordinary-user, staff, admin, customer owner, customer member and billing boundaries across the main route families, including last-owner protection, membership revocation and audit before/after metadata. Separate tests cover project/ticket/file membership boundaries, private file visibility, notification ownership, CMS media publication and public-only content delivery.
+The integration suite exercises anonymous, ordinary-user, staff, admin, customer owner, customer member and billing boundaries across the main route families, including last-owner deletion and demotion protection, membership revocation and audit before/after metadata. Separate tests cover project/ticket/file membership boundaries, private file visibility, notification ownership, CMS media publication and public-only content delivery.
 
 Primary test suite: backend/tests/auth.integration.test.js.
 

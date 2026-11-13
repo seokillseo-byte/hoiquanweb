@@ -1105,7 +1105,7 @@ function validCmsPostSeo(seo, body) {
     const description = typeof seo.description === "string" ? seo.description.trim() : "";
     if (!["vi", "en"].includes(seo.locale) || title.length < 10 || title.length > 240 ||
         description.length < 50 || description.length > 320 ||
-        !Array.isArray(body?.blocks) || !body.blocks.some(block => block && typeof block === "object" && ["heading", "paragraph", "list", "quote", "image", "cta", "faq", "divider"].includes(block.type))) return false;
+        !Array.isArray(body?.blocks) || !body.blocks.some(block => { if (!block || typeof block !== "object") return false; if (["heading", "paragraph", "quote"].includes(block.type)) return typeof block.text === "string" && block.text.trim().length > 0; if (["list", "faq"].includes(block.type)) return Array.isArray(block.items) && block.items.length > 0; return false; })) return false;
   }
   return true;
 }
@@ -1716,7 +1716,7 @@ async function publicContent(request, env, url) {
     if (category) { where.push("category = ?"); values.push(category); }
     if (tag) { where.push("EXISTS (SELECT 1 FROM json_each(cms_posts.tags_json) WHERE value = ?)"); values.push(tag); }
     if (query) { where.push("(title LIKE ? OR excerpt LIKE ?)"); values.push("%" + query + "%", "%" + query + "%"); }
-    const result = await env.DB.prepare("SELECT slug, title, excerpt, author_name, category, tags_json, published_at, seo_json, CASE WHEN EXISTS (SELECT 1 FROM json_each(body_json, '$.blocks') WHERE json_extract(value, '$.type') IN ('heading', 'paragraph', 'list', 'quote', 'image', 'cta', 'faq', 'divider')) THEN 1 ELSE 0 END AS body_ready FROM cms_posts WHERE " + where.join(" AND ") + " ORDER BY published_at DESC, slug ASC LIMIT ? OFFSET ?").bind(...values, limit, offset).all();
+    const result = await env.DB.prepare("SELECT slug, title, excerpt, author_name, category, tags_json, published_at, seo_json, CASE WHEN EXISTS (SELECT 1 FROM json_each(body_json, '$.blocks') WHERE (json_extract(value, '$.type') IN ('heading', 'paragraph', 'quote') AND length(trim(COALESCE(json_extract(value, '$.text'), ''))) > 0) OR (json_extract(value, '$.type') IN ('list', 'faq') AND json_array_length(json_extract(value, '$.items')) > 0)) THEN 1 ELSE 0 END AS body_ready FROM cms_posts WHERE " + where.join(" AND ") + " ORDER BY published_at DESC, slug ASC LIMIT ? OFFSET ?").bind(...values, limit, offset).all();
     return json({ data: (result.results || []).map(row => { const item = contentRecord(row, "post"); delete item.body_ready; if (item.seo?.indexable === true && row.body_ready !== 1) item.seo.indexable = false; return item; }), meta: { limit, offset, locale: locale || null, category: category || null, tag: tag || null, query: query || null } });
   }
   if (path.startsWith("/api/v1/public/posts/") && request.method === "GET") {

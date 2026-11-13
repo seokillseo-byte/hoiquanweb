@@ -1,6 +1,8 @@
 name: Build isolated PR preview
 
 on:
+  push:
+    branches: [feat/public-ui-factual-content-accessibility]
   pull_request:
     branches: [main, feat/better-auth-worker-d1-integration, docs/phase-0-master-blueprint-risk-review, feat/seo-clean-article-routes]
     types: [opened, synchronize, reopened, ready_for_review]

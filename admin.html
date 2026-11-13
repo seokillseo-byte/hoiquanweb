@@ -14,7 +14,7 @@
 <style id="admin-workspace-refresh">
 
   /* Admin workspace visual refresh — presentation only; existing API and business logic remain unchanged. */
-  :root{color-scheme:light;--admin-ink:#14233b;--admin-muted:#718096;--admin-line:#e6ebf2;--admin-blue:#315cf5;--admin-navy:#101d33;--admin-surface:#f4f7fb;--admin-green:#0f9f6e}
+  :root{color-scheme:light;--admin-ink:#14233b;--admin-muted:#657187;--admin-line:#e6ebf2;--admin-blue:#315cf5;--admin-navy:#101d33;--admin-surface:#f4f7fb;--admin-green:#0f9f6e}
   body{background:var(--admin-surface);color:var(--admin-ink);font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;line-height:1.55}
   .wrap{width:100%;max-width:none;margin:0;padding:28px clamp(16px,2.6vw,40px)}
   .admin-layout{display:grid;grid-template-columns:248px minmax(0,1fr);gap:26px;max-width:1600px;margin:0 auto;align-items:start}
@@ -76,6 +76,7 @@
   .tag,.status-pill{display:inline-flex;align-items:center;border-radius:999px;padding:5px 9px;background:#eef3ff;color:#3554b5;font-size:11px;font-weight:750}
   .admin-anchor{scroll-margin-top:20px}
   @media(max-width:1050px){.admin-layout{grid-template-columns:210px minmax(0,1fr);gap:18px}.admin-sidebar{padding:18px 12px}.dashboard-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+  @media(max-width:900px){.admin-layout{grid-template-columns:1fr}.admin-sidebar{position:relative;top:auto;min-height:0}.admin-nav{grid-template-columns:repeat(2,minmax(0,1fr))}.admin-sidebar-foot{display:none}}
   @media(max-width:760px){.wrap{padding:14px}.admin-layout{grid-template-columns:1fr;gap:14px}.admin-sidebar{position:relative;top:auto;min-height:0;padding:14px;border-radius:15px}.admin-brand{padding-bottom:13px}.admin-nav-label{padding:14px 8px 7px}.admin-nav{grid-template-columns:repeat(2,minmax(0,1fr))}.admin-nav a{font-size:12px;padding:9px}.admin-sidebar-foot{display:none}.admin-content>.topline:first-child{padding:5px 2px 10px}.panel{padding:16px;margin-bottom:13px}.dashboard-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.dashboard-columns{grid-template-columns:1fr}}
   @media(max-width:420px){.admin-nav{grid-template-columns:1fr 1fr}.dashboard-grid{grid-template-columns:1fr}.topline{align-items:flex-start}.admin-content>.topline:first-child{flex-direction:column}}
   @media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;transition:none!important}}
@@ -680,7 +681,8 @@
     link.hidden = target.hidden;
     link.addEventListener("click", event => {
       event.preventDefault();
-      target.scrollIntoView({behavior:"smooth",block:"start"});
+      const reduceMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+      target.scrollIntoView({behavior:reduceMotion ? "auto" : "smooth",block:"start"});
       links.forEach(item => item.classList.toggle("active",item === link));
     });
     nav.append(link);

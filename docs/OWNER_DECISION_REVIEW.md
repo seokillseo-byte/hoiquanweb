@@ -58,10 +58,7 @@ This is a sequencing decision, not an exclusion of B2B from the business scope o
 
 No verified USP, competitive advantage, customer result, award, certification, client logo, review, uptime guarantee or delivery guarantee has been approved in the current project inputs.
 
-**Please choose:**
-- [ ] No public USP or comparative claim for the Preview; use factual service descriptions only.
-- [ ] I will provide a specific USP and evidence.
-- [ ] Use the following approved claim(s), with supporting evidence/source: ______.
+**Owner decision — Approved (2026-11-13):** No public USP or comparative claim for Core Preview. Use factual service descriptions only. This does not assert that the business has no differentiators; it means no USP/claim is authorized for publication until the owner supplies and approves it with supporting evidence.
 
 Until approved, the site must not publish claims such as “best”, “leading”, “number one”, “guaranteed results”, invented years of experience, customer counts, rankings or testimonials.
 
@@ -133,7 +130,7 @@ Reply in normal text using the decision IDs; short answers are sufficient:
 
 - D-01: Approve / edit / replace.
 - D-02: **Approved — B2C first, then B2B** (2026-11-13); both remain in scope. Detailed personas and demographics remain TBD.
-- D-03: No USP claim for Preview / provide claim + evidence.
+- D-03: No public USP/comparative claim for Core Preview; use factual service descriptions only (owner-approved 2026-11-13).
 - D-04: Interim blue/white / provide brand guideline / separate brand project.
 - D-05: Form only / form + email / other / no lead submission; approved contact/privacy details to follow.
 

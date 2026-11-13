@@ -24,6 +24,15 @@ const posts = [
       title: "SEO Fundamentals for Websites | HoiQuanWeb",
       description: "A practical guide to website SEO foundations, from content structure and crawling to user experience and technical quality."
     }
+  },
+  {
+    id: "article-reserved", slug: "post", title: "Reserved Slug Article",
+    excerpt: "A published article using a slug reserved by the static route builder.",
+    seo: {
+      locale: "vi", indexable: true,
+      title: "Reserved Slug Article for Route Fallback | HoiQuanWeb",
+      description: "A valid SEO description for a published article whose slug is reserved by the static route builder."
+    }
   }
 ];
 const fullPosts = Object.fromEntries(posts.map(post => [post.slug, {
@@ -81,6 +90,8 @@ test("static generator prerenders approved bilingual CMS articles and validates 
     const viHtml = await readFile("public-site/dist/blog/seo-co-ban/index.html", "utf8");
     const enHtml = await readFile("public-site/dist/en/blog/seo-basics/index.html", "utf8");
     const listingHtml = await readFile("public-site/dist/blog/index.html", "utf8");
+    const enListingHtml = await readFile("public-site/dist/en/blog/index.html", "utf8");
+    const siteScript = await readFile("public-site/src/site.js", "utf8");
     const sitemap = await readFile("public-site/dist/sitemap.xml", "utf8");
 
     assert.match(viHtml, /<meta name="robots" content="index,follow/);
@@ -95,6 +106,10 @@ test("static generator prerenders approved bilingual CMS articles and validates 
     assert.match(enHtml, /hreflang="en"/);
     assert.match(enHtml, /hreflang="x-default"/);
     assert.match(listingHtml, /data-base-path="\/hoiquanweb"/);
+    assert.match(listingHtml, /data-clean-article-slugs="&quot;seo-co-ban&quot;"/);
+    assert.match(enListingHtml, /data-clean-article-slugs="&quot;seo-basics&quot;"/);
+    assert.match(siteScript, /cleanArticleSlugs\.has\(item\.slug\)/);
+    assert.match(siteScript, /root\.dataset\.detailPath\+"\?slug="/);
     assert.match(sitemap, /https:\/\/hoiquanweb\.io\.vn\/blog\/seo-co-ban\//);
     assert.match(sitemap, /https:\/\/hoiquanweb\.io\.vn\/en\/blog\/seo-basics\//);
     assert.match(sitemap, /<lastmod>2026-11-12<\/lastmod>/);

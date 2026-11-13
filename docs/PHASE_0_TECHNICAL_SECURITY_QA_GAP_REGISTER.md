@@ -60,12 +60,12 @@
 
 ### GAP-ARCH-01 — Architecture decisions need a decision ledger
 
-- **Priority:** P0. **Current state:** Partial.
-- **Evidence:** Logical layers, application areas, data entities and security principles exist in ARCHITECTURE.md.
-- **Gap:** Proposed versus approved choices are not consolidated for frontend hosting, API/runtime, database, auth/session lifecycle, object storage/private files, email, media delivery, monitoring, backup/restore and integrations.
+- **Priority:** P0. **Current state:** Documentation consolidated; Owner acceptance and production decisions remain open.
+- **Evidence:** `ARCHITECTURE_BLUEPRINT.md` now maps all 15 Architecture Blueprint deliverables and consolidates `ARCHITECTURE.md`, `API_CONTRACT.md`, `DATA_MODEL.md`, ADR-0001 and ADR-0002.
+- **Gap:** Production frontend host, API/runtime topology, database and object-storage resources, email sender, monitoring, backup/restore ownership and operational integrations are not approved as production decisions. Existing ADRs remain candidate/prototype status.
 - **Owner role:** Technical Lead; Project Owner approval; Security/Operations review.
 - **Dependencies:** GAP-TECH-01; business/privacy decisions; HDO-019.
-- **Closure evidence:** ADRs with ID, context, options, selected choice or TBD, rationale, consequences, approver and dependent work packages. Mark non-P0 integrations as deferred.
+- **Closure evidence:** Owner-reviewed architecture decision ledger; approved topology/environment matrix; provider/resource ownership; operational responsibilities; staging/runtime evidence. Mark non-P0 integrations as deferred.
 
 ### GAP-SEC-01 — Dedicated Security Blueprint and P0 security acceptance profile are incomplete
 

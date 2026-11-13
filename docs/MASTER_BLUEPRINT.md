@@ -40,6 +40,7 @@ Thứ tự ưu tiên nguồn thông tin:
 | DEC-010 | Scope control | Chỉ triển khai P0 trước; P1/P2 sau khi được duyệt | Approved |
 | DEC-011 | Customer scope and rollout priority | Phục vụ cả B2C và B2B; ưu tiên B2C trước, sau đó mở rộng B2B; persona chi tiết còn TBD | Approved |
 | DEC-012 | Factual business description | Owner-approved wording recorded in OWNER_DECISION_REVIEW.md; formal industry classification and operating/revenue model remain TBD | Approved (description only) |
+| DEC-013 | Public USP and comparative claims for Core Preview | No public USP/comparative claim; use factual service descriptions only until a claim and evidence are separately approved | Approved (Preview content restriction) |
 
 ### 2.1 Bảy nhóm dịch vụ đã chốt
 
@@ -63,7 +64,7 @@ Các mục dưới đây chưa được người dùng xác nhận. Chúng là g
 |---|---|---|---|
 | TBD-001 | Persona, nhu cầu, use case và demographic cụ thể của B2C (ưu tiên trước); buyer roles/company size của B2B (giai đoạn sau) | Messaging, IA, UX, CTA, content | Open — sequencing approved |
 | TBD-002 | Ngành phân loại chính thức và mô hình vận hành/nguồn doanh thu (mô tả doanh nghiệp đã được duyệt tại DEC-012) | Business Blueprint, trust, legal content | Partially resolved |
-| TBD-003 | USP / Value Proposition | Homepage, service pages, conversion | Open |
+| TBD-003 | Evidence-backed USP / Value Proposition for a future approved release | Homepage, service messaging and differentiation | Deferred for Core Preview — no public USP claim authorized by DEC-013 |
 | TBD-004 | Quy mô khách hàng và pain points | Persona, solution mapping | Open |
 | TBD-005 | Portfolio/case study có quyền công bố | Trust, proof, E-E-A-T signals | Open |
 | TBD-006 | Giá, cách tính phí, chính sách báo giá | Pricing page, quote flow | Open |

@@ -164,7 +164,7 @@ Blueprint Standard yêu cầu đủ 19 phần. Trạng thái dưới đây phả
 | 09 | Feature Blueprint | Draft complete — review required | Xem [FEATURE_BLUEPRINT.md](FEATURE_BLUEPRINT.md); P0 được giới hạn trong Core Preview |
 | 10 | Technical Blueprint | Partial | Repo có implementation hiện hữu; production topology còn TBD |
 | 11 | Architecture Blueprint | Partial | Có architecture doc; một số quyết định production chưa chốt |
-| 12 | Performance Blueprint | Planning draft created — owner review required | Xem [PERFORMANCE_BLUEPRINT.md](PERFORMANCE_BLUEPRINT.md); numeric thresholds TBD, actual Preview measurement pending |
+| 12 | Performance Blueprint | Planning draft created; Core Web Vitals thresholds approved under DEC-022; actual measurement pending | Xem [PERFORMANCE_BLUEPRINT.md](PERFORMANCE_BLUEPRINT.md); Lighthouse, TTFB, asset budgets, API and load targets remain TBD |
 | 13 | Security Blueprint | Partial | Có security controls và test trong repo; runtime chưa nghiệm thu |
 | 14 | AI Blueprint | Deferred | Không thuộc Core Preview |
 | 15 | Marketing Blueprint | Not started | Cần audience, positioning và market inputs |

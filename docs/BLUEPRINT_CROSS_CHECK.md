@@ -8,16 +8,19 @@
 
 ## 1. Purpose and review method
 
-This document checks the 19 mandatory Blueprint modules against:
+This document checks the 19 mandatory Blueprint modules against the five **Project Owner-supplied external planning standards** listed below. These source files were provided in the HOIQUANWEB project context on 2026-11-13; they are planning inputs and are not repository-tracked files in this branch.
 
-- `01_AI_CONSTITUTION_AND_PLANNING_STANDARD.md`
-- `02_PROJECT_INPUT_TEMPLATE.md`
-- `03_BLUEPRINT_AND_DESIGN_SYSTEM_STANDARD.md`
-- `04_DEVELOPMENT_STANDARD.md`
-- `05_QA_ACCEPTANCE_STANDARD.md`
-- Current repository planning documents, source-observed route inventory, and recorded user-confirmed decisions.
+| External source supplied by Project Owner | Source revision stated in file | Use in this cross-check |
+|---|---|---|
+| `01_AI_CONSTITUTION_AND_PLANNING_STANDARD.md` | Version 3.0 (Merged) | AI role, planning workflow, requirements and decision-control rules |
+| `02_PROJECT_INPUT_TEMPLATE.md` | Version 3.0 (Condensed) | Required project/business/brand/audience inputs and completeness checks |
+| `03_BLUEPRINT_AND_DESIGN_SYSTEM_STANDARD.md` | Version 3.0 (Merged) | Mandatory 19-module Blueprint structure and Design System requirements |
+| `04_DEVELOPMENT_STANDARD.md` | Version 3.0 (Renumbered) | Architecture, implementation, testing, DevOps, deployment and documentation standards |
+| `05_QA_ACCEPTANCE_STANDARD.md` | Version 3.0 (Renumbered) | QA workflow, acceptance evidence, severity and production-readiness gates |
 
-The review distinguishes **approved facts**, **source/code observations**, **proposals**, and **TBD owner decisions**. Existing implementation does not become a business requirement merely because code exists. A draft document or green CI run is not equivalent to runtime acceptance.
+The source files remain external Project inputs; the version labels above identify the exact revisions used, but do not imply they are vendored into this repository. Reproducibility requires retaining those owner-supplied source files with the project record.
+
+The review also uses current repository planning documents, source-observed route inventory, and recorded user-confirmed decisions. It distinguishes **approved facts**, **source/code observations**, **proposals**, and **TBD owner decisions**. Existing implementation does not become a business requirement merely because code exists. A draft document or green CI run is not equivalent to runtime acceptance.
 
 ### Status meanings
 

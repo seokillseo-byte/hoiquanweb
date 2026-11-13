@@ -4,21 +4,76 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="robots" content="noindex,nofollow">
-  <meta name="description" content="Công cụ nội bộ để xem và phân loại yêu cầu tư vấn Hội Quán Web.">
+  <meta name="description" content="Trung tâm quản trị nội bộ HoiQuanWeb cho CRM, CMS, báo giá và hỗ trợ khách hàng.">
   <meta name="hq-api-base" content="">
-  <title>Quản lý lead — Hội Quán Web</title>
+  <title>HoiQuanWeb Admin — Trung tâm quản trị</title>
   <style>
     :root{font-family:system-ui,-apple-system,"Segoe UI",sans-serif;color:#101b2d;background:#f5f7fb;line-height:1.55;--line:#dfe5ef;--blue:#4567f5}*{box-sizing:border-box}body{margin:0}.wrap{max-width:1200px;width:calc(100% - 32px);margin:32px auto}h1{letter-spacing:-.04em;margin-bottom:4px}.muted{color:#657187;font-size:13px}.panel{background:#fff;border:1px solid var(--line);border-radius:16px;padding:20px;margin:20px 0}.controls{display:grid;grid-template-columns:minmax(220px,1fr) minmax(220px,1fr) auto;gap:12px;align-items:end}.field{display:grid;gap:6px}.field label{font-size:12px;font-weight:750}.field input,.field select{width:100%;min-width:0;border:1px solid #ccd5e5;border-radius:9px;padding:11px;background:#fff;color:inherit}.btn{border:0;border-radius:9px;padding:12px 16px;background:var(--blue);color:#fff;font-weight:800;cursor:pointer}.btn:disabled{opacity:.6;cursor:wait}.message{min-height:22px;font-size:13px;color:#304fe0;margin-top:12px}.table-wrap{overflow:auto}table{border-collapse:collapse;width:100%;min-width:850px;font-size:12px}th,td{text-align:left;padding:12px;border-bottom:1px solid var(--line);vertical-align:top}th{background:#f8f9fc}td p{white-space:pre-wrap;max-width:260px;margin:4px 0}td select{max-width:160px;padding:7px;border:1px solid #ccd5e5;border-radius:7px;background:white}.danger{color:#9b3a22}.topline{display:flex;justify-content:space-between;align-items:center;gap:20px;flex-wrap:wrap}.back{color:var(--blue);font-weight:750}.cms-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}.cms-grid .wide{grid-column:1/-1}.cms-grid textarea{min-height:110px;resize:vertical}.cms-table{min-width:760px}.cms-actions{display:flex;gap:6px;flex-wrap:wrap}.revision-history{flex-basis:100%;margin-top:6px}.revision-history summary{cursor:pointer;color:#40557b;font-size:12px;font-weight:700}.revision-list{display:grid;gap:8px;padding:10px 0}.revision-item{display:flex;align-items:center;justify-content:space-between;gap:10px;border-top:1px solid var(--line);padding-top:8px;font-size:12px}.revision-item span{color:#657187}.btn.secondary{background:#e9eefb;color:#2445b8}.btn.danger{background:#a43b3b;color:#fff}.cms-form{display:grid;gap:12px;margin:18px 0;padding:16px;background:#f8faff;border:1px solid var(--line);border-radius:12px}.cms-form[hidden],#cmsPanel[hidden]{display:none}.cms-status{font-size:12px;color:#657187}.cms-top{display:flex;gap:10px;align-items:center;flex-wrap:wrap}.cms-top select{padding:10px;border:1px solid #ccd5e5;border-radius:8px;background:white}.quote-form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.quote-form-grid .wide{grid-column:1/-1}.quote-items{display:grid;gap:8px}.quote-item-row{display:grid;grid-template-columns:minmax(180px,1fr) 110px 160px auto;gap:8px;align-items:center}.quote-item-row input{min-width:0;border:1px solid #ccd5e5;border-radius:9px;padding:10px;background:#fff;color:inherit}.quote-table{min-width:900px}.quote-detail{margin-top:8px;padding:12px;background:#f8faff;border:1px solid var(--line);border-radius:10px}.quote-detail ul{margin:8px 0;padding-left:20px}.quote-detail p{margin:4px 0}.quote-status{font-size:12px;font-weight:750}.quote-actions{display:flex;gap:6px;flex-wrap:wrap}.quote-help{font-size:12px;color:#657187}.template-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.template-grid .wide{grid-column:1/-1}.template-grid textarea{resize:vertical}.template-check{display:flex;align-items:flex-start;gap:9px;font-size:13px}.template-check input{margin-top:4px}@media(max-width:760px){.template-grid{grid-template-columns:1fr}.template-grid .wide{grid-column:auto}}.dashboard-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}.dashboard-kpi{border:1px solid var(--line);border-radius:12px;padding:14px;background:#fff}.dashboard-kpi strong{display:block;font-size:26px;line-height:1.2;color:#1d3eaa}.dashboard-kpi span{display:block;font-size:12px;color:#657187;margin-top:6px}.dashboard-columns{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin-top:14px}.dashboard-list{display:grid;gap:8px}.dashboard-row{border-bottom:1px solid var(--line);padding:8px 0;font-size:12px}.dashboard-row strong{display:block}.dashboard-row span{color:#657187}@media(max-width:900px){.dashboard-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}@media(max-width:760px){.dashboard-columns{grid-template-columns:1fr}}.delivery-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.delivery-card{border:1px solid var(--line);border-radius:12px;padding:14px;background:#fff}.delivery-card h3{margin:0 0 10px}.delivery-card input,.delivery-card select,.delivery-card textarea{width:100%;padding:9px;border:1px solid #ccd5e5;border-radius:8px;margin:4px 0 8px}.delivery-list{display:grid;gap:10px}.delivery-item{border:1px solid var(--line);border-radius:10px;padding:12px}.delivery-item p{margin:5px 0;white-space:pre-wrap}.delivery-item .cms-actions{margin-top:8px}@media(max-width:760px){.delivery-grid{grid-template-columns:1fr}}.crm-customer-row{display:flex;gap:6px;flex-wrap:wrap}.activity-entry{padding:12px;border:1px solid var(--line);border-radius:10px;background:#fff}.activity-entry strong{display:block}.activity-entry p{white-space:pre-wrap;margin:6px 0}.activity-meta{font-size:12px;color:#657187}.activity-empty{padding:16px;color:#657187;border:1px dashed var(--line);border-radius:10px}.quote-message{min-height:22px;font-size:13px;color:#304fe0;margin-top:12px}@media(max-width:760px){.quote-form-grid{grid-template-columns:1fr}.quote-form-grid .wide{grid-column:auto}.quote-item-row{grid-template-columns:1fr 1fr}.quote-item-row input:first-child{grid-column:1/-1}}@media(max-width:760px){.controls{grid-template-columns:1fr}.panel{padding:14px}.wrap{width:calc(100% - 20px);margin:20px auto}}
+
+    body{background:#f2f5fa;color:#17243b}
+    .admin-shell{max-width:1560px;width:calc(100% - 40px);margin:24px auto;display:grid;grid-template-columns:minmax(0,1fr);gap:22px;align-items:start}
+    .admin-shell.is-authenticated{grid-template-columns:250px minmax(0,1fr)}
+    .admin-content{min-width:0}
+    .admin-sidebar[hidden]{display:none!important}
+    .admin-sidebar{position:sticky;top:18px;align-self:start;min-height:calc(100vh - 36px);padding:20px 14px;background:#0b1f3a;color:#fff;border-radius:20px;box-shadow:0 18px 48px rgba(11,31,58,.16);display:flex;flex-direction:column}
+    .admin-brand{display:flex;align-items:center;gap:11px;padding:4px 8px 20px;border-bottom:1px solid #29415f}
+    .admin-brand-mark{width:42px;height:42px;display:grid;place-items:center;border-radius:13px;background:linear-gradient(140deg,#155eef,#38bdf8);font-weight:900;letter-spacing:-.05em}
+    .admin-brand strong{display:block;font-size:15px;letter-spacing:-.02em}
+    .admin-brand small{display:block;margin-top:3px;color:#9eb2cc;font-size:9px;letter-spacing:.12em}.admin-brand .admin-account-label{text-transform:none;letter-spacing:0;font-size:10px;color:#a9bfd8;margin-top:5px}
+    .sidebar-caption{margin:23px 10px 9px;color:#8096b3;font-size:9px;font-weight:850;letter-spacing:.14em}
+    .admin-sidebar nav{display:grid;gap:5px}
+    .admin-sidebar nav a{display:flex;align-items:center;gap:11px;padding:11px 12px;border-radius:10px;color:#c6d4e6;text-decoration:none;font-size:12px;font-weight:700;transition:background .16s,color .16s}
+    .admin-sidebar nav a>span{width:20px;text-align:center;color:#83b8ff;font-size:16px}
+    .admin-sidebar nav a:hover{background:#18395f;color:#fff}
+    .admin-sidebar nav a[aria-current=page]{background:#1b4777;color:#fff;box-shadow:inset 3px 0 #55a6ff}
+    .sidebar-footer{margin-top:auto;padding:20px 8px 0;border-top:1px solid #29415f;display:grid;gap:12px}
+    .sidebar-secure{font-size:10px;color:#a9bfd8}
+    .sidebar-secure:first-letter{color:#35d39a}
+    .sidebar-footer .btn{width:100%;justify-content:center}
+    .admin-content>.topline{padding:8px 4px 12px}
+    .admin-content h1{font-size:clamp(25px,3vw,34px);color:#0b1f3a;letter-spacing:-.05em}
+    .admin-content h2{color:#102a4a;letter-spacing:-.025em}
+    .panel{border-radius:17px;border-color:#e2e9f2;box-shadow:0 8px 28px rgba(20,42,74,.045);padding:22px;margin:16px 0}
+    .auth-panel{border-color:#cbdcf2;background:linear-gradient(145deg,#fff,#f7faff)}
+    .btn{border-radius:10px;background:#155eef;transition:transform .16s,box-shadow .16s}
+    .btn:hover:not(:disabled){transform:translateY(-1px);box-shadow:0 8px 18px rgba(21,94,239,.16)}
+    .btn.secondary{background:#eaf1ff;color:#1d4f9b}
+    .btn.danger{background:#a43b3b;color:#fff}
+    .field input:focus-visible,.field select:focus-visible,.cms-form textarea:focus-visible,.delivery-card input:focus-visible,.delivery-card select:focus-visible,.delivery-card textarea:focus-visible,.btn:focus-visible,.admin-sidebar a:focus-visible{outline:3px solid #58a5ff;outline-offset:3px}
+    th{position:sticky;top:0;z-index:1;background:#f0f5fc;color:#334965;font-size:11px}
+    .dashboard-kpi{border-radius:14px;background:linear-gradient(150deg,#fff,#f8fbff);box-shadow:0 4px 14px rgba(20,42,74,.035)}
+    .dashboard-kpi strong{color:#155eef}
+    .delivery-card,.activity-entry{border-radius:14px;border-color:#e2e9f2}
+    .cms-form{border-radius:14px;background:#f7faff}
+    .message,.quote-message{font-size:13px}
+    @media(max-width:980px){.admin-shell.is-authenticated{grid-template-columns:minmax(0,1fr)}.admin-sidebar{position:static;min-height:0}.admin-sidebar nav{display:flex;overflow-x:auto;padding-bottom:5px}.admin-sidebar nav a{white-space:nowrap;flex:0 0 auto}.sidebar-footer{display:flex;align-items:center;justify-content:space-between}.sidebar-footer .btn{width:auto}}
+    @media(max-width:760px){.admin-shell{width:calc(100% - 20px);margin:12px auto;gap:10px}.admin-sidebar{padding:14px 10px;border-radius:14px}.admin-brand{padding-bottom:13px}.sidebar-caption{margin-top:15px}.admin-sidebar nav a{padding:9px 10px}.panel{padding:14px;border-radius:14px}.admin-content>.topline{align-items:flex-start}.dashboard-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
   </style>
 </head>
 <body>
-<main class="wrap">
-  <div class="topline"><div><p><a class="back" href="./">← Hội Quán Web</a></p><h1>Quản lý yêu cầu tư vấn</h1><p class="muted">Công cụ nội bộ tối giản. API cần Better Auth và quyền quản trị được cấp từ phía máy chủ.</p></div><span class="muted">Phiên đăng nhập dùng cookie; không lưu mật khẩu.</span></div>
-  <section class="panel">
+<div class="wrap admin-shell">
+  <aside class="admin-sidebar" id="adminNav" hidden>
+    <div class="admin-brand"><span class="admin-brand-mark">HQ</span><span><strong>HoiQuanWeb</strong><small>ADMIN CONTROL CENTER</small><small id="adminAccountLabel" class="admin-account-label">Chưa đăng nhập</small></span></div>
+    <p class="sidebar-caption">KHÔNG GIAN QUẢN TRỊ</p>
+    <nav aria-label="Điều hướng quản trị">
+      <a href="#dashboardPanel" data-panel="dashboardPanel" aria-current="page"><span>◫</span>Tổng quan</a>
+      <a href="#leadsPanel" data-panel="leadsPanel"><span>↗</span>Yêu cầu tư vấn</a>
+      <a href="#quotePanel" data-panel="quotePanel"><span>▤</span>Báo giá</a>
+      <a href="#crmPanel" data-panel="crmPanel"><span>◉</span>Khách hàng CRM</a>
+      <a href="#cmsPanel" data-panel="cmsPanel"><span>▧</span>Nội dung CMS</a>
+      <a href="#mediaPanel" data-panel="mediaPanel"><span>▣</span>Thư viện Media</a>
+      <a href="#templatePanel" data-panel="templatePanel"><span>▦</span>Kho Template</a>
+      <a href="#deliveryPanel" data-panel="deliveryPanel"><span>⌁</span>Đơn hàng & hỗ trợ</a>
+    </nav>
+    <div class="sidebar-footer"><span class="sidebar-secure">● Phiên quản trị bảo mật</span><button class="btn secondary" id="logoutButton" type="button">Đăng xuất</button></div>
+  </aside>
+  <main class="admin-content">
+  <div class="topline"><div><p><a class="back" href="./">← Hội Quán Web</a></p><h1>Trung tâm quản trị HoiQuanWeb</h1><p class="muted">Quản lý CRM, nội dung, báo giá, template và hoạt động hỗ trợ khách hàng trong một không gian tập trung.</p></div><span class="muted">Phiên đăng nhập dùng cookie; không lưu mật khẩu.</span></div>
+  <section class="panel auth-panel" id="authPanel">
     <form id="connectForm" class="controls">
       <div class="field"><label for="apiBase">API base URL</label><input id="apiBase" type="url" placeholder="https://your-worker.workers.dev" autocomplete="url" required></div>
       <div class="field"><label for="adminEmail">Email quản trị</label><input id="adminEmail" type="email" autocomplete="username" required></div><div class="field"><label for="adminPassword">Mật khẩu</label><input id="adminPassword" type="password" autocomplete="current-password" required></div>
-      <button class="btn" type="submit" id="loadButton">Kết nối / tải lead</button>
+      <button class="btn" type="submit" id="loadButton">Đăng nhập quản trị</button>
     </form>
     <p id="statusMessage" class="message" role="status" aria-live="polite">Nhập URL Worker và đăng nhập bằng tài khoản đã được cấp vai trò admin/staff.</p>
   </section>
@@ -32,7 +87,7 @@
     <div class="delivery-card" style="margin-top:14px"><h3>Hoạt động gần đây</h3><div class="dashboard-list" id="dashboardActivity"><p class="muted">Chưa tải.</p></div></div>
     <p class="cms-status" id="dashboardGeneratedAt"></p>
   </section>
-  <section class="panel">
+  <section class="panel" id="leadsPanel" hidden>
     <div class="topline"><div><h2>Lead gần đây</h2><p class="muted">Tối đa 100 yêu cầu mới nhất. Nội dung do khách hàng nhập được hiển thị dưới dạng văn bản thuần.</p></div><button class="btn" type="button" id="refreshButton">Làm mới</button></div>
     <div class="table-wrap"><table><thead><tr><th>Thời gian</th><th>Khách hàng</th><th>Yêu cầu</th><th>Ngân sách</th><th>Trạng thái</th><th>Người phụ trách</th><th>CRM</th></tr></thead><tbody id="leadRows"><tr><td colspan="7">Chưa tải dữ liệu.</td></tr></tbody></table></div>
   </section>
@@ -166,6 +221,7 @@
     <p class="message" id="deliveryMessage" role="status" aria-live="polite"></p>
   </section>
 </main>
+</div>
 <script>
 (() => {
   const $ = (selector, root=document) => root.querySelector(selector);
@@ -176,6 +232,19 @@
   let currentRoles = [];
   let staffMembers = [];
   const message = (text, error=false) => { $("#statusMessage").textContent=text; $("#statusMessage").classList.toggle("danger",error); };
+  const adminPanelIds=["dashboardPanel","leadsPanel","quotePanel","crmPanel","cmsPanel","mediaPanel","templatePanel","deliveryPanel"];
+  function setAuthenticatedUI(authenticated){
+    $("#authPanel").hidden=authenticated;
+    $("#adminNav").hidden=!authenticated;
+    $(".admin-shell").classList.toggle("is-authenticated",authenticated);
+    for(const id of adminPanelIds){const panel=$("#"+id);if(panel)panel.hidden=!authenticated;}
+  }
+  async function logoutAdmin(){
+    try{if(apiBase)await fetch(apiBase+"/api/v1/auth/sign-out",{method:"POST",credentials:"include"});}catch{}
+    signedIn=false;currentRoles=[];staffMembers=[];$("#adminAccountLabel").textContent="Chưa đăng nhập";setAuthenticatedUI(false);
+    $("#adminEmail").value="";$("#adminPassword").value="";
+    message("Đã đăng xuất.");
+  }
   async function request(path, options={}) {
     const response = await fetch(apiBase + path, { ...options, credentials: "include", headers: { ...(options.headers || {}), ...(options.body ? {"content-type":"application/json"} : {}) } });
     const body = await response.json().catch(() => ({}));
@@ -561,7 +630,9 @@
     finally{$("#mediaUploadButton").disabled=false;}
   });
   $("#mediaRefresh").addEventListener("click",loadMedia);
-  $("#connectForm").addEventListener("submit",async event=>{event.preventDefault();apiBase=$("#apiBase").value.trim().replace(/\/$/,"");const email=$("#adminEmail").value.trim();const password=$("#adminPassword").value;$("#loadButton").disabled=true;message("Đang xác thực…");try{const response=await fetch(apiBase+"/api/v1/auth/sign-in/email",{method:"POST",credentials:"include",headers:{"content-type":"application/json"},body:JSON.stringify({email,password})});const body=await response.json().catch(()=>({}));if(!response.ok)throw new Error(body.message||body.error||("HTTP "+response.status));signedIn=true;$("#adminPassword").value="";message("Đăng nhập thành công. Đang kiểm tra quyền quản trị…");const me=await request("/api/v1/me");if(!Array.isArray(me.data?.roles)||!me.data.roles.some(role=>["admin","staff"].includes(role))){signedIn=false;throw new Error("Tài khoản chưa được cấp quyền admin/staff.");}currentRoles=me.data.roles;$("#dashboardPanel").hidden=false;$("#crmPanel").hidden=false;$("#cmsPanel").hidden=false;$("#mediaPanel").hidden=false;$("#quotePanel").hidden=false;$("#templatePanel").hidden=false;$("#deliveryPanel").hidden=false;updateCmsFields();resetQuoteForm();resetTemplateForm();await loadDashboard();await loadStaff();await load();await loadCustomers();await loadCms();await loadMedia();await loadQuoteCustomers();await loadQuotes();await loadTemplates();await loadDelivery();await loadAdminNotifications();}catch(error){signedIn=false;message("Không thể đăng nhập/quản trị: "+error.message,true);}finally{$("#loadButton").disabled=false;}});
+  $("#adminNav").addEventListener("click",event=>{const link=event.target.closest("a[data-panel]");if(!link)return;$("#adminNav").querySelectorAll("a[data-panel]").forEach(item=>item.removeAttribute("aria-current"));link.setAttribute("aria-current","page");});
+  $("#logoutButton").addEventListener("click",logoutAdmin);
+  $("#connectForm").addEventListener("submit",async event=>{event.preventDefault();apiBase=$("#apiBase").value.trim().replace(/\/$/,"");const email=$("#adminEmail").value.trim();const password=$("#adminPassword").value;$("#loadButton").disabled=true;message("Đang xác thực…");try{const response=await fetch(apiBase+"/api/v1/auth/sign-in/email",{method:"POST",credentials:"include",headers:{"content-type":"application/json"},body:JSON.stringify({email,password})});const body=await response.json().catch(()=>({}));if(!response.ok)throw new Error(body.message||body.error||("HTTP "+response.status));signedIn=true;$("#adminPassword").value="";message("Đăng nhập thành công. Đang kiểm tra quyền quản trị…");const me=await request("/api/v1/me");if(!Array.isArray(me.data?.roles)||!me.data.roles.some(role=>["admin","staff"].includes(role))){signedIn=false;throw new Error("Tài khoản chưa được cấp quyền admin/staff.");}currentRoles=me.data.roles;$("#adminAccountLabel").textContent=$("#adminEmail").value.trim();setAuthenticatedUI(true);updateCmsFields();resetQuoteForm();resetTemplateForm();await loadDashboard();await loadStaff();await load();await loadCustomers();await loadCms();await loadMedia();await loadQuoteCustomers();await loadQuotes();await loadTemplates();await loadDelivery();await loadAdminNotifications();}catch(error){signedIn=false;try{if(apiBase)await fetch(apiBase+"/api/v1/auth/sign-out",{method:"POST",credentials:"include"});}catch{}setAuthenticatedUI(false);message("Không thể đăng nhập/quản trị: "+error.message,true);}finally{$("#loadButton").disabled=false;}});
   $("#refreshButton").addEventListener("click",load);
   const configured=document.querySelector('meta[name="hq-api-base"]')?.content?.trim(); if(configured){$("#apiBase").value=configured;apiBase=configured.replace(/\/$/,"");}
 })();

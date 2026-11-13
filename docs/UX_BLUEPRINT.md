@@ -214,3 +214,13 @@ Until those inputs are available, this remains a B2C-first baseline UX specifica
 - Contact is explicit about the current state: local brief download by default, no false “request received” confirmation, and no server transmission until the privacy-policy approval and HTTPS API gates pass.
 - The standalone privacy notice is marked noindex, unlinked and clearly identified as temporary rather than an approved policy.
 - Mobile navigation supports Escape/outside-click dismissal, localized accessible labels, focus return and visible keyboard focus.
+
+## R-018 Admin workspace UX implementation update — 2026-11-13
+
+1. Unauthenticated staff see only the API/email/password sign-in panel.
+2. After successful sign-in, the client calls `/api/v1/me` and requires an `admin` or `staff` role before revealing any operational panel.
+3. Authenticated users navigate between existing modules using the sidebar; the sidebar collapses to a horizontally scrollable navigation row on smaller screens.
+4. Sign-out calls Better Auth, clears local role state and hides all operational panels before returning to sign-in.
+5. Existing module workflows and endpoint contracts remain unchanged; backend authorization continues to be authoritative.
+
+The admin interface remains noindex. No default admin identity, credential or role is seeded by this UI work.

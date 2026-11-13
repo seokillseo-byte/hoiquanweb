@@ -203,3 +203,11 @@ Không công bố hệ thống là production-ready cho đến khi có domain v�
 - A standalone noindex privacy notice is copied into the static artifact; it is not linked or treated as the approved legal policy.
 - Mobile navigation has localized accessible labels, Escape/outside-click dismissal and focus return; keyboard focus styles are visible.
 - Project listing/detail pages are not generated until verified case-study facts and publication rights are approved.
+
+## R-018 Admin dashboard UX implementation update — 2026-11-13
+
+- Existing admin modules are retained and reorganized into a responsive Control Center layout with sticky desktop sidebar and compact mobile navigation.
+- Added authenticated navigation state: operational panels remain hidden until Better Auth sign-in succeeds and `/api/v1/me` confirms admin/staff.
+- Added explicit sign-out through Better Auth; sign-out and failed role verification return to the login state and hide protected panels.
+- Added UI validation for required admin navigation, auth panel, sign-out control and existing module IDs.
+- No account creation, role seeding, database migration, backend endpoint change or deployment is included.

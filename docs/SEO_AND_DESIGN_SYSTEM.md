@@ -30,6 +30,14 @@
 9. Add automated checks that fail when an indexable route is missing from the sitemap or a sitemap URL is not part of the route inventory.
 10. Update README, Architecture, Roadmap and this document using the verified result.
 
+### 1.3 Dynamic blog and CMS route limitation
+
+- The generated static site includes generic blog detail shells at /blog/post/ and /en/blog/post/.
+- The current browser code reads the article slug from a query parameter and updates canonical/title/description after JavaScript runs.
+- Individual published blog posts are not emitted as individual URLs in the 40-page static sitemap. Arbitrary new CMS pages are also not generated as routes.
+- Do not treat dynamic blog/CMS content as fully SEO-ready. Before indexation, use clean slug routes with SSR, prerendering or static generation; include only published URLs in sitemap; ensure metadata and Article structured data are present in the initial HTML.
+- Until then, keep unsupported dynamic routes out of the indexable sitemap and do not claim full dynamic SEO coverage.
+
 ## 2. Target information architecture
 
 The approved business scope is a multi-page bilingual services website. The high-level content groups are:

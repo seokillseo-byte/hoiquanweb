@@ -94,11 +94,12 @@ Required behavior:
 1. Validate required fields and email format before submission.
 2. Display an explicit submitting state and disable repeat submission.
 3. Submit to the configured API only when an API base is configured.
-4. Show success only when the API returns an accepted success response.
+4. Show customer-facing confirmation only when the API confirms that the inquiry has been durably saved/accepted. The confirmation must not claim that the notification email was delivered or that the owner has already been notified.
 5. On API/network failure, show an error and preserve form values.
 6. If no API is configured, any local download/fallback must explicitly state that no server submission occurred; it must never be described as a received lead.
 7. Consent wording, privacy destination and retention explanation require owner/legal approval before live collection.
 8. The owner has approved website form + business email notification as the inquiry channel (DEC-015). The destination email is `info@hoiquanweb.io.vn` (owner-supplied), and the Project Owner personally handles incoming inquiries. Privacy/consent wording, API/email configuration and delivery tests remain outstanding; do not enable live submission until these prerequisites are met.
+9. Treat lead persistence/API acceptance and asynchronous notification delivery as separate states. A successful API response may confirm that the lead was saved, but UI copy must not imply email delivery. Verify eventual delivery to the approved inbox independently in end-to-end QA; cover queued, not-configured, retrying and terminal-failure states without exposing internal provider details to the customer.
 
 ### 3.5 SEO and indexation
 - Use `docs/URL_MAP.md` as the route inventory.
@@ -139,7 +140,7 @@ Required behavior:
 - TBD-010 target English market affects localization and keyword validation.
 
 ### External/runtime dependencies
-- A configured and tested public inquiry API is required to accept a lead as received; the approved email notification must also be delivered and verified for F-009 end-to-end acceptance.
+- A configured and tested public inquiry API is required to confirm that a lead was saved. The approved email notification must also be delivered and verified for F-009 end-to-end acceptance, but delivery is an asynchronous state distinct from customer-facing lead acceptance.
 - Cloudflare Worker/D1, R2 and email provider setup must be verified separately; CI/source presence is not runtime acceptance.
 - A live Preview URL is required for direct-navigation, form, responsive, accessibility and performance acceptance.
 

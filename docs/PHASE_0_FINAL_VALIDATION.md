@@ -25,7 +25,7 @@
 
 ## 2. Validation outcome
 
-<badge>BLOCKED — Phase 0 remains open</badge>
+**Validation status: BLOCKED — Phase 0 remains open**
 
 | Validation area | Result | Evidence / reason |
 |---|---|---|

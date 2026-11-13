@@ -103,6 +103,8 @@ A generic “continue” instruction must not be interpreted as permission to by
 
 ## 5. Readiness evidence register
 
+The detailed P0 technical, architecture, security, performance and QA gaps, including a minimum test matrix, are tracked in [BP-GAP-01](PHASE_0_TECHNICAL_SECURITY_QA_GAP_REGISTER.md). This register is supporting evidence and does not close any blocker by itself.
+
 | ID | Readiness condition | Current evidence/status | Required disposition before Gate 2 |
 |---|---|---|---|
 | GOV-01 | Project scope and release boundary | Master Blueprint defines bilingual public Core Preview P0 and deferred platform modules | Owner review of the complete P0 Blueprint and any remaining scope conflicts |
@@ -243,6 +245,7 @@ The next authorized activity is to close or formally disposition these readiness
 - [Project Input Traceability](PROJECT_INPUT_TRACEABILITY.md)
 - [Blueprint Cross-check — 19 modules](BLUEPRINT_CROSS_CHECK.md)
 - [Phase 0 Final Validation — BP-FV-01](PHASE_0_FINAL_VALIDATION.md)
+- [Technical, Security & QA Gap Register — BP-GAP-01](PHASE_0_TECHNICAL_SECURITY_QA_GAP_REGISTER.md)
 - [Owner Decision Review](OWNER_DECISION_REVIEW.md)
 - [Implementation Roadmap](IMPLEMENTATION_ROADMAP.md)
 - [Risk Assessment](RISK_ASSESSMENT.md)

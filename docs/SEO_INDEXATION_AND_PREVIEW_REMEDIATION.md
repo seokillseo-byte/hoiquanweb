@@ -1,6 +1,6 @@
 # HOIQUANWEB — SEO Indexation & PR Preview Remediation Plan
 
-**Status:** Implementation-ready planning specification; no code changes authorized or performed  
+**Status:** Development authorized by Project Owner for XC-03 and XC-10; implementation and acceptance evidence pending  
 **Phase:** Phase 0 — Core Preview P0  
 **Related cross-checks:** XC-03, XC-10  
 **Related risks:** R-016, R-017  
@@ -10,7 +10,7 @@
 
 ## 1. Purpose and confirmed findings
 
-This plan defines the minimum remediation and acceptance evidence for two observed issues. It does not authorize implementation, merge, deployment or production changes.
+This plan defines the minimum remediation and acceptance evidence for two observed issues. The Project Owner has authorized Development for XC-03 and XC-10 on the current PR branch. This authorization does not include merge, deployment or production changes.
 
 ### XC-03 / R-016 — Generic blog-detail shell is incorrectly indexable
 
@@ -113,7 +113,7 @@ The final artifact must prove:
 | 5 | Add post-assembly Preview assertions | PR preview workflow/validator | Task 4 |
 | 6 | Build and inspect new artifact; verify all route and indexation invariants | CI/QA evidence | Tasks 1–5 |
 
-No task above has been implemented or authorized for production by this document.
+The Project Owner has authorized the six tasks above for Development on the current PR branch. No implementation is evidenced by this planning document. Production changes, merge and deployment remain outside this authorization.
 
 ## 5. Acceptance test matrix
 

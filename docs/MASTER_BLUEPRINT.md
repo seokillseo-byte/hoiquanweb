@@ -12,7 +12,7 @@
 
 ## 1. Mục đích và nguyên tắc kiểm soát
 
-**Final Validation (2026-11-13):** [PHASE_0_FINAL_VALIDATION.md](PHASE_0_FINAL_VALIDATION.md) — BLOCKED / NOT ACCEPTED. Phase 0 remains open; PR #43 CI was 2/2 success on the last CI-verified HEAD `eb0182a`; later documentation-only commits have no reported workflow runs yet. This is not Owner acceptance, runtime acceptance or release approval. **Technical/Security/QA gap audit:** [PHASE_0_TECHNICAL_SECURITY_QA_GAP_REGISTER.md](PHASE_0_TECHNICAL_SECURITY_QA_GAP_REGISTER.md) records the current P0 gaps and the minimum QA evidence matrix.
+**Final Validation (2026-11-13):** [PHASE_0_FINAL_VALIDATION.md](PHASE_0_FINAL_VALIDATION.md) — BLOCKED / NOT ACCEPTED. Phase 0 remains open; PR #43 CI is 2/2 success on latest checked HEAD `b8a14e84967601bbf8d37d2c8213569aadd06411`: [Validate website and API — run 43408801855](https://github.com/seokillseo-byte/hoiquanweb/actions/runs/43408801855) and [Build isolated PR Preview — run 43408801866](https://github.com/seokillseo-byte/hoiquanweb/actions/runs/43408801866). Independent artifact QA is recorded in [QA_REVIEW_XC03_XC10.md](QA_REVIEW_XC03_XC10.md): static SEO/route checks pass, while R-016/R-017/F-009 and content-owner approvals remain open. This is not Owner acceptance, runtime acceptance or release approval. **Technical/Security/QA gap audit:** [PHASE_0_TECHNICAL_SECURITY_QA_GAP_REGISTER.md](PHASE_0_TECHNICAL_SECURITY_QA_GAP_REGISTER.md).
 
 Tài liệu này là điểm điều hướng trung tâm cho Blueprint HOIQUANWEB. Nó tổng hợp các quyết định đã được người dùng xác nhận, các thông tin còn thiếu và các tài liệu chuyên môn cần hoàn thiện.
 

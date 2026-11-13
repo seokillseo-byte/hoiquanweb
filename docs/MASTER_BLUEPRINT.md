@@ -42,6 +42,7 @@ Thứ tự ưu tiên nguồn thông tin:
 | DEC-012 | Factual business description | Owner-approved wording recorded in OWNER_DECISION_REVIEW.md; formal industry classification and operating/revenue model remain TBD | Approved (description only) |
 | DEC-013 | Public USP and comparative claims for Core Preview | No public USP/comparative claim; use factual service descriptions only until a claim and evidence are separately approved | Approved (Preview content restriction) |
 | DEC-014 | Interim visual system for Core Preview | Use interim blue/white visual system and retain five existing source-observed colors as provisional tokens; this is not the official brand identity | Approved (Preview only) |
+| DEC-015 | Inquiry channel for Core Preview | Website consultation/quotation form with business email notification; destination, privacy/consent, backend/email setup and runtime acceptance remain prerequisites for live lead collection | Approved (channel only) |
 
 ### 2.1 Bảy nhóm dịch vụ đã chốt
 
@@ -73,6 +74,9 @@ Các mục dưới đây chưa được người dùng xác nhận. Chúng là g
 | TBD-008 | Production hosting, deployment và ownership | Technical/Architecture Blueprint | Open |
 | TBD-009 | Chính sách vận hành, bảo hành, hỗ trợ và SLA | Service content, legal, conversion | Open |
 | TBD-010 | Thị trường/quốc gia tiếng Anh ưu tiên | Localization, keyword research, legal | Open |
+| TBD-011 | Approved inquiry destination email and responsible recipient | F-009, notification routing and operations | Open — channel approved under DEC-015; recipient details not supplied |
+| TBD-012 | Privacy notice, consent wording and data-retention/handling details for inquiry form | F-009, Security & Compliance, legal acceptance | Open — owner approval required before live lead collection |
+| TBD-013 | Configured inquiry API, email sender/provider and end-to-end delivery evidence | F-009, Architecture, QA and deployment | Open — runtime configuration and testing required |
 
 Không được dùng nội dung mẫu như dữ liệu thật. Khi cần thiết kế layout trước khi có dữ liệu, dùng placeholder nội bộ có nhãn CONTENT REQUIRED; không xuất bản placeholder.
 
@@ -214,7 +218,7 @@ Phase 0 chỉ được đóng khi:
 - [ ] Technical decisions cần cho Preview được phân biệt với quyết định production.
 - [ ] Risk Assessment có mitigation và residual risk.
 - [ ] User review và phê duyệt Blueprint trước khi chuyển sang UI/Development.
-- [ ] Inquiry endpoint, privacy/consent wording và end-to-end form acceptance được xác nhận.
+- [ ] Inquiry endpoint, approved recipient/email, privacy/consent wording and end-to-end form + email delivery acceptance are confirmed.
 - [ ] Core Preview / first usable platform release được phân biệt rõ trong mọi tài liệu.
 - [ ] Performance acceptance thresholds và x-default language fallback được Project Owner quyết định hoặc ghi nhận rõ là TBD.
 

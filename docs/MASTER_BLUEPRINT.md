@@ -49,6 +49,7 @@ Thứ tự ưu tiên nguồn thông tin:
 | DEC-019 | Events resetting inquiry-data retention period | Reset the 24-month period when the Project Owner sends a quotation to the customer or when the customer replies; no other reset events are implied | Approved (event types) |
 | DEC-020 | Backup handling for expired inquiry data | Retain backups until their normal lifecycle expires; when restoring, reapply retention rules and delete expired inquiry records before normal operation resumes; exact backup lifecycle duration remains TBD | Approved (handling policy only) |
 | DEC-021 | Default language for hreflang x-default | Vietnamese (vi) is the default fallback destination; each genuine VI/EN pair points x-default to its Vietnamese URL | Approved (2026-11-13) |
+| DEC-022 | Core Web Vitals acceptance thresholds | LCP ≤ 2.5s, INP ≤ 200ms, CLS ≤ 0.1; evaluate field p75 separately for mobile and desktop where data is available; lab results remain separate | Approved (2026-11-13); other performance targets remain TBD |
 
 ### 2.1 Bảy nhóm dịch vụ đã chốt
 

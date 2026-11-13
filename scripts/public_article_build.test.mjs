@@ -106,8 +106,8 @@ test("static generator prerenders approved bilingual CMS articles and validates 
     assert.match(enHtml, /hreflang="en"/);
     assert.match(enHtml, /hreflang="x-default"/);
     assert.match(listingHtml, /data-base-path="\/hoiquanweb"/);
-    assert.match(listingHtml, /data-clean-article-slugs="&quot;seo-co-ban&quot;"/);
-    assert.match(enListingHtml, /data-clean-article-slugs="&quot;seo-basics&quot;"/);
+    assert.match(listingHtml, /data-clean-article-slugs="\\[&quot;seo-co-ban&quot;\\]"/);
+    assert.match(enListingHtml, /data-clean-article-slugs="\\[&quot;seo-basics&quot;\\]"/);
     assert.match(siteScript, /cleanArticleSlugs\.has\(item\.slug\)/);
     assert.match(siteScript, /root\.dataset\.detailPath\+"\?slug="/);
     assert.match(sitemap, /https:\/\/hoiquanweb\.io\.vn\/blog\/seo-co-ban\//);

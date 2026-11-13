@@ -8,6 +8,9 @@
 
 ## 1. Purpose and review method
 
+Governance/readiness disposition is consolidated in [HDO-019 — Project Governance & Development Readiness](HDO-019_PROJECT_GOVERNANCE_AND_DEVELOPMENT_READINESS.md). HDO-019 is a draft for Project Owner review; it does not approve Gate 2 or grant Development Authorization.
+
+
 This document checks the 19 mandatory Blueprint modules against the five **Project Owner-supplied external planning standards** listed below. These source files were provided in the HOIQUANWEB project context on 2026-11-13; they are planning inputs and are not repository-tracked files in this branch.
 
 | External source supplied by Project Owner | Source revision stated in file | Use in this cross-check |

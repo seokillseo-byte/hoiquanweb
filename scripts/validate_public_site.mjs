@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { access, readFile, readdir } from "node:fs/promises";
 import { join, relative, resolve, sep } from "node:path";
+import { createServer } from "node:http";
 
 const root = resolve(process.env.HQ_PUBLIC_SITE_ROOT || join(process.cwd(), "public-site", "dist"));
 const basePath = (process.env.HQ_BASE_PATH || "").replace(/\/+$/, "");
@@ -191,6 +192,53 @@ if (previewMode) {
   for (const href of platformAssets) {
     const assetPath = new URL(href, "https://hoiquanweb.io.vn").pathname.replace(/^\/+/, "");
     assert.ok(await exists(join(root, assetPath)), "PREV-04: platform asset must exist in final Preview artifact: " + href);
+  }
+
+  // Exercise the assembled artifact over HTTP, including repeat requests to
+  // representative deep routes to simulate direct navigation and refresh.
+  const previewServer = createServer(async (request, response) => {
+    try {
+      const pathname = decodeURIComponent(new URL(request.url || "/", "http://127.0.0.1").pathname);
+      let filePath = join(root, pathname.replace(/^\/+/, ""));
+      if (pathname.endsWith("/")) filePath = join(filePath, "index.html");
+      if (!(await exists(filePath))) {
+        response.statusCode = 404;
+        response.end("Not Found");
+        return;
+      }
+      response.statusCode = 200;
+      response.end(await readFile(filePath));
+    } catch {
+      response.statusCode = 500;
+      response.end("Preview smoke server error");
+    }
+  });
+  await new Promise((resolveListen, rejectListen) => {
+    previewServer.once("error", rejectListen);
+    previewServer.listen(0, "127.0.0.1", resolveListen);
+  });
+  const address = previewServer.address();
+  assert.ok(address && typeof address === "object", "Preview smoke server must bind an ephemeral port");
+  const previewOrigin = "http://127.0.0.1:" + address.port;
+  try {
+    for (const route of ["/", "/en/", "/gioi-thieu/", "/en/about/"]) {
+      for (const attempt of [1, 2]) {
+        const response = await fetch(previewOrigin + route);
+        assert.equal(response.status, 200, "PREV-03: direct load/refresh must return 200 for " + route);
+        const html = await response.text();
+        assert.ok(html.startsWith("<!doctype html>"), "PREV-03: route must return a complete HTML document: " + route);
+      }
+    }
+    for (const route of ["/admin.html", "/portal.html", "/platform/"]) {
+      const response = await fetch(previewOrigin + route);
+      assert.equal(response.status, 200, "PREV-04: verified entrypoint must load: " + route);
+    }
+    for (const href of platformAssets) {
+      const response = await fetch(previewOrigin + href);
+      assert.equal(response.status, 200, "PREV-04: built application asset must load: " + href);
+    }
+  } finally {
+    await new Promise((resolveClose, rejectClose) => previewServer.close(error => error ? rejectClose(error) : resolveClose()));
   }
 
   assert.ok(!sitemapPathSet.has("/portal.html") && !sitemapPathSet.has("/platform/"), "PREV-05: non-public entrypoints must not appear in sitemap");

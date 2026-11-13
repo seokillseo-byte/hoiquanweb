@@ -38,7 +38,7 @@ Thứ tự ưu tiên nguồn thông tin:
 | DEC-008 | SEO direction | SEO-first, kiến trúc SEO đồng bộ toàn website | Approved |
 | DEC-009 | Delivery approach | Preview-first / Core-first; nghiệm thu trước khi mở rộng | Approved |
 | DEC-010 | Scope control | Chỉ triển khai P0 trước; P1/P2 sau khi được duyệt | Approved |
-| DEC-011 | Business model / customer type | Phục vụ cả B2B và B2C; phân khúc ưu tiên và mô tả persona chưa xác định | Approved (scope only) |
+| DEC-011 | Customer scope and rollout priority | Phục vụ cả B2C và B2B; ưu tiên B2C trước, sau đó mở rộng B2B; persona chi tiết còn TBD | Approved |
 
 ### 2.1 Bảy nhóm dịch vụ đã chốt
 
@@ -60,7 +60,7 @@ Các mục dưới đây chưa được người dùng xác nhận. Chúng là g
 
 | ID | Thông tin cần xác nhận | Ảnh hưởng | Trạng thái |
 |---|---|---|---|
-| TBD-001 | Phân khúc khách hàng ưu tiên trong phạm vi B2B + B2C đã xác nhận | Messaging, IA, UX, CTA, content | Open |
+| TBD-001 | Persona, nhu cầu, use case và demographic cụ thể của B2C (ưu tiên trước); buyer roles/company size của B2B (giai đoạn sau) | Messaging, IA, UX, CTA, content | Open — sequencing approved |
 | TBD-002 | Mô tả doanh nghiệp, ngành phân loại chính thức và mô hình vận hành/nguồn doanh thu | Business Blueprint, trust, legal content | Open |
 | TBD-003 | USP / Value Proposition | Homepage, service pages, conversion | Open |
 | TBD-004 | Quy mô khách hàng và pain points | Persona, solution mapping | Open |
@@ -72,6 +72,13 @@ Các mục dưới đây chưa được người dùng xác nhận. Chúng là g
 | TBD-010 | Thị trường/quốc gia tiếng Anh ưu tiên | Localization, keyword research, legal | Open |
 
 Không được dùng nội dung mẫu như dữ liệu thật. Khi cần thiết kế layout trước khi có dữ liệu, dùng placeholder nội bộ có nhãn CONTENT REQUIRED; không xuất bản placeholder.
+
+### 3.1 Thứ tự ưu tiên khách hàng đã được Owner xác nhận
+
+- **Giai đoạn ưu tiên đầu tiên: B2C.** Homepage, thông điệp giới thiệu, thứ bậc nội dung và hành trình tư vấn/báo giá cần ưu tiên khách hàng cá nhân.
+- **Giai đoạn tiếp theo: B2B.** Bổ sung/điều chỉnh thông điệp và hành trình cho doanh nghiệp/tổ chức sau khi nền tảng B2C-first được xác lập.
+- B2B vẫn thuộc phạm vi khách hàng của HOIQUANWEB; thứ tự này không loại bỏ B2B khỏi website và không tự động mở rộng Core Preview P0.
+- Persona, độ tuổi, nhu cầu, use case, ngành nghề và dữ liệu hành vi cụ thể vẫn TBD cho đến khi có thông tin xác thực.
 
 ## 4. Mục tiêu và phạm vi Core Preview
 

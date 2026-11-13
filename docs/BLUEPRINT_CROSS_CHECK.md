@@ -187,7 +187,11 @@ Phase 0 is **not complete** until all applicable conditions below are evidenced 
 
 **Current decision:** Phase 0 remains open. The cross-check identifies documentation and acceptance gaps; it does not authorize implementation expansion, merge, deployment, production configuration or external account changes.
 
-## 8. Change control
+## 8. Final Validation disposition
+
+The evidence-based Phase 0 review is recorded in [PHASE_0_FINAL_VALIDATION.md](PHASE_0_FINAL_VALIDATION.md) (BP-FV-01, 2026-11-13). **Result: BLOCKED / NOT ACCEPTED.** The two CI workflows on reviewed HEAD `e68049e96ae55e001a00cc5f81d3d5f7ab4be52e` completed successfully, but R-016 remains Critical, R-017 remains High pending full visual/browser/responsive QA and Owner acceptance, F-009 runtime/privacy prerequisites remain open, and Gate 2 / blanket Development Authorization remain unapproved. Phase 0 must not be marked complete.
+
+## 9. Change control
 
 - This document is a review artifact and does not override the user-confirmed decisions in Master Blueprint.
 - Any change to P0, service groups, route inventory, language strategy, conversion behavior or production topology requires explicit owner approval.

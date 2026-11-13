@@ -40,7 +40,7 @@ The Project Owner has approved the role-responsibility model on 2026-11-13. Thes
 
 ## 2. Cross-check matrix — all 19 modules
 
-| # | Blueprint module | Current source / status | Priority | Proposed owner role | Dependencies | Acceptance evidence / remaining gap |
+| # | Blueprint module | Current source / status | Priority | Approved accountable role | Dependencies | Acceptance evidence / remaining gap |
 |---:|---|---|---|---|---|---|
 | 01 | Executive Summary | `MASTER_BLUEPRINT.md` — partial | Planning prerequisite | Project Owner + Planning | 02–06, 10–13, 16–18 | One-page summary must state confirmed business, audience, scope, routes, technology and SEO facts; unresolved fields remain visibly TBD. Current summary is a working baseline, not final approval. |
 | 02 | Business Blueprint | `MASTER_BLUEPRINT.md` — in progress | P0 dependency | Project Owner + Business Analyst | Project Input sections 00, 01, 03, 04, 05, 18 | Factual business description wording is owner-approved (2026-11-13); no public USP/comparative claim is authorized for Core Preview (DEC-013). Formal industry classification, operating/revenue model, detailed B2C persona inputs, measurable business goals and success metrics remain open. Seven service groups and consultation/quotation conversion are confirmed. Owner has approved both B2C and B2B, with B2C first and B2B expansion next; detailed personas and market details remain incomplete. |

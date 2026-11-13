@@ -86,4 +86,4 @@ Project case-study routes are not generated or linked until project status, desc
 
 ## Admin workspace
 
-The admin HTML is a noindex operational workspace. It presents existing CRM, CMS, quote, media, template and customer-delivery modules behind Better Auth sign-in plus a server-side `/api/v1/me` admin/staff role check. A sign-out action clears the session and returns to the login panel. The UI does not create administrator identities or assign roles; provisioning remains a controlled server-side operation after the Worker/D1 environment is accepted.
+The admin HTML is a noindex operational workspace. It presents existing CRM, CMS, quote, media, template and customer-delivery modules behind Better Auth sign-in or existing-cookie session restoration plus a server-side `/api/v1/me` admin/staff role check. A sign-out action clears the session and returns to the login panel. The UI does not create administrator identities or assign roles; provisioning remains a controlled server-side operation after the Worker/D1 environment is accepted.

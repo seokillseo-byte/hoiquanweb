@@ -90,8 +90,8 @@ if "/api/v1/me/notifications" not in admin_html or "/api/v1/me/notifications" no
     fail("admin and customer portal must use the authenticated in-app notification API")
 if "/api/v1/admin/dashboard" not in admin_html:
     fail("admin CRM dashboard must use the role-protected metrics API")
-if "/api/v1/auth/sign-out" not in admin_html or "function setAuthenticatedUI" not in admin_html:
-    fail("admin workspace must expose authenticated navigation and sign-out cleanup")
+if "/api/v1/auth/sign-out" not in admin_html or "function setAuthenticatedUI" not in admin_html or "async function restoreAdminSession" not in admin_html or "void restoreAdminSession();" not in admin_html:
+    fail("admin workspace must expose authenticated navigation, session restoration and sign-out cleanup")
 if not parser.scripts or not any("briefForm" in chunk for script_type, chunk in parser.scripts if script_type in ("", "text/javascript", "application/javascript", "module")):
     fail("inline form handler not found")
 for fragment in parser.fragments:

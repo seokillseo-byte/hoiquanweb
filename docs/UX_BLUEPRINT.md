@@ -218,7 +218,7 @@ Until those inputs are available, this remains a B2C-first baseline UX specifica
 ## R-018 Admin workspace UX implementation update — 2026-11-13
 
 1. Unauthenticated staff see only the API/email/password sign-in panel.
-2. After successful sign-in, the client calls `/api/v1/me` and requires an `admin` or `staff` role before revealing any operational panel.
+2. On load, the client checks `/api/v1/me` using the existing HttpOnly session cookie. After sign-in or session restoration, it requires an `admin` or `staff` role before revealing any operational panel.
 3. Authenticated users navigate between existing modules using the sidebar; the sidebar collapses to a horizontally scrollable navigation row on smaller screens.
 4. Sign-out calls Better Auth, clears local role state and hides all operational panels before returning to sign-in.
 5. Existing module workflows and endpoint contracts remain unchanged; backend authorization continues to be authoritative.

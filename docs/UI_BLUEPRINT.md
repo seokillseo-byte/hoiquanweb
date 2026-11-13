@@ -219,7 +219,7 @@ These decisions do not authorize the designer or developer to invent missing bus
 
 - The existing admin modules are retained and placed in a two-column workspace with a sticky navigation rail on authenticated desktop sessions.
 - Navigation links target the existing dashboard, lead, quote, CRM, CMS, media, template and delivery/support panels; no module/API contract is replaced.
-- The login panel is shown before authentication. The workspace and navigation appear only after Better Auth sign-in and a server-side `/api/v1/me` role check confirms admin/staff.
+- The login panel is shown before authentication. The workspace and navigation appear only after Better Auth sign-in or restoration of an existing cookie session, followed by a server-side `/api/v1/me` role check confirming admin/staff.
 - A sign-out action calls the Better Auth sign-out endpoint, clears client-side role state and returns the interface to the login panel.
 - The workspace uses responsive horizontal navigation on narrow screens, visible focus states, improved table/card hierarchy and accessible labels.
 - No account is created or role assigned by this UI change. Production authentication remains dependent on the configured Worker/D1 environment and server-side provisioning.

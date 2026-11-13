@@ -38,6 +38,7 @@ Thứ tự ưu tiên nguồn thông tin:
 | DEC-008 | SEO direction | SEO-first, kiến trúc SEO đồng bộ toàn website | Approved |
 | DEC-009 | Delivery approach | Preview-first / Core-first; nghiệm thu trước khi mở rộng | Approved |
 | DEC-010 | Scope control | Chỉ triển khai P0 trước; P1/P2 sau khi được duyệt | Approved |
+| DEC-011 | Business model / customer type | Phục vụ cả B2B và B2C; phân khúc ưu tiên và mô tả persona chưa xác định | Approved (scope only) |
 
 ### 2.1 Bảy nhóm dịch vụ đã chốt
 
@@ -59,8 +60,8 @@ Các mục dưới đây chưa được người dùng xác nhận. Chúng là g
 
 | ID | Thông tin cần xác nhận | Ảnh hưởng | Trạng thái |
 |---|---|---|---|
-| TBD-001 | Phân khúc khách hàng ưu tiên | Messaging, IA, UX, CTA, content | Open |
-| TBD-002 | Mô tả doanh nghiệp và mô hình vận hành | Business Blueprint, trust, legal content | Open |
+| TBD-001 | Phân khúc khách hàng ưu tiên trong phạm vi B2B + B2C đã xác nhận | Messaging, IA, UX, CTA, content | Open |
+| TBD-002 | Mô tả doanh nghiệp, ngành phân loại chính thức và mô hình vận hành/nguồn doanh thu | Business Blueprint, trust, legal content | Open |
 | TBD-003 | USP / Value Proposition | Homepage, service pages, conversion | Open |
 | TBD-004 | Quy mô khách hàng và pain points | Persona, solution mapping | Open |
 | TBD-005 | Portfolio/case study có quyền công bố | Trust, proof, E-E-A-T signals | Open |

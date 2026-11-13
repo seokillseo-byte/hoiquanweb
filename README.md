@@ -6,6 +6,8 @@ Hội Quán Web được định hướng thành nền tảng vận hành công 
 
 ## Tài liệu dự án
 
+- [Master Blueprint — nguồn điều hướng Planning](docs/MASTER_BLUEPRINT.md)
+- [BP-17 Risk Assessment](docs/RISK_ASSESSMENT.md)
 - [Kiến trúc đích](docs/ARCHITECTURE.md)
 - [Mô hình dữ liệu logic](docs/DATA_MODEL.md)
 - [API contract ban đầu](docs/API_CONTRACT.md)

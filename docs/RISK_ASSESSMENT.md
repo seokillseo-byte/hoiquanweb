@@ -42,6 +42,7 @@
 | R-014 | Nội dung placeholder hoặc claim không có bằng chứng được phát hành | 3 | 5 | 15 | High | Content QA bắt buộc; mọi placeholder phải bị chặn trước publish; kiểm tra legal/contact claims | Open |
 | R-015 | Thiếu user acceptance trên thiết bị, trình duyệt và ngôn ngữ thực tế | 3 | 4 | 12 | High | Kiểm thử responsive, keyboard, accessibility, browser, form, links, 404 và VI/EN trước nghiệm thu | Open |
 | R-016 | Blog detail và CMS dynamic routes chưa được pre-render đầy đủ cho SEO; bài viết dùng query slug và không có URL riêng trong sitemap generated | 4 | 4 | 16 | Critical | Trước khi index blog/CMS dynamic content, triển khai clean slug routes cùng SSR/prerender hoặc static generation; bổ sung URL từng bài vào sitemap và kiểm tra metadata/hreflang trong HTML ban đầu | Open |
+| R-017 | PR preview artifact overlays the frontend SPA build on top of the generated public-site output and replaces the public Vietnamese homepage at `/`; the assembled artifact therefore does not faithfully preview the production Pages root route | 4 | 3 | 12 | High | Correct preview assembly so the public homepage remains at `/`; keep application/admin surfaces at intended paths; assert root title, canonical, hreflang and robots in the final assembled artifact | Open — Preview fidelity blocker; production Pages impact not established |
 
 ## 4. Priority risks requiring closure before SEO / Core Preview acceptance
 
@@ -58,6 +59,20 @@ Required closure:
 1. Giữ generated sitemap từ public-site/dist làm nguồn sitemap cho GitHub Pages.
 2. Đồng bộ hoặc ghi chú rõ sitemap.xml ở root là stale/non-deployment artifact.
 3. Khi đổi deployment pipeline, xác minh lại artifact thực tế trước khi publish.
+
+### R-017 — Isolated Preview root-route collision
+
+Evidence from PR preview artifact run 43389153166 on commit `4cb78e548e4077722dd1a2a3a107c6ca3003d293`:
+- `.github/workflows/pr-preview.yml` first copies `public-site/dist/.` into `_preview/`, then copies frontend `dist/.` into the same root.
+- The second copy overwrites `_preview/index.html` with the frontend application shell (`noindex,nofollow`) and removes the generated public homepage canonical and hreflang tags.
+- The sitemap in that artifact still contains the public homepage URL `/`.
+- `.github/workflows/pages.yml` currently assembles deployment from `public-site/dist` only; the preview collision is not evidence that production Pages output is overwritten.
+
+Required closure:
+1. Confirm the intended root route in the isolated Preview is the public HOIQUANWEB homepage.
+2. Change preview assembly so the app build cannot overwrite that page; mount app/admin paths only at their intended URLs.
+3. Add an assertion against the final assembled artifact for the root page title, canonical, VI/EN hreflang and robots policy.
+4. Rebuild and inspect the artifact before marking Preview homepage acceptance complete.
 
 ### R-016 — Dynamic blog/CMS SEO coverage
 
@@ -116,7 +131,7 @@ Tên cá nhân/đơn vị phụ trách chưa được chỉ định; các vai tr
 ## 6. Risk acceptance rules
 
 Không được nghiệm thu Core Preview nếu:
-- R-016 chưa được xử lý nếu blog/CMS dynamic content được đưa vào phạm vi indexable. R-003 chỉ là rủi ro thấp đối với deployment path khác, không phải blocker của Pages pipeline hiện tại.
+- R-016 chưa được xử lý nếu blog/CMS dynamic content được đưa vào phạm vi indexable. R-017 phải được xử lý trước khi nghiệm thu Preview homepage. R-003 chỉ là rủi ro thấp đối với deployment path khác, không phải blocker của Pages pipeline hiện tại.
 - Có claim, testimonial, giá hoặc thông tin doanh nghiệp không có căn cứ.
 - Form báo thành công giả hoặc làm mất lead.
 - Có lỗi nghiêm trọng về bảo mật, quyền riêng tư hoặc dữ liệu.
@@ -130,6 +145,7 @@ Một số rủi ro production (R-008, R-010, R-013) có thể vẫn mở trong 
 - [ ] Project owner xác nhận audience/USP/business facts hoặc chấp thuận giữ các trường này ngoài scope của Preview.
 - [x] Static route inventory và generated sitemap được kiểm tra trong CI (40 pages).
 - [ ] Dynamic blog/CMS routes được prerender/SSR, có URL riêng và được đưa vào sitemap trước khi index.
+- [ ] Isolated Preview artifact giữ nguyên public homepage tại `/` và không bị frontend SPA shell ghi đè.
 - [ ] Content evidence và quyền công bố được kiểm tra.
 - [ ] VI/EN content parity được kiểm tra.
 - [ ] Form end-to-end có backend confirmation.

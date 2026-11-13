@@ -295,3 +295,27 @@ The refreshed artifact was downloaded and its top-level structure inspected. It 
 This refresh records the current PR HEAD and successful CI/artifact generation. It does **not** repeat the complete 40-route canonical/hreflang and 36-URL sitemap audit already recorded in §9.6, and does not replace full visual/browser/responsive/accessibility QA or Project Owner acceptance.
 
 **Disposition:** Current PR #43 HEAD has **2/2 CI workflows successful** and a new Preview artifact available. R-016 remains Critical/Open; R-017 remains High/Open; F-009 remains blocked for live collection. Gate 2, merge and deployment remain unapproved. This evidence refresh does not expand the existing XC-03/XC-10 authorization.
+
+
+### 9.8 Evidence refresh on current documentation HEAD and Admin UI workstream
+
+**Refresh date:** 2026-11-13  
+**PR #43 HEAD:** `bddf27a8b76cb90b140f7f25f605f481c2312bd6` (documentation-only QA evidence update; application implementation unchanged from `8bac71d`).  
+**Validation workflow:** [Validate website and API — run 43453802718](https://github.com/seokillseo-byte/hoiquanweb/actions/runs/43453802718) — completed, **success**.  
+**Preview workflow:** [Build isolated PR Preview — run 43453802707](https://github.com/seokillseo-byte/hoiquanweb/actions/runs/43453802707) — completed, **success**.  
+**Artifact:** [hoiquanweb-pr-43-preview — artifact 14051693406](https://github.com/seokillseo-byte/hoiquanweb/actions/runs/43453802707/artifacts/14051693406)  
+**Artifact size:** 203,344 bytes  
+**GitHub artifact SHA-256 digest:** `3246e7a3f81b97c069a04aa966506611a49738aa5d6f42b5a6a9d2cbcb791c82`
+
+The artifact was generated successfully by CI. Independent full extraction and route-by-route inspection of this latest artifact remain outstanding. The previous artifact 14049751657 had its top-level structure inspected and contained the public root homepage and isolated `/platform/` entrypoint. Do not transfer that inspection claim to artifact 14051693406.
+
+**Separate Admin UI workstream — PR #49:**
+- Current Admin UI commit: `bf8292f289e78842d7a890559d0159cdbf6afa3c`.
+- Validate website/API run 43451427869 and isolated Preview run 43451427714 both completed successfully.
+- Codex code review completed without findings on that exact commit; three earlier inline review findings were resolved.
+- PR #49 remains Draft and unmerged. The refreshed Admin artifact 14051055530 is based on `main`, while PR #43 is a separate unmerged branch. There is no combined, CI-verified full-site artifact containing both PR #43 public-site changes and PR #49 Admin changes.
+- Browser-based visual review, Worker/D1 staging integration and authenticated end-to-end acceptance remain outstanding.
+
+**Disposition:** PR #43 latest HEAD has 2/2 CI workflows successful and a newly generated Preview artifact. PR #49 Admin UI code review and CI are successful, but full Admin acceptance is incomplete. R-016 remains Critical/Open; R-017 remains High/Open; F-009 remains blocked for live collection. Gate 2, merge and deployment remain unapproved.
+
+This is a documentation/evidence refresh only. It does not authorize combining branches, changing application code outside existing work packages, merging or deploying.

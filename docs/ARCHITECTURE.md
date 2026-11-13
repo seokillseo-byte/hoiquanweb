@@ -17,7 +17,7 @@ This is not just a static marketing site. Existing lead API scaffolding should b
 
 ## Current verified baseline and gaps
 
-- README.md and IMPLEMENTATION_ROADMAP.md report a bilingual static public site with 40 content pages; however, the currently checked sitemap.xml contains only the homepage URL, and SEO_AND_DESIGN_SYSTEM.md still describes a one-page landing page. The actual generated route inventory and indexable URL count are therefore NOT VERIFIED. Do not state 34 or 40 pages as a verified current count until route inventory, generated output and sitemap are reconciled.
+- scripts/build_public_site.mjs defines 40 localized page objects and generates HTML plus sitemap.xml from the same pages array. scripts/validate_public_site.mjs checks sitemap count, uniqueness and canonical path parity. The Pages workflow runs the generator and validator and deploys public-site/dist. The repository-root sitemap.xml currently contains only the homepage but is not the sitemap copied by the Pages workflow; it is stale. The generated artifact and deployed preview were not inspected in this review, so runtime SEO acceptance remains pending. The previous 34-page count and one-page description are outdated.
 - `admin.html` contains a session-protected CMS workspace for pages, posts and services. Staff/admin can create/edit drafts; admin can publish/archive. Content revisions are stored by the Worker API.
 - Worker APIs include Better Auth session handling, server-assigned roles, public published-content reads, protected CMS writes, lead intake and the initial CRM identity/customer foundations.
 - D1 migrations include CMS content and revision tables, identity/authorization and CRM foundations. They have not yet been applied to a real Cloudflare database.

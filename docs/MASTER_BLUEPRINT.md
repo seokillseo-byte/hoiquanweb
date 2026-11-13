@@ -12,6 +12,8 @@
 
 ## 1. Mục đích và nguyên tắc kiểm soát
 
+**Final Validation (2026-11-13):** [PHASE_0_FINAL_VALIDATION.md](PHASE_0_FINAL_VALIDATION.md) — BLOCKED / NOT ACCEPTED. Phase 0 remains open; PR #43 CI is 2/2 success on reviewed HEAD, but this is not Owner acceptance, runtime acceptance or release approval.
+
 Tài liệu này là điểm điều hướng trung tâm cho Blueprint HOIQUANWEB. Nó tổng hợp các quyết định đã được người dùng xác nhận, các thông tin còn thiếu và các tài liệu chuyên môn cần hoàn thiện.
 
 Thứ tự ưu tiên nguồn thông tin:

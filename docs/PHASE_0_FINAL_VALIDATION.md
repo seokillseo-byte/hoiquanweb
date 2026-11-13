@@ -8,7 +8,8 @@
 **Branch:** `docs/phase-0-master-blueprint-risk-review`  
 **Reviewed PR:** [#43](https://github.com/seokillseo-byte/hoiquanweb/pull/43)  
 **Previously reviewed HEAD:** `e68049e96ae55e001a00cc5f81d3d5f7ab4be52e`  
-**Latest evidence refresh:** PR HEAD `eb0182abeb5baf59bdaab5dd497dbfe5c5f73b0d` (2026-11-13)
+**Latest CI-verified HEAD:** `eb0182abeb5baf59bdaab5dd497dbfe5c5f73b0d` (2026-11-13)  
+**Latest documentation HEAD after this update:** `ac7da0524eba22483278209c04104415353a087b` (CI runs not yet reported for this docs-only HEAD)
 
 > This report records the evidence and gaps visible at the assessment time. It is not an Owner acceptance, a Gate 2 approval, a Development Authorization, a release approval or a production-readiness certificate.
 
@@ -57,10 +58,10 @@ Statuses below reflect the current Cross-check and linked source documents, not 
 | 07 | UX Blueprint | Draft / review required | B2C-first journeys and key flows documented; detailed personas, validated pain points and usability tests remain open. |
 | 08 | UI Blueprint | Draft / review required | Templates, components, responsive and accessibility direction documented; final identity approval and full visual QA remain open. |
 | 09 | Feature Blueprint | Draft / review required | Feature register exists; F-009 inquiry flow is not end-to-end accepted until privacy/consent, API, sender/mailbox and delivery tests pass. |
-| 10 | Technical Blueprint | Partial | Current Preview/static path and existing scaffold are described; production host, API/runtime, database/resource, secrets and ownership are not approved. |
+| 10 | Technical Blueprint | Draft / partial | `TECHNICAL_BLUEPRINT.md` now defines the P0 technical contract and observed baseline; production host, API/runtime, database/resource, secrets, ownership and runtime acceptance remain open. |
 | 11 | Architecture Blueprint | Partial | Logical architecture and security boundaries exist in `ARCHITECTURE.md`; complete approved architecture/deployment topology and external service decisions remain open. |
 | 12 | Performance Blueprint | Draft / partial | CWV thresholds approved (LCP ≤ 2.5s, INP ≤ 200ms, CLS ≤ 0.1); field p75/lab evidence and non-CWV thresholds remain open. |
-| 13 | Security Blueprint | Partial | Security controls are described in architecture/risk material; a complete dedicated security acceptance profile, staging/runtime tests and evidence remain open. |
+| 13 | Security Blueprint | Draft / partial | `SECURITY_BLUEPRINT.md` now defines the P0 security control profile and test plan; privacy/consent, backup lifecycle, staging/runtime tests and security evidence remain open. |
 | 14 | AI Blueprint | Deferred | No AI requirement is approved for Core Preview. Deferral is explicit; a full AI Blueprint is required only if a specific business requirement is approved. |
 | 15 | Marketing Blueprint | Framework draft | Funnel/channel/KPI governance documented; personas, country selection, budget, analytics baseline and campaign approvals remain open. |
 | 16 | Development Roadmap | In progress | Long-term roadmap exists; do not confuse it with Core Preview P0. Timeline/resource baseline depends on approved scope, owners and estimates. |
@@ -113,12 +114,12 @@ Owner decisions recorded: form + business email notification; destination `info@
 
 ## 5. CI and QA evidence — precise interpretation
 
-### CI on the latest checked PR HEAD
+### CI evidence and documentation HEAD
 
-- Latest checked repository HEAD: `eb0182abeb5baf59bdaab5dd497dbfe5c5f73b0d`.
+- Latest CI-verified HEAD at the evidence check: `eb0182abeb5baf59bdaab5dd497dbfe5c5f73b0d`.
 - [Validate website and API — run 43407229788](https://github.com/seokillseo-byte/hoiquanweb/actions/runs/43407229788): completed, **success**.
 - [Build isolated PR Preview — run 43407229622](https://github.com/seokillseo-byte/hoiquanweb/actions/runs/43407229622): completed, **success**.
-- Earlier runs on `e68049e...` remain historical evidence only; they are not used as the latest-head result.
+- Subsequent documentation-only commits added BP-GAP-01, TECHNICAL_BLUEPRINT.md and SECURITY_BLUEPRINT.md and updated cross-references. The latest documentation HEAD is `ac7da0524eba22483278209c04104415353a087b`; no workflow runs were returned for that HEAD at the latest check. Do not describe the earlier CI runs as validation of these later commits.
 
 These runs evidence automated checks for that commit. They do not prove production deployment, real mailbox delivery, database/Worker runtime readiness, Core Web Vitals field thresholds, full cross-browser visual quality or formal acceptance.
 
@@ -128,7 +129,7 @@ See [QA_REVIEW_XC03_XC10.md](QA_REVIEW_XC03_XC10.md). The recorded static checks
 
 ## 6. Technical, Security and QA gap audit
 
-The supporting deliverable [BP-GAP-01 — Technical, Security & QA Gap Register](PHASE_0_TECHNICAL_SECURITY_QA_GAP_REGISTER.md) now consolidates GAP-TECH-01, GAP-ARCH-01, GAP-SEC-01, GAP-PERF-01, GAP-QA-01 and GAP-GOV-01, plus a minimum Core Preview QA matrix. It clarifies the missing P0 deployment contract, incomplete dedicated security acceptance profile, absent performance baseline and incomplete full-preview QA. This documentation does not close R-016, R-017 or F-009 and does not approve Gate 2.
+The supporting deliverables [Technical Blueprint](TECHNICAL_BLUEPRINT.md) and [Security Blueprint](SECURITY_BLUEPRINT.md) now define the P0 technical and security planning baselines. [BP-GAP-01 — Technical, Security & QA Gap Register](PHASE_0_TECHNICAL_SECURITY_QA_GAP_REGISTER.md) consolidates GAP-TECH-01, GAP-ARCH-01, GAP-SEC-01, GAP-PERF-01, GAP-QA-01 and GAP-GOV-01, plus a minimum Core Preview QA matrix. It clarifies the missing P0 deployment contract, incomplete dedicated security acceptance profile, absent performance baseline and incomplete full-preview QA. This documentation does not close R-016, R-017 or F-009 and does not approve Gate 2.
 
 ## 7. Phase 0 exit checklist
 

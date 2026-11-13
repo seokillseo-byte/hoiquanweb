@@ -204,3 +204,46 @@ After the documentation updates, the isolated Preview workflow was rerun on late
 - The latest artifact contains the same public static route and indexation behavior as the previously inspected artifact. Full visual/browser/responsive/accessibility and live-runtime checks remain unperformed.
 
 This refresh is the latest artifact evidence for PR HEAD 2d83b9d. The current QA disposition and open risks in section 9.3 are unchanged.
+
+### 9.5 Latest artifact verification — PR HEAD 388aa6ef
+
+**Review refresh:** 2026-11-13  
+**PR HEAD:** `388aa6ef53d106f181b8983a7d9021e245d7086c`  
+**Validation workflow:** [Validate website and API — run 43409087189](https://github.com/seokillseo-byte/hoiquanweb/actions/runs/43409087189) — completed, **success**. All steps in the validate job completed successfully, including API/auth boundary tests, local Worker/D1 integration tests, frontend typecheck/build, bilingual site generation and public-site validation.  
+**Preview workflow:** [Build isolated PR Preview — run 43409087020](https://github.com/seokillseo-byte/hoiquanweb/actions/runs/43409087020) — completed, **success**. All steps completed successfully, including staging-config guardrails, final assembled Preview validation and artifact upload.  
+**Artifact:** [hoiquanweb-pr-43-preview — artifact 14028672376](https://github.com/seokillseo-byte/hoiquanweb/actions/runs/43409087020/artifacts/14028672376)  
+**Artifact ZIP size:** 203,344 bytes  
+**Artifact ZIP SHA-256:** `221bd701c120ac744c4ffc0c5bbaee4a51c528267a0de349221e91c4fb3f00c2`  
+**Extracted structure:** 51 files, 44 HTML documents, 40 localized public route documents.
+
+#### 9.5.1 Repeated static artifact checks
+
+The exact artifact produced from PR HEAD `388aa6ef` was downloaded, SHA-256 verified, extracted and independently inspected.
+
+| Check | Result | Evidence |
+|---|---|---|
+| Artifact integrity | PASS | Artifact ID 14028672376; SHA-256 above |
+| Localized public route documents | PASS | 40/40 documents contain canonical and VI/EN/x-default alternates |
+| Canonical/hreflang invariants | PASS | 0 missing canonical, 0 missing alternates, 0 x-default-to-Vietnamese mismatches, 0 canonical/alternate mismatches |
+| Sitemap URLs | PASS | 36 unique URLs |
+| Sitemap route files | PASS | 36/36 local route files exist |
+| Sitemap duplicates | PASS | 0 |
+| Sitemap canonical mismatches | PASS | 0 |
+| Noindex URLs in sitemap | PASS | 0 |
+| Generic blog listing/article shells | PASS | VI/EN listing and generic article shells remain noindex and excluded from sitemap |
+| Root homepage | PASS | Vietnamese public homepage at `/`, with canonical and language alternates |
+| Platform application assets | PASS | Both `/platform/assets/index-CHgcRs-R.js` and `/platform/assets/index-CCT5DBxr.css` exist in the artifact |
+| Admin/Portal/Platform metadata | PASS | Static entrypoints remain noindex and excluded from sitemap |
+
+These checks are static artifact inspection. The asset files were verified to exist in the extracted artifact; no claim is made here about hosted production delivery or Worker/D1/R2 runtime.
+
+#### 9.5.2 Updated disposition
+
+- CI is now **2/2 successful on exact PR HEAD `388aa6ef`**; this supersedes the older CI-head caveat in section 9.4.
+- XC-03 generic-shell/indexation guard and XC-10 root collision/platform asset assembly remain **PASS at static artifact level**.
+- R-016 remains **CRITICAL / OPEN**: dynamic published articles still lack clean-slug URLs and article-specific initial HTML. The current bounded handoff does not authorize implementing those routes or CMS publishing behavior.
+- R-017 remains **HIGH / OPEN**: full visual/browser/responsive/accessibility/usability QA and Project Owner acceptance have not been completed.
+- F-009 remains **BLOCKED** for live collection: privacy/legal copy, mailbox/sender verification, live API/email configuration and end-to-end retention/deletion evidence remain incomplete.
+- Public content acceptance remains pending Owner disposition of positioning/tagline, portfolio status/rights and process/service claims.
+
+The latest CI and artifact checks do not establish full Core Preview acceptance, Gate 2 approval, merge approval, deployment or production readiness.

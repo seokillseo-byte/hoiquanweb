@@ -8,7 +8,7 @@
 **Branch:** `docs/phase-0-master-blueprint-risk-review`  
 **Reviewed PR:** [#43](https://github.com/seokillseo-byte/hoiquanweb/pull/43)  
 **Previously reviewed HEAD:** `e68049e96ae55e001a00cc5f81d3d5f7ab4be52e`  
-**Latest CI-verified PR HEAD:** `388aa6ef53d106f181b8983a7d9021e245d7086c` (2026-11-13)  
+**Latest code-bearing PR HEAD with CI/Preview evidence:** `388aa6ef53d106f181b8983a7d9021e245d7086c` (2026-11-13). Subsequent commits on the PR branch are documentation-only evidence refreshes; no application code changed after this tested code-bearing HEAD.  
 **Current evidence:** Both CI workflows and the isolated Preview artifact have now been verified on the exact current PR HEAD. The independent static artifact refresh is recorded in QA_REVIEW_XC03_XC10.md section 9.5.
 
 > This report records the evidence and gaps visible at the assessment time. It is not an Owner acceptance, a Gate 2 approval, a Development Authorization, a release approval or a production-readiness certificate.
@@ -116,13 +116,13 @@ Owner decisions recorded: form + business email notification; destination `info@
 
 ### CI evidence and documentation HEAD
 
-- Exact current PR HEAD checked: `388aa6ef53d106f181b8983a7d9021e245d7086c` (2026-11-13).
+- Latest code-bearing PR HEAD with CI/Preview evidence: `388aa6ef53d106f181b8983a7d9021e245d7086c` (2026-11-13). Later commits updated only QA/governance documentation; those commits were not represented as a new code validation run.
 - [Validate website and API — run 43409087189](https://github.com/seokillseo-byte/hoiquanweb/actions/runs/43409087189): completed, **success**.
 - [Build isolated PR Preview — run 43409087020](https://github.com/seokillseo-byte/hoiquanweb/actions/runs/43409087020): completed, **success**.
 - Both workflows are associated with the exact current PR HEAD. Their jobs and all listed steps completed successfully. The Preview artifact [14028672376](https://github.com/seokillseo-byte/hoiquanweb/actions/runs/43409087020/artifacts/14028672376) was downloaded and independently checked; see [QA_REVIEW_XC03_XC10.md](QA_REVIEW_XC03_XC10.md), section 9.5.
 - These checks evidence the automated workflows and static artifact only. They do not prove production deployment, real mailbox delivery, hosted Worker/D1/R2 runtime, field Core Web Vitals, full browser/device visual quality or formal acceptance.
 
-These runs evidence automated checks for that commit. They do not prove production deployment, real mailbox delivery, database/Worker runtime readiness, Core Web Vitals field thresholds, full cross-browser visual quality or formal acceptance.
+The PR branch subsequently received documentation-only QA/governance evidence updates (latest recorded docs commit: `318b789f1465c59b6d3982cbabaaaacb931ef6fc`). No application code changed in those updates. The two runs evidence automated checks for the tested code-bearing commit; they do not prove production deployment, real mailbox delivery, hosted Worker/D1/R2 runtime, Core Web Vitals field thresholds, full cross-browser visual quality or formal acceptance.
 
 ### Independent static artifact QA
 

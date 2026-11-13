@@ -168,7 +168,7 @@ Do not send credentials, API keys or other secrets in this document or in chat.
 
 **Implementation rule:** Every genuine VI/EN translation pair must retain reciprocal `hreflang="vi"` and `hreflang="en"` links; its `hreflang="x-default"` link points to the Vietnamese URL in that pair. This decision does not change the bilingual route structure, canonical rules or page-language content.
 
-**Acceptance evidence:** Inspect generated initial HTML for representative Vietnamese and English routes and verify that both language alternates are reciprocal and `x-default` resolves to the corresponding Vietnamese route. The generator currently points x-default to Vietnamese; retain that behavior and verify the built artifact. Do not mark runtime/Preview acceptance complete solely from this documentation update.
+**Acceptance evidence:** On commit `4cb78e548e4077722dd1a2a3a107c6ca3003d293`, workflow `Validate website and API` (run 43389153063) and `Build isolated PR preview` (run 43389153166) both succeeded. The generated Preview artifact was inspected: 39 available localized route HTML files all contain VI/EN/x-default alternates; each x-default exactly matches its Vietnamese alternate, with no pair-target mismatch. The root homepage could not be inspected from that artifact because the preview assembly overwrote it with the application SPA shell; the unmodified `public-site/dist` root output still needs direct verification. This is tracked as XC-10. Do not mark complete based only on CI success.
 
 **Approval boundary:** This approves only the default-language fallback. It does not approve changes to translation quality, route inventory, target-market localization or indexation eligibility.
 

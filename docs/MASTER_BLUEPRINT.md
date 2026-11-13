@@ -257,6 +257,8 @@ Phase 0 chỉ được đóng khi:
 - [UX Blueprint](UX_BLUEPRINT.md): visitor journey, service discovery, language switching, inquiry flow and evidence-based validation plan.
 - [Content Blueprint](CONTENT_BLUEPRINT.md): bilingual content architecture, seven service groups, page templates, topic-cluster framework, CTA, localization, E-E-A-T, media, internal linking and maintenance rules; draft for Owner review.
 - [SEO Blueprint](SEO_BLUEPRINT.md): keyword research method, intent/mapping, clusters, metadata, schema, entities, E-E-A-T, technical/indexation gates, link-building governance and KPIs; draft for Owner review.
+- [Business Blueprint](BUSINESS_BLUEPRINT.md): 15 mandatory business deliverables, confirmed facts, open commercial/audience inputs and acceptance controls; draft for Owner review.
+- [Brand Blueprint](BRAND_BLUEPRINT.md): 15 mandatory brand deliverables and interim Preview tokens; official identity remains unapproved.
 - [Competitor Blueprint](COMPETITOR_BLUEPRINT.md): competitor classification, evidence protocol and comparison framework; no market findings or competitor claims asserted.
 - [Marketing Blueprint](MARKETING_BLUEPRINT.md): audience sequencing, channel framework, funnel, inquiry governance, KPIs and budget approval controls; no campaigns or spend authorized.
 - [Blueprint Cross-check](BLUEPRINT_CROSS_CHECK.md): đối chiếu 19 modules, Project Input completeness, approved role-responsibility model, cross-document conflicts, blockers và Phase 0 exit criteria.

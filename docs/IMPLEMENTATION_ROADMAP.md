@@ -22,7 +22,7 @@
 - [x] Kiểm tra cấu trúc repo và ghi lại giới hạn hiện tại.
 - [x] Xác định hướng CMS riêng + WordPress cho website khách hàng.
 - [x] Xác định kho mẫu gồm WordPress và HTML/CSS.
-- [x] Xác định cổng khách hàng là yêu cầu của bản đầu tiên.
+- [x] Xác định cổng khách hàng cho bản phát hành nền tảng dài hạn (Phase 4), ngoài Core Preview P0.
 - [x] Tạo tài liệu kiến trúc đích, vùng chức năng, dữ liệu logic, bảo mật và tiêu chí chất lượng.
 - [x] Lập URL Map source-verified cho 40 route song ngữ; policy indexation và runtime SEO còn chờ triển khai/kiểm thử.
 - [x] Lập Feature Blueprint cho Core Preview P0; chờ owner review.

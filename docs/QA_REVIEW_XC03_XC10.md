@@ -387,3 +387,17 @@ Both required workflows completed successfully for the exact source HEAD recorde
 **Disposition:** CI workflow status for PR #43 source HEAD `46420374739aafabde281964db6dde85905cfe72` is **2/2 PASS**. This does not close R-016, R-017 or F-009; does not establish hosted Worker/D1/R2/auth/email behavior; and does not constitute full visual/browser/responsive/accessibility QA, Core Preview acceptance, Gate 2 approval, merge approval or deployment. PR #43 remains open and unmerged.
 
 This section records evidence for the identified source HEAD. The documentation commit that adds this section is a later commit and must be evaluated by its own CI checks.
+
+### 9.12 Workflow evidence for documentation HEAD 54866b9
+
+**Verification date:** 2026-11-13  
+**PR #43 source HEAD:** `54866b9c50d2eb975b91976d27ae7f80bccb92bc` (QA evidence documentation update; application implementation unchanged).  
+**Validation workflow:** [Validate website and API — run 43463781207](https://github.com/seokillseo-byte/hoiquanweb/actions/runs/43463781207) — completed, **success**.  
+**Preview workflow:** [Build isolated PR preview — run 43463781178](https://github.com/seokillseo-byte/hoiquanweb/actions/runs/43463781178) — completed, **success**.  
+**Preview artifact:** [hoiquanweb-pr-43-preview — artifact 14057900572](https://github.com/seokillseo-byte/hoiquanweb/actions/runs/43463781178/artifacts/14057900572)  
+**Artifact size:** 203,344 bytes  
+**GitHub artifact digest:** `sha256:6eed81316a37f9258d3c62f7c930a375e88aa9e429356d272b95e3e8cae6ca5c`
+
+Both required workflows passed on the exact source HEAD above. The Preview artifact was generated but has not been independently extracted or re-audited. The latest independent static artifact audit remains §9.10, tied specifically to artifact 14053557316 from source HEAD `b7d750e773218f3914e5e5530ea990e42daff560`. Do not transfer §9.10's artifact-level results to artifact 14057900572.
+
+**Disposition:** Workflow CI for source HEAD `54866b9c50d2eb975b91976d27ae7f80bccb92bc` is **2/2 PASS**. This does not close R-016, R-017 or F-009; does not verify hosted Worker/D1/R2/auth/email behavior; and does not constitute full visual/browser/responsive/accessibility QA, Core Preview acceptance, Gate 2 approval, merge approval or deployment. PR #43 remains open and unmerged.

@@ -242,6 +242,7 @@ The next authorized activity is to close or formally disposition these readiness
 - [Master Blueprint](MASTER_BLUEPRINT.md)
 - [Project Input Traceability](PROJECT_INPUT_TRACEABILITY.md)
 - [Blueprint Cross-check — 19 modules](BLUEPRINT_CROSS_CHECK.md)
+- [Phase 0 Final Validation — BP-FV-01](PHASE_0_FINAL_VALIDATION.md)
 - [Owner Decision Review](OWNER_DECISION_REVIEW.md)
 - [Implementation Roadmap](IMPLEMENTATION_ROADMAP.md)
 - [Risk Assessment](RISK_ASSESSMENT.md)

@@ -1,6 +1,6 @@
 # HOIQUANWEB — Owner Decision Review
 
-**Status:** Awaiting Project Owner decisions  
+**Status:** Core owner decisions recorded; remaining inputs and acceptance evidence are still open  
 **Date:** 2026-11-13  
 **Purpose:** Collect only the unresolved owner decisions that materially affect Blueprint Final or Core Preview acceptance.  
 **Source of truth:** `02_PROJECT_INPUT_TEMPLATE.md`, Master Blueprint, Feature/UI/UX Blueprints and Blueprint Cross-check.

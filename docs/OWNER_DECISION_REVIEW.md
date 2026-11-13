@@ -102,6 +102,22 @@ Until these are available, F-009 remains blocked for live end-to-end acceptance.
 
 Do not send credentials, API keys or other secrets in this document or in chat.
 
+
+### D-07 — Inquiry data retention period
+
+**Feature:** F-009 Consultation/quotation form and related lead records.  
+**Project Input fields:** 13. Security & Compliance; Data Retention; privacy/consent requirements.
+
+**Owner decision — Approved (2026-11-13):** Retain customer inquiry data for **24 months from the last interaction**.
+
+**Approval boundary:** This approves the retention duration and the stated starting point only. It does not yet define which events reset the last-interaction date, the deletion/anonymization procedure, backup expiry, legal exceptions, or the final privacy notice and consent wording. Do not invent those details or claim that automated deletion is already implemented.
+
+**Still required before live lead collection and retention acceptance:**
+- Define and document which customer/owner events count as the last interaction and reset the 24-month period.
+- Approve deletion or anonymization behavior at expiry, including treatment of backups and any records required to be retained for a separate legal/operational reason.
+- Include the approved 24-month period and accurate handling explanation in the privacy notice and consent wording.
+- Implement and test retention enforcement only after the policy details above are approved.
+
 ## 3. Decisions that can remain TBD for the initial neutral Preview
 
 These are required or recommended fields in the Project Input Template, but they do not all need to block a neutral public-site shell. They must remain visible as TBD and must not be silently guessed.
@@ -134,6 +150,6 @@ Reply in normal text using the decision IDs; short answers are sufficient:
 - D-02: **Approved — B2C first, then B2B** (2026-11-13); both remain in scope. Detailed personas and demographics remain TBD.
 - D-03: No public USP/comparative claim for Core Preview; use factual service descriptions only (owner-approved 2026-11-13).
 - D-04: Interim blue/white system and five provisional tokens approved for Core Preview only (2026-11-13); official identity remains TBD.
-- D-05: Website form + business email notification approved (2026-11-13); destination `info@hoiquanweb.io.vn` supplied and Project Owner confirmed as direct handler (2026-11-13). Privacy/consent wording, mailbox verification, backend/email configuration and end-to-end acceptance remain outstanding.
+- D-05: Website form + business email notification approved (2026-11-13); destination `info@hoiquanweb.io.vn` supplied and Project Owner confirmed as direct handler (2026-11-13). The 24-month inquiry-data retention period from last interaction is approved under D-07. The exact last-interaction event rules, expiry/deletion or anonymization behavior, privacy/consent wording, mailbox verification, backend/email configuration and end-to-end acceptance remain outstanding.
 
 Partial answers are acceptable. Any unanswered item remains **TBD** and is not treated as approved.

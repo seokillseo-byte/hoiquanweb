@@ -112,8 +112,8 @@ A generic “continue” instruction must not be interpreted as permission to by
 | GOV-05 | Business/content integrity | Factual description and service groups approved; USP, case studies, prices, proof and several business details remain unapproved/TBD | Confirm all public copy uses approved facts; exclude unsupported claims and fabricated proof |
 | GOV-06 | Inquiry/privacy readiness | Channel and recipient approved; privacy/consent wording, mailbox verification, API/email configuration and end-to-end delivery evidence remain open | Keep live form inactive until prerequisites are approved/configured; verify API save, notification, retries, duplicates and failure states |
 | GOV-07 | Retention and backup policy | 24-month duration, reset events, deletion action and restore policy approved; backup lifecycle duration and separate legal/operational exceptions remain TBD | Document remaining policy boundaries; do not claim automated expiry deletion or restore purge until implemented and tested |
-| GOV-08 | SEO/indexation | XC-03 implementation and CI evidence recorded; R-016 remains Critical because dynamic articles lack clean-slug/article-specific initial HTML | Independent QA of current guard; keep dynamic articles non-indexable until full article readiness gate is delivered |
-| GOV-09 | Preview assembly | XC-10 implementation and CI evidence recorded; R-017 remains High pending independent QA | Independently inspect the final assembled artifact and record acceptance; CI alone is insufficient |
+| GOV-08 | SEO/indexation | XC-03 shell/indexation guard independently verified in the assembled artifact; R-016 remains Critical because dynamic articles lack clean-slug/article-specific initial HTML | Keep dynamic articles non-indexable until the full article readiness gate is implemented and accepted; see `QA_REVIEW_XC03_XC10.md` |
+| GOV-09 | Preview assembly | XC-10 static artifact QA subset passed independently; R-017 remains High pending full visual/browser review and Project Owner acceptance | Complete remaining UI/responsive/browser checks and record Owner disposition; see `QA_REVIEW_XC03_XC10.md` |
 | GOV-10 | Security and authorization | PR #42 remains open; code review reported no major issues on reviewed head, but PR is not merged or runtime-accepted | Complete required security/QA review, resolve all findings and obtain the applicable Owner decision before merge |
 | GOV-11 | Technical/staging architecture | Worker/D1/R2 runtime and staging acceptance are not evidenced; production identifiers/configuration and ownership remain incomplete | Define and approve the exact environment/topology and evidence needed for the authorized phase; no production assumptions |
 | GOV-12 | Performance | CWV thresholds approved; actual measurements are pending; other targets remain TBD | Measure the corrected Preview with reproducible route/device evidence and report field versus lab data distinctly |
@@ -164,8 +164,8 @@ The repository review recorded PR #30–#36 as merged. PR #40 (durable lead emai
 
 ### 6.3 XC-03 / R-016 and XC-10 / R-017
 
-- XC-03: generic blog shells emit `noindex,follow` and are excluded from sitemap; generated route and sitemap eligibility are separated. CI evidence records 40 localized HTML routes, 36 indexable and 4 noindex, with SEO-IX-01..07 passing. Dynamic published articles still lack clean-slug URLs and article-specific initial HTML. R-016 remains Critical and open.
-- XC-10: the public Vietnamese homepage remains at Preview root; SPA is isolated under `/platform/`; final assembled artifact checks PREV-01..06 passed. This was an isolated CI artifact, not a public hosted Preview URL. Independent QA remains pending and R-017 remains open.
+- XC-03: generic blog shells emit `noindex,follow` and are excluded from sitemap; generated route and sitemap eligibility are separated. CI evidence records 40 localized HTML routes, 36 indexable and 4 noindex, with SEO-IX-01..07 passing. Independent artifact review confirmed both VI/EN generic article shells remain noindex and outside the sitemap. Dynamic published articles still lack clean-slug URLs and article-specific initial HTML. R-016 remains Critical and open. See `QA_REVIEW_XC03_XC10.md`.
+- XC-10: the public Vietnamese homepage remains at Preview root; SPA is isolated under `/platform/`; final assembled artifact checks PREV-01..06 passed. Independent static artifact QA additionally confirmed 36/36 sitemap URLs return HTTP 200, canonical/indexability consistency and JS/CSS asset resolution. Full visual/browser/responsive QA and Project Owner acceptance remain pending; this was an isolated CI artifact, not a public hosted Preview URL. R-017 remains open. See `QA_REVIEW_XC03_XC10.md`.
 
 ### 6.4 Release restrictions
 
@@ -181,7 +181,7 @@ The current Risk Assessment records 17 risks. At minimum, preserve the following
 - R-010: Worker/D1/R2 staging/production runtime not accepted.
 - R-011: scope expansion risk; maintain strict Core Preview P0 boundary.
 - R-016: Critical dynamic blog/article SEO readiness gap.
-- R-017: High Preview assembly remediation awaiting independent QA.
+- R-017: High Preview assembly remediation; independent static artifact QA subset passed, but full visual/browser QA and Project Owner acceptance remain pending.
 
 For every High/Critical risk, retain:
 1. A named accountable owner or an explicit role placeholder awaiting assignment.
@@ -231,7 +231,7 @@ The Project Owner and responsible reviewers should record each item as **Accepte
 
 Current evidence supports continuing the planning and readiness review, but does not support declaring Phase 0 complete or Gate 2 approved. The two bounded remediation work packages already authorized by the Project Owner remain distinct from the unapproved next-phase authorization.
 
-The following remain open: owner review of draft Blueprints; critical Project Input disposition; inquiry privacy/runtime readiness; independent QA for R-016/R-017; security acceptance for PR #42; staging architecture/runtime evidence; performance measurements; named staffing/capacity; and final validation.
+The following remain open: owner review of draft Blueprints; critical Project Input disposition; inquiry privacy/runtime readiness; remaining full QA and Owner disposition for R-016/R-017; security acceptance for PR #42; staging architecture/runtime evidence; performance measurements; named staffing/capacity; and final validation.
 
 The next authorized activity is to close or formally disposition these readiness items and present a precise Gate 2 decision to the Project Owner. Do not start unrelated feature development, merge either open PR or deploy an environment as a consequence of this document.
 
@@ -251,5 +251,6 @@ The next authorized activity is to close or formally disposition these readiness
 - [Performance Blueprint](PERFORMANCE_BLUEPRINT.md)
 - [Development Report XC-03 / XC-10](DEVELOPMENT_REPORT_XC03_XC10.md)
 - [Development Handoff XC-03 / XC-10](DEVELOPMENT_HANDOFF_XC03_XC10.md)
+- [Independent QA Review XC-03 / XC-10](QA_REVIEW_XC03_XC10.md)
 - [PR #42 — Security and authorization](https://github.com/seokillseo-byte/hoiquanweb/pull/42)
 - [PR #43 — Phase 0 planning and bounded remediation](https://github.com/seokillseo-byte/hoiquanweb/pull/43)

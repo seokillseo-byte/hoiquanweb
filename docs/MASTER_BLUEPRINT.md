@@ -53,6 +53,8 @@ Không tự ý gộp, đổi tên hoặc loại bỏ nhóm dịch vụ nếu ch�
 
 ## 3. Các thông tin quan trọng còn thiếu
 
+Danh sách câu hỏi xác nhận tập trung, không suy diễn thay Owner, được quản lý tại [OWNER_DECISION_REVIEW.md](OWNER_DECISION_REVIEW.md). Chỉ các câu trả lời được Owner xác nhận mới được cập nhật thành quyết định đã duyệt.
+
 Các mục dưới đây chưa được người dùng xác nhận. Chúng là giới hạn đối với việc hoàn thiện định vị, nội dung bán hàng và thiết kế chuyển đổi.
 
 | ID | Thông tin cần xác nhận | Ảnh hưởng | Trạng thái |
@@ -224,3 +226,4 @@ Phase 0 chỉ được đóng khi:
 
 - [UX Blueprint](UX_BLUEPRINT.md): visitor journey, service discovery, language switching, inquiry flow and evidence-based validation plan.
 - [Blueprint Cross-check](BLUEPRINT_CROSS_CHECK.md): đối chiếu 19 modules, Project Input completeness, cross-document conflicts, blockers và Phase 0 exit criteria.
+- [Owner Decision Review](OWNER_DECISION_REVIEW.md): các quyết định còn thiếu cần Project Owner xác nhận trước Blueprint Final.

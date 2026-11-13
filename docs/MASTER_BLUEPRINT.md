@@ -151,6 +151,8 @@ Blueprint Standard yêu cầu đủ 19 phần. Trạng thái dưới đây phả
 
 ## 7. Requirement traceability
 
+Cross-check đầy đủ 19 module, owner role, priority, dependencies, acceptance evidence, Project Input gaps và các điểm mâu thuẫn liên tài liệu được quản lý tại [BLUEPRINT_CROSS_CHECK.md](BLUEPRINT_CROSS_CHECK.md). Tài liệu này là bản rà soát, không thay thế quyết định của Project Owner.
+
 | Requirement ID | Nguồn | Requirement | Deliverable | Acceptance evidence |
 |---|---|---|---|---|
 | REQ-BIZ-001 | User-confirmed decision | Primary conversion là yêu cầu tư vấn/báo giá | BP-02, BP-07, BP-09 | CTA và form hoạt động đúng, có trạng thái backend rõ ràng |
@@ -186,7 +188,7 @@ Requirement IDs là mã truy vết trong Blueprint; không thay thế mã requir
 Phase 0 chỉ được đóng khi:
 
 - [ ] Project Input critical fields đã được xác nhận hoặc được ghi nhận rõ là không chặn Core Preview.
-- [ ] 19 Blueprint modules có deliverable/status/owner/dependency/acceptance criteria.
+- [ ] 19 Blueprint modules có deliverable/status/owner/dependency/acceptance criteria; đối chiếu tại [BLUEPRINT_CROSS_CHECK.md](BLUEPRINT_CROSS_CHECK.md), owner roles vẫn cần Project Owner xác nhận.
 - [x] Feature Blueprint P0 đã được lập thành draft: [FEATURE_BLUEPRINT.md](FEATURE_BLUEPRINT.md).
 - [x] UI Blueprint Core Preview đã được lập thành draft: [UI_BLUEPRINT.md](UI_BLUEPRINT.md).
 - [x] UX Blueprint baseline đã được lập: [UX_BLUEPRINT.md](UX_BLUEPRINT.md); persona validation vẫn chờ target segment.
@@ -199,6 +201,9 @@ Phase 0 chỉ được đóng khi:
 - [ ] Technical decisions cần cho Preview được phân biệt với quyết định production.
 - [ ] Risk Assessment có mitigation và residual risk.
 - [ ] User review và phê duyệt Blueprint trước khi chuyển sang UI/Development.
+- [ ] Inquiry endpoint, privacy/consent wording và end-to-end form acceptance được xác nhận.
+- [ ] Core Preview / first usable platform release được phân biệt rõ trong mọi tài liệu.
+- [ ] Performance acceptance thresholds và x-default language fallback được Project Owner quyết định hoặc ghi nhận rõ là TBD.
 
 **Current decision:** Phase 0 chưa được tuyên bố hoàn tất. Core Preview được phép chuẩn bị theo các quyết định đã xác nhận, nhưng không được tự điền các dữ liệu nghiệp vụ còn thiếu.
 
@@ -218,3 +223,4 @@ Phase 0 chỉ được đóng khi:
 
 
 - [UX Blueprint](UX_BLUEPRINT.md): visitor journey, service discovery, language switching, inquiry flow and evidence-based validation plan.
+- [Blueprint Cross-check](BLUEPRINT_CROSS_CHECK.md): đối chiếu 19 modules, Project Input completeness, cross-document conflicts, blockers và Phase 0 exit criteria.

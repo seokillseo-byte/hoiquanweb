@@ -86,11 +86,13 @@ The form must not claim that a lead has been received unless the configured back
 
 **Owner decision — Approved (2026-11-13):** Use the website consultation/quotation form with business email notification as the primary inquiry channel.
 
-**Approval boundary:** This approves the channel and intended notification flow only. It does not approve or supply the destination email address, email provider/sender configuration, privacy notice, consent wording, data-retention policy, or the person/team responsible for handling inquiries.
+**Owner-provided notification destination (2026-11-13):** `info@hoiquanweb.io.vn`.
+
+**Approval boundary:** The owner has supplied this address as the business inbox for inquiry notifications. This does not verify mailbox existence/deliverability, configure an email provider/sender, establish who monitors or handles inquiries, or approve the privacy notice, consent wording or data-retention policy.
 
 **Still required before live lead collection:**
-- Owner-approved destination business email address (do not put credentials or API keys in project documents).
-- Confirmed inquiry recipient/handling owner.
+- Confirmed operational owner/team responsible for monitoring and handling messages delivered to `info@hoiquanweb.io.vn`.
+- Verified mailbox access/deliverability and configured email provider/sender (do not put credentials or API keys in project documents).
 - Owner-approved privacy notice URL/text and consent wording, including data collected, purpose and retention/handling explanation.
 - Configured and tested public inquiry API plus email delivery on the intended environment.
 - End-to-end evidence for API acceptance, notification delivery, failure/retry behavior and duplicate-submit prevention.
@@ -131,6 +133,6 @@ Reply in normal text using the decision IDs; short answers are sufficient:
 - D-02: **Approved — B2C first, then B2B** (2026-11-13); both remain in scope. Detailed personas and demographics remain TBD.
 - D-03: No public USP/comparative claim for Core Preview; use factual service descriptions only (owner-approved 2026-11-13).
 - D-04: Interim blue/white system and five provisional tokens approved for Core Preview only (2026-11-13); official identity remains TBD.
-- D-05: Website form + business email notification approved (2026-11-13); destination email, recipient ownership, privacy/consent wording, backend/email configuration and end-to-end acceptance remain outstanding.
+- D-05: Website form + business email notification approved (2026-11-13); notification destination `info@hoiquanweb.io.vn` supplied by owner (2026-11-13). Operational handler, privacy/consent wording, backend/email configuration and end-to-end acceptance remain outstanding.
 
 Partial answers are acceptable. Any unanswered item remains **TBD** and is not treated as approved.

@@ -159,6 +159,19 @@ Do not send credentials, API keys or other secrets in this document or in chat.
 - Include the approved backup handling, 24-month period, reset events and deletion behavior accurately in the privacy notice and consent wording.
 - Implement and test backup lifecycle handling and the restore procedure, including deletion of expired inquiry records before restored service resumes normal operation.
 
+### D-11 — Default language for hreflang x-default
+
+**Feature:** Bilingual URL, canonical and hreflang policy.  
+**Related document:** `URL_MAP.md`, section 3.
+
+**Owner decision — Approved (2026-11-13):** Vietnamese (`vi`) is the default language destination for `hreflang="x-default"`.
+
+**Implementation rule:** Every genuine VI/EN translation pair must retain reciprocal `hreflang="vi"` and `hreflang="en"` links; its `hreflang="x-default"` link points to the Vietnamese URL in that pair. This decision does not change the bilingual route structure, canonical rules or page-language content.
+
+**Acceptance evidence:** Inspect generated initial HTML for representative Vietnamese and English routes and verify that both language alternates are reciprocal and `x-default` resolves to the corresponding Vietnamese route. The generator currently points x-default to Vietnamese; retain that behavior and verify the built artifact. Do not mark runtime/Preview acceptance complete solely from this documentation update.
+
+**Approval boundary:** This approves only the default-language fallback. It does not approve changes to translation quality, route inventory, target-market localization or indexation eligibility.
+
 ## 3. Decisions that can remain TBD for the initial neutral Preview
 
 These are required or recommended fields in the Project Input Template, but they do not all need to block a neutral public-site shell. They must remain visible as TBD and must not be silently guessed.
@@ -192,5 +205,6 @@ Reply in normal text using the decision IDs; short answers are sufficient:
 - D-03: No public USP/comparative claim for Core Preview; use factual service descriptions only (owner-approved 2026-11-13).
 - D-04: Interim blue/white system and five provisional tokens approved for Core Preview only (2026-11-13); official identity remains TBD.
 - D-05: Website form + business email notification approved (2026-11-13); destination `info@hoiquanweb.io.vn` supplied and Project Owner confirmed as direct handler (2026-11-13). The 24-month inquiry-data retention period, complete deletion of personal information plus inquiry content at expiry, the two reset events (Project Owner sends a quotation; customer replies), and backup handling under D-10 are approved under D-07 through D-10. The exact backup lifecycle duration, any separate legal/operational exceptions, privacy/consent wording, mailbox verification, backend/email configuration and end-to-end acceptance remain outstanding.
+- D-11: Vietnamese (`vi`) approved as the default destination for `hreflang="x-default"` (2026-11-13). Keep reciprocal VI/EN alternates; verify generated HTML and Preview behavior.
 
 Partial answers are acceptable. Any unanswered item remains **TBD** and is not treated as approved.

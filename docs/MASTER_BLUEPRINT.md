@@ -165,7 +165,7 @@ Blueprint Standard yêu cầu đủ 19 phần. Trạng thái dưới đây phả
 | 08 | UI Blueprint | Draft complete — review required | Xem [UI_BLUEPRINT.md](UI_BLUEPRINT.md); tokens hiện tại là code-observed, brand identity chính thức còn TBD |
 | 09 | Feature Blueprint | Draft complete — review required | Xem [FEATURE_BLUEPRINT.md](FEATURE_BLUEPRINT.md); P0 được giới hạn trong Core Preview |
 | 10 | Technical Blueprint | Draft / partial | Xem [TECHNICAL_BLUEPRINT.md](TECHNICAL_BLUEPRINT.md); P0 technical contract documented, production topology/runtime and acceptance evidence remain TBD |
-| 11 | Architecture Blueprint | Partial | Có architecture doc; một số quyết định production chưa chốt |
+| 11 | Architecture Blueprint | Draft / partial | Xem [ARCHITECTURE_BLUEPRINT.md](ARCHITECTURE_BLUEPRINT.md); 15 deliverables consolidated; production topology and runtime acceptance remain TBD |
 | 12 | Performance Blueprint | Planning draft created; Core Web Vitals thresholds approved under DEC-022; actual measurement pending | Xem [PERFORMANCE_BLUEPRINT.md](PERFORMANCE_BLUEPRINT.md); Lighthouse, TTFB, asset budgets, API and load targets remain TBD |
 | 13 | Security Blueprint | Draft / partial | Xem [SECURITY_BLUEPRINT.md](SECURITY_BLUEPRINT.md); P0 controls/test plan documented; runtime, privacy, backup/restore and security acceptance remain open |
 | 14 | AI Blueprint | Deferred | Không thuộc Core Preview |

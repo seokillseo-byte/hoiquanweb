@@ -34,14 +34,9 @@ The questions below are intentionally limited. If a fact is not known or cannot 
 
 **Approval boundary:** This approves the factual business description only. It does not approve a formal legal/industry classification, revenue model, operating model, USP, competitive claim or detailed audience persona.
 
-**Industry classification proposal (still not approved):** Công nghệ thông tin / Dịch vụ công nghệ số (website, software and digital services).
+**Industry classification proposal (not approved):** Công nghệ thông tin / Dịch vụ công nghệ số (website, software and digital services). The owner has not confirmed a formal industry classification.
 
-> HOIQUANWEB cung cấp dịch vụ thiết kế và phát triển website, phần mềm, ứng dụng di động, game, SEO, giải pháp AI và tự động hóa cùng các dịch vụ công nghệ liên quan. Website giới thiệu dịch vụ và tiếp nhận yêu cầu tư vấn, báo giá từ khách hàng tại Việt Nam và thị trường quốc tế.
-
-**Please confirm:**
-- [x] Approve this wording as the factual business description (owner-approved 2026-11-13).
-
-**Industry classification proposal:** Công nghệ thông tin / Dịch vụ công nghệ số (website, software and digital services). This is a proposed classification, not an approved industry fact.
+No further approval is required for the factual business-description wording recorded above.
 
 ### D-02 — Business model and primary customer
 

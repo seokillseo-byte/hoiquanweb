@@ -98,18 +98,53 @@ The detail-page template must not imply that every possible technology, platform
 
 ## 4. Page content specifications
 
-### 4.1 Homepage
+### 4.1 Homepage — page-level content specification
 
-Recommended content order for the B2C-first Core Preview:
+**Page role:** The primary public entry point for the B2C-first service website and the main route to consultation/quotation. B2B remains discoverable and supported without taking priority over the initial individual-customer journey.
 
-1. **Hero / factual introduction:** identify HOIQUANWEB using the Owner-approved business description; primary CTA is consultation/quotation.
-2. **Service discovery:** show all seven approved service groups as separate choices.
-3. **How to proceed:** explain only the confirmed inquiry/consultation process; do not invent delivery stages, timelines or contractual commitments.
-4. **Verified work or knowledge:** include only approved portfolio items or reviewed articles. Omit the module when no approved material exists.
-5. **Factual company/contact information:** use confirmed facts only.
-6. **Closing consultation CTA:** link to the accepted inquiry path or clearly identify the contact method.
+**Approved factual introduction (use verbatim unless the Project Owner approves a revision):**
 
-This hierarchy is a content-order proposal consistent with the approved B2C-first UX direction. Exact headline, section copy, imagery and service ranking remain subject to content review and evidence.
+> HOIQUANWEB cung cấp dịch vụ thiết kế và phát triển website, phần mềm, ứng dụng di động, game, SEO, giải pháp AI và tự động hóa cùng các dịch vụ công nghệ liên quan. Website giới thiệu dịch vụ và tiếp nhận yêu cầu tư vấn, báo giá từ khách hàng tại Việt Nam và thị trường quốc tế.
+
+The English version must be professionally localized from this approved meaning; it must not add claims or capabilities absent from the approved Vietnamese wording.
+
+#### Homepage module inventory
+
+| ID | Module / order | Purpose and required content | CTA / interaction | Publication and evidence gate |
+|---|---|---|---|---|
+| HP-01 | Hero and factual introduction | One clear page-level H1; identify HOIQUANWEB using the approved factual description; communicate the service-discovery and consultation purpose. Keep the message B2C-first without excluding B2B. | Primary action: consultation/quotation request. Exact label and destination remain subject to the accepted inquiry implementation. | No USP, superlative, guarantee, fabricated differentiator or unapproved tagline. |
+| HP-02 | Seven-service discovery | Show seven separate service choices: Website; Software; Mobile App; Game; SEO; AI & Automation; Other Technology Services. Each item has a concise factual description and a link to its corresponding service detail page. | Open the relevant service detail page; optional consultation action. | Preserve canonical service names and distinct groups. Do not imply unverified platforms, deliverables or specialist capabilities. |
+| HP-03 | Audience access and sequencing | Make the initial individual-customer journey easiest to discover. Retain a clear route for business/organizational visitors and do not state that B2B is unsupported. | Route visitors to the relevant service or general consultation path. | Do not invent personas, age groups, industries, budgets, buyer roles or use cases. Detailed audience content remains TBD. |
+| HP-04 | Service information / next step | Explain how visitors can identify a relevant service and submit their requirements. Include operational process steps only when confirmed by the Project Owner. | Consultation/quotation intent. | Do not invent project stages, delivery timelines, response-time promises, free-consultation claims, payment terms or warranties. Omit unverified process details. |
+| HP-05 | Work samples / portfolio | Display only genuine projects whose description, publication permission, asset rights and any metrics have been verified and approved. | View an approved project, if available. | Conditional module. If no item passes the evidence and rights gate, omit the module; do not show fabricated projects, logos or sample metrics. |
+| HP-06 | Knowledge / editorial content | Optionally surface reviewed, useful articles with clear topics and genuine localized content. | Read the relevant article; link to a related service only when appropriate. | Conditional module. Generic blog shells and query-string-only dynamic articles remain non-indexable until R-016 is accepted. |
+| HP-07 | Consultation / quotation conversion | Explain the approved inquiry channel and collect only fields defined in the accepted F-009 contract. | Submit consultation/quotation request. | Keep the form inactive until privacy/consent wording, API configuration, sender configuration and required QA are accepted. Customer confirmation may state only that the inquiry was recorded after durable API acceptance; it must not claim email delivery. |
+| HP-08 | Contact, legal and footer | Show verified contact information, language navigation, links to applicable privacy/legal pages and the confirmed business identity. | Use a verified contact route; navigate to the relevant page/language. | Email destination is `info@hoiquanweb.io.vn`; mailbox delivery is not yet runtime-verified. Publish privacy/consent wording only after approval. |
+
+#### Content and heading rules
+
+- Use one descriptive H1 for the homepage. The exact wording and keyword target remain pending keyword research and Owner content approval.
+- Use a logical H2/H3 hierarchy for the service discovery, supporting content and contact sections; do not choose headings solely to repeat keywords.
+- Page title and meta description must describe the actual homepage content. Exact metadata remains pending validated keyword mapping and final copy review.
+- Keep Vietnamese and English versions semantically equivalent, naturally localized and linked as a genuine language pair.
+- Use the seven canonical service labels consistently in navigation, cards, headings, breadcrumbs, internal links and localized equivalents.
+- Do not place draft copy, empty cards, fabricated testimonials, placeholder metrics or unsupported trust badges in the public page.
+- Use only approved media. If a visual is illustrative rather than documentary, it must not be presented as a real customer, project, team, office or result.
+
+#### Homepage acceptance checklist
+
+- [ ] H1, title and description accurately represent the approved business description and validated search intent.
+- [ ] All seven service groups appear separately and link to the correct service detail routes.
+- [ ] B2C-first hierarchy is evident; B2B remains accessible and is not described as excluded.
+- [ ] Every visible business, service, process, portfolio and trust claim is traceable to approved facts or evidence.
+- [ ] Portfolio and knowledge modules are omitted when their publication gates are not met.
+- [ ] Primary consultation/quotation path has an explicit operational state; no inactive form is presented as live.
+- [ ] Vietnamese and English content is genuinely localized and the language switcher links to the equivalent approved route.
+- [ ] Mobile, tablet and desktop layouts preserve reading order, service discoverability, keyboard access and CTA usability.
+- [ ] SEO metadata, canonical, hreflang, robots and sitemap eligibility are validated against the actual assembled Preview.
+- [ ] The final assembled Preview keeps the Vietnamese public homepage at `/`; the application remains isolated at the approved Preview path.
+
+**Status:** Homepage content structure specified for Owner review. Final public copy, exact headline/CTA wording, keyword mapping, portfolio selection and operational form acceptance remain pending. This section does not approve new features or change the Core Preview P0 boundary.
 
 ### 4.2 About page
 

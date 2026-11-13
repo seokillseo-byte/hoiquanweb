@@ -45,15 +45,13 @@ The questions below are intentionally limited. If a fact is not known or cannot 
 
 The lead-generation conversion goal is confirmed, but it does not by itself determine whether the business model is B2B, B2C or hybrid.
 
-**Please confirm the main customer type:**
-- [ ] B2B — businesses/organizations buying services.
-- [ ] B2C — individual customers buying services.
-- [ ] Both B2B and B2C.
-- [ ] Other — specify.
+**Owner decision — Approved (2026-11-13):** Both B2B and B2C.
 
-**Please identify the primary audience in one sentence:** e.g. “SMEs looking for website and software development” is only an example, not a pre-filled assumption.
+This confirms that HOIQUANWEB serves both business/organizational buyers and individual customers. It does **not** establish which segment is the priority, nor does it define specific industries, company sizes, individual demographics or buyer personas.
 
-**Age groups:** If the primary audience is an organization/business, confirm “Not applicable — organizational buyers” rather than inventing age demographics.
+**Still TBD:** Identify the primary audience/priority segment in one sentence. Until then, messaging and UX must remain inclusive of both B2B and B2C without ranking either segment.
+
+**Age groups:** Not yet specified. Do not infer age demographics; organizational buyers should be described by role/organization rather than personal age.
 
 ### D-03 — USP and claims that may appear publicly
 
@@ -135,7 +133,7 @@ These are required or recommended fields in the Project Input Template, but they
 Reply in normal text using the decision IDs; short answers are sufficient:
 
 - D-01: Approve / edit / replace.
-- D-02: B2B / B2C / both / other; primary audience: ...
+- D-02: **Approved — B2B + B2C** (2026-11-13); priority audience/segment remains TBD.
 - D-03: No USP claim for Preview / provide claim + evidence.
 - D-04: Interim blue/white / provide brand guideline / separate brand project.
 - D-05: Form only / form + email / other / no lead submission; approved contact/privacy details to follow.

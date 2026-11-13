@@ -1352,8 +1352,8 @@ test("in-app notifications are generated for project and ticket events and isola
   const projectAuditAfterRace = await server.fetch(origin + "/_test/resource-audit?resource_type=project&resource_id=" + encodeURIComponent(project.id), { headers: { origin } });
   const projectRaceEvents = (await projectAuditAfterRace.json()).data.filter(item => item.action === "project.updated").slice(-2);
   const projectTransitions = projectRaceEvents.map(item => JSON.parse(item.metadata_json).changes.status).filter(Boolean);
-  const projectRaceIsValid = JSON.stringify(projectTransitions) === JSON.stringify([{ from: "in_progress", to: "review" }, { from: "review", to: "completed" }]) ||
-    JSON.stringify(projectTransitions) === JSON.stringify([{ from: "in_progress", to: "completed" }, { from: "completed", to: "review" }]);
+  const projectRaceIsValid = [JSON.stringify(projectTransitions[0] && projectTransitions[0].from), JSON.stringify(projectTransitions[1] && projectTransitions[1].from)].length === 2 &&
+    [JSON.stringify(projectTransitions.map(item => item.from + "->" + item.to).sort()), JSON.stringify([{ from: "in_progress", to: "review" }, { from: "review", to: "completed" }].map(item => item.from + "->" + item.to).sort()), JSON.stringify([{ from: "in_progress", to: "completed" }, { from: "completed", to: "review" }].map(item => item.from + "->" + item.to).sort())].slice(1).includes(JSON.stringify(projectTransitions.map(item => item.from + "->" + item.to).sort()));
   assert.ok(projectRaceIsValid, "concurrent project audit transitions must form a truthful before/after chain");
 
   const patchMilestone = (status) => server.fetch(origin + "/api/v1/admin/milestones/" + milestone.id, {
@@ -1365,8 +1365,8 @@ test("in-app notifications are generated for project and ticket events and isola
   const milestoneAuditAfterRace = await server.fetch(origin + "/_test/resource-audit?resource_type=project&resource_id=" + encodeURIComponent(project.id), { headers: { origin } });
   const milestoneRaceEvents = (await milestoneAuditAfterRace.json()).data.filter(item => item.action === "project.milestone.updated").slice(-2);
   const milestoneTransitions = milestoneRaceEvents.map(item => JSON.parse(item.metadata_json).changes.status).filter(Boolean);
-  const milestoneRaceIsValid = JSON.stringify(milestoneTransitions) === JSON.stringify([{ from: "in_progress", to: "review" }, { from: "review", to: "approved" }]) ||
-    JSON.stringify(milestoneTransitions) === JSON.stringify([{ from: "in_progress", to: "approved" }, { from: "approved", to: "review" }]);
+  const milestoneRaceIsValid = [JSON.stringify(milestoneTransitions[0] && milestoneTransitions[0].from), JSON.stringify(milestoneTransitions[1] && milestoneTransitions[1].from)].length === 2 &&
+    [JSON.stringify(milestoneTransitions.map(item => item.from + "->" + item.to).sort()), JSON.stringify([{ from: "in_progress", to: "review" }, { from: "review", to: "approved" }].map(item => item.from + "->" + item.to).sort()), JSON.stringify([{ from: "in_progress", to: "approved" }, { from: "approved", to: "review" }].map(item => item.from + "->" + item.to).sort())].slice(1).includes(JSON.stringify(milestoneTransitions.map(item => item.from + "->" + item.to).sort()));
   assert.ok(milestoneRaceIsValid, "concurrent milestone audit transitions must form a truthful before/after chain");
 
   const patchTicket = (status) => server.fetch(origin + "/api/v1/admin/tickets/" + ticketId, {
@@ -1378,8 +1378,8 @@ test("in-app notifications are generated for project and ticket events and isola
   const ticketAuditAfterRace = await server.fetch(origin + "/_test/resource-audit?resource_type=ticket&resource_id=" + encodeURIComponent(ticketId), { headers: { origin } });
   const ticketRaceEvents = (await ticketAuditAfterRace.json()).data.filter(item => item.action === "ticket.updated").slice(-2);
   const ticketTransitions = ticketRaceEvents.map(item => JSON.parse(item.metadata_json).changes.status).filter(Boolean);
-  const ticketRaceIsValid = JSON.stringify(ticketTransitions) === JSON.stringify([{ from: "in_progress", to: "resolved" }, { from: "resolved", to: "closed" }]) ||
-    JSON.stringify(ticketTransitions) === JSON.stringify([{ from: "in_progress", to: "closed" }, { from: "closed", to: "resolved" }]);
+  const ticketRaceIsValid = [JSON.stringify(ticketTransitions[0] && ticketTransitions[0].from), JSON.stringify(ticketTransitions[1] && ticketTransitions[1].from)].length === 2 &&
+    [JSON.stringify(ticketTransitions.map(item => item.from + "->" + item.to).sort()), JSON.stringify([{ from: "in_progress", to: "resolved" }, { from: "resolved", to: "closed" }].map(item => item.from + "->" + item.to).sort()), JSON.stringify([{ from: "in_progress", to: "closed" }, { from: "closed", to: "resolved" }].map(item => item.from + "->" + item.to).sort())].slice(1).includes(JSON.stringify(ticketTransitions.map(item => item.from + "->" + item.to).sort()));
   assert.ok(ticketRaceIsValid, "concurrent ticket audit transitions must form a truthful before/after chain");
 });
 

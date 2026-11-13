@@ -1347,6 +1347,10 @@ test("in-app notifications are generated for project and ticket events and isola
     method: "PATCH", headers: { origin, cookie: admin.cookie, "content-type": "application/json" },
     body: JSON.stringify({ status })
   });
+  const patchProjectFields = (fields) => server.fetch(origin + "/api/v1/admin/projects/" + project.id, {
+    method: "PATCH", headers: { origin, cookie: admin.cookie, "content-type": "application/json" },
+    body: JSON.stringify(fields)
+  });
   const concurrentProject = await Promise.all([patchProject("review"), patchProject("completed")]);
   assert.ok(concurrentProject.every(response => response.status === 200), "both concurrent project updates should succeed");
   const projectAuditAfterRace = await server.fetch(origin + "/_test/resource-audit?resource_type=project&resource_id=" + encodeURIComponent(project.id), { headers: { origin } });
@@ -1360,6 +1364,10 @@ test("in-app notifications are generated for project and ticket events and isola
   const patchMilestone = (status) => server.fetch(origin + "/api/v1/admin/milestones/" + milestone.id, {
     method: "PATCH", headers: { origin, cookie: admin.cookie, "content-type": "application/json" },
     body: JSON.stringify({ status })
+  });
+  const patchMilestoneFields = (fields) => server.fetch(origin + "/api/v1/admin/milestones/" + milestone.id, {
+    method: "PATCH", headers: { origin, cookie: admin.cookie, "content-type": "application/json" },
+    body: JSON.stringify(fields)
   });
   const concurrentMilestones = await Promise.all([patchMilestone("review"), patchMilestone("approved")]);
   assert.ok(concurrentMilestones.every(response => response.status === 200), "both concurrent milestone updates should succeed");
@@ -1399,6 +1407,26 @@ test("in-app notifications are generated for project and ticket events and isola
   const projectAuditNoop = await server.fetch(origin + "/_test/resource-audit?resource_type=project&resource_id=" + encodeURIComponent(project.id), { headers: { origin } });
   assert.equal((await projectAuditNoop.json()).data.filter(item => item.action === "project.updated").length, projectEventCountBeforeNoop, "no-op project PATCH must not create an audit change");
 
+  // Explicit JSON nulls must be preserved in both directions for nullable date fields.
+  const projectDatesSet = await patchProjectFields({ start_date: "2026-11-14", due_date: "2026-11-20" });
+  assert.equal(projectDatesSet.status, 200, await projectDatesSet.clone().text());
+  const projectAuditDatesSet = await server.fetch(origin + "/_test/resource-audit?resource_type=project&resource_id=" + encodeURIComponent(project.id), { headers: { origin } });
+  const projectDateSetEvents = (await projectAuditDatesSet.json()).data.filter(item => item.action === "project.updated");
+  const projectDateSetChanges = projectDateSetEvents.map(item => JSON.parse(item.metadata_json).changes).find(changes =>
+    changes.start_date?.to === "2026-11-14" && changes.due_date?.to === "2026-11-20");
+  assert.deepEqual(projectDateSetChanges?.start_date, { from: null, to: "2026-11-14" });
+  assert.deepEqual(projectDateSetChanges?.due_date, { from: null, to: "2026-11-20" });
+
+  const projectDatesCleared = await patchProjectFields({ start_date: null, due_date: null });
+  assert.equal(projectDatesCleared.status, 200, await projectDatesCleared.clone().text());
+  const projectAuditDatesCleared = await server.fetch(origin + "/_test/resource-audit?resource_type=project&resource_id=" + encodeURIComponent(project.id), { headers: { origin } });
+  const projectDateClearEvents = (await projectAuditDatesCleared.json()).data.filter(item => item.action === "project.updated");
+  const projectDateClearChanges = projectDateClearEvents.map(item => JSON.parse(item.metadata_json).changes).find(changes =>
+    changes.start_date?.from === "2026-11-14" && Object.hasOwn(changes.start_date, "to") && changes.start_date.to === null &&
+    changes.due_date?.from === "2026-11-20" && Object.hasOwn(changes.due_date, "to") && changes.due_date.to === null);
+  assert.deepEqual(projectDateClearChanges?.start_date, { from: "2026-11-14", to: null });
+  assert.deepEqual(projectDateClearChanges?.due_date, { from: "2026-11-20", to: null });
+
   const sequentialMilestoneOne = await patchMilestone("blocked");
   const sequentialMilestoneTwo = await patchMilestone("pending");
   assert.equal(sequentialMilestoneOne.status, 200);
@@ -1411,6 +1439,22 @@ test("in-app notifications are generated for project and ticket events and isola
   assert.equal(milestoneNoop.status, 200);
   const milestoneAuditNoop = await server.fetch(origin + "/_test/resource-audit?resource_type=project&resource_id=" + encodeURIComponent(project.id), { headers: { origin } });
   assert.equal((await milestoneAuditNoop.json()).data.filter(item => item.action === "project.milestone.updated").length, milestoneEventCountBeforeNoop, "no-op milestone PATCH must not create an audit change");
+
+  const milestoneDateSet = await patchMilestoneFields({ due_date: "2026-11-21" });
+  assert.equal(milestoneDateSet.status, 200, await milestoneDateSet.clone().text());
+  const milestoneAuditDateSet = await server.fetch(origin + "/_test/resource-audit?resource_type=project&resource_id=" + encodeURIComponent(project.id), { headers: { origin } });
+  const milestoneDateSetEvents = (await milestoneAuditDateSet.json()).data.filter(item => item.action === "project.milestone.updated");
+  const milestoneDateSetChanges = milestoneDateSetEvents.map(item => JSON.parse(item.metadata_json).changes).find(changes =>
+    changes.due_date?.to === "2026-11-21");
+  assert.deepEqual(milestoneDateSetChanges?.due_date, { from: null, to: "2026-11-21" });
+
+  const milestoneDateCleared = await patchMilestoneFields({ due_date: null });
+  assert.equal(milestoneDateCleared.status, 200, await milestoneDateCleared.clone().text());
+  const milestoneAuditDateCleared = await server.fetch(origin + "/_test/resource-audit?resource_type=project&resource_id=" + encodeURIComponent(project.id), { headers: { origin } });
+  const milestoneDateClearEvents = (await milestoneAuditDateCleared.json()).data.filter(item => item.action === "project.milestone.updated");
+  const milestoneDateClearChanges = milestoneDateClearEvents.map(item => JSON.parse(item.metadata_json).changes).find(changes =>
+    changes.due_date?.from === "2026-11-21" && Object.hasOwn(changes.due_date, "to") && changes.due_date.to === null);
+  assert.deepEqual(milestoneDateClearChanges?.due_date, { from: "2026-11-21", to: null });
 
   const sequentialTicketOne = await patchTicket("waiting_customer");
   const sequentialTicketTwo = await patchTicket("resolved");

@@ -20,26 +20,26 @@ The UI must not use invented trust signals, fake dashboard metrics, fabricated c
 
 ## 2. Design-system baseline
 
-### 2.1 Existing repository tokens (observed, not final brand approval)
+### 2.1 Interim Core Preview color tokens and existing implementation tokens
 
 The current public-site stylesheet defines:
 
-| Token | Current value | Intended use in current implementation |
+| Token | Current value | Status / use |
 |---|---|---|
-| `--blue` | `#155EEF` | Primary interactive/action color |
-| `--navy` | `#0B1F3A` | Headings, footer and deep surfaces |
-| `--cyan` | `#38BDF8` | Accent/highlight |
-| `--ink` | `#14243B` | Main text |
-| `--muted` | `#61718A` | Supporting text |
-| `--surface` | `#F5F8FC` | Soft section background |
-| `--line` | `#E2EAF3` | Borders/dividers |
-| `--white` | `#fff` | Main surface |
-| `--gradient` | Blue-to-cyan gradient | Existing primary emphasis |
-| `--shadow` | Existing soft shadow | Elevation |
+| `--blue` | `#155EEF` | Owner-approved provisional Core Preview color; primary action |
+| `--navy` | `#0B1F3A` | Owner-approved provisional Core Preview color; headings/deep surfaces |
+| `--cyan` | `#38BDF8` | Owner-approved provisional Core Preview color; accent |
+| `--surface` | `#F5F8FC` | Owner-approved provisional Core Preview color; soft surface |
+| `--white` | `#FFFFFF` | Owner-approved provisional Core Preview color; main surface |
+| `--ink` | `#14243B` | Existing implementation text token; not one of the five approved colors |
+| `--muted` | `#61718A` | Existing implementation supporting-text token; not one of the five approved colors |
+| `--line` | `#E2EAF3` | Existing implementation border token; not one of the five approved colors |
+| `--gradient` | Blue-to-cyan gradient | Existing implementation effect; not separately approved as a brand asset |
+| `--shadow` | Existing soft shadow | Existing implementation effect; not a brand token |
 
 Current typography stack begins with Inter and falls back to system sans-serif. Existing layout tokens include a 1280px content container and rounded cards/buttons. Retain the current typography stack provisionally for Core Preview; this does not constitute official typography approval.
 
-**Governance:** The five existing tokens below are owner-approved for interim Core Preview use only under DEC-014. They are not the official brand palette or final corporate identity. Official logo, final typography and brand guideline remain TBD-007.
+**Governance:** Exactly five color values (`--blue`, `--navy`, `--cyan`, `--surface`, `--white`) are owner-approved for interim Core Preview use only under DEC-014. Other listed CSS values are existing implementation tokens/effects, not part of the five-color approval and not an official brand palette. Official logo, final typography and brand guideline remain TBD-007.
 
 ### 2.2 Visual principles
 - Clean, modern, professional technology-services presentation.

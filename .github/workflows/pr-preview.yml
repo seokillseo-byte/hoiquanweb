@@ -34,7 +34,7 @@ jobs:
       - name: Install locked dependencies
         run: npm ci --no-audit --no-fund
       - name: Typecheck and build frontend
-        run: npm run build
+        run: VITE_BASE_PATH=/platform/ npm run build
       - name: Generate bilingual public website
         run: node scripts/build_public_site.mjs
       - name: Assemble isolated static preview
@@ -43,7 +43,8 @@ jobs:
           cp -R public-site/dist/. _preview/
           cp admin.html _preview/
           cp portal.html _preview/
-          if [ -d dist ]; then cp -R dist/. _preview/; fi
+          mkdir -p _preview/platform
+          if [ -d dist ]; then cp -R dist/. _preview/platform/; fi
           cat > _preview/PREVIEW-README.txt <<'EOF'
           Hội Quán Web isolated PR preview bundle.
           This is a static frontend preview only. It does not deploy or start the Cloudflare Worker,
@@ -52,6 +53,8 @@ jobs:
           Download and extract this artifact, then run: python -m http.server 4173
           Open http://localhost:4173
           EOF
+      - name: Validate final assembled Preview artifact
+        run: HQ_PUBLIC_SITE_ROOT=_preview HQ_VALIDATE_PREVIEW=1 node scripts/validate_public_site.mjs
       - name: Upload preview bundle
         uses: actions/upload-artifact@v4
         with:

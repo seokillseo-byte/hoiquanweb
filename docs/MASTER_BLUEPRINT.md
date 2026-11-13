@@ -135,7 +135,7 @@ Blueprint Standard yêu cầu đủ 19 phần. Trạng thái dưới đây phả
 | 04 | Competitor Blueprint | Not started | Chưa có đối thủ/benchmark được xác nhận |
 | 05 | SEO Blueprint | In progress | Có SEO principles; cần keyword map, đồng thời xử lý SEO cho dynamic blog/CMS routes (clean slug, prerender/SSR, sitemap từng bài) |
 | 06 | Content Blueprint | In progress | Có content groups; thiếu proof, pricing và nội dung doanh nghiệp |
-| 07 | UX Blueprint | In progress | Conversion goal đã chốt; persona và customer journey chi tiết còn TBD |
+| 07 | UX Blueprint | Draft complete — review required | Xem [UX_BLUEPRINT.md](UX_BLUEPRINT.md); journey baseline đã định nghĩa, persona/customer research còn TBD |
 | 08 | UI Blueprint | Draft complete — review required | Xem [UI_BLUEPRINT.md](UI_BLUEPRINT.md); tokens hiện tại là code-observed, brand identity chính thức còn TBD |
 | 09 | Feature Blueprint | Draft complete — review required | Xem [FEATURE_BLUEPRINT.md](FEATURE_BLUEPRINT.md); P0 được giới hạn trong Core Preview |
 | 10 | Technical Blueprint | Partial | Repo có implementation hiện hữu; production topology còn TBD |
@@ -189,6 +189,7 @@ Phase 0 chỉ được đóng khi:
 - [ ] 19 Blueprint modules có deliverable/status/owner/dependency/acceptance criteria.
 - [x] Feature Blueprint P0 đã được lập thành draft: [FEATURE_BLUEPRINT.md](FEATURE_BLUEPRINT.md).
 - [x] UI Blueprint Core Preview đã được lập thành draft: [UI_BLUEPRINT.md](UI_BLUEPRINT.md).
+- [x] UX Blueprint baseline đã được lập: [UX_BLUEPRINT.md](UX_BLUEPRINT.md); persona validation vẫn chờ target segment.
 - [ ] UX Blueprint / persona / journey được hoàn thiện sau khi target segment được xác nhận.
 - [ ] Scope P0/P1/P2 không mâu thuẫn với roadmap repository.
 - [x] URL inventory 20 cặp / 40 route đã được đối chiếu với route generator; policy indexation và sitemap vẫn cần triển khai/kiểm thử.
@@ -214,3 +215,6 @@ Phase 0 chỉ được đóng khi:
 - [Feature Blueprint](FEATURE_BLUEPRINT.md): P0 feature register, functional/non-functional requirements, dependencies and acceptance criteria.
 - [UI Blueprint](UI_BLUEPRINT.md): public site shell, page templates, components, responsive and accessibility rules.
 - Both documents are draft planning specifications and require owner review; neither marks implementation or production runtime as accepted.
+
+
+- [UX Blueprint](UX_BLUEPRINT.md): visitor journey, service discovery, language switching, inquiry flow and evidence-based validation plan.

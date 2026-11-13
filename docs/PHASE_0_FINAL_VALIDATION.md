@@ -8,8 +8,8 @@
 **Branch:** `docs/phase-0-master-blueprint-risk-review`  
 **Reviewed PR:** [#43](https://github.com/seokillseo-byte/hoiquanweb/pull/43)  
 **Previously reviewed HEAD:** `e68049e96ae55e001a00cc5f81d3d5f7ab4be52e`  
-**Latest CI-verified HEAD:** `eb0182abeb5baf59bdaab5dd497dbfe5c5f73b0d` (2026-11-13)  
-**Subsequent documentation-only commits:** Added BP-GAP-01, TECHNICAL_BLUEPRINT.md and SECURITY_BLUEPRINT.md and updated cross-references. The current branch head is newer than the CI-verified HEAD below; no workflow runs were returned for the current docs-only head at the latest check.
+**Latest CI-verified PR HEAD:** `388aa6ef53d106f181b8983a7d9021e245d7086c` (2026-11-13)  
+**Current evidence:** Both CI workflows and the isolated Preview artifact have now been verified on the exact current PR HEAD. The independent static artifact refresh is recorded in QA_REVIEW_XC03_XC10.md section 9.5.
 
 > This report records the evidence and gaps visible at the assessment time. It is not an Owner acceptance, a Gate 2 approval, a Development Authorization, a release approval or a production-readiness certificate.
 
@@ -37,8 +37,8 @@
 | 19-module Blueprint coverage | PARTIAL | All 19 modules have a status in the Cross-check; several are draft, partial, deferred or pending and are not Owner-accepted. See Section 3. |
 | Cross-document consistency | PARTIAL | Cross-check records resolved and open items; route/indexability, inquiry runtime, production architecture and full QA evidence remain outstanding. |
 | Bounded development remediation | PARTIAL | XC-03/R-016 guard and XC-10/R-017 isolated Preview assembly are implemented within the existing bounded authorization. |
-| CI on latest code-and-docs HEAD checked | PASS | On HEAD `81b8cd4937c6c88cbd22f4af604ee6748fd66ba5`, Validate website and API run `43408429570` and Build isolated PR Preview run `43408429572` both completed with conclusion `success`. Later QA documentation-only update records the artifact evidence; do not infer runtime or Owner acceptance from CI. |
-| Independent static artifact QA | PARTIAL PASS | Latest artifact 14028885257 (HEAD `81b8cd4`) independently checked: 40 localized HTML routes; 40 canonical/hreflang invariants pass; 36/36 sitemap URLs HTTP 200; 0 duplicates/missing routes/canonical mismatches/noindex sitemap entries; root and `/platform/` asset paths intact. Full visual, browser, responsive, accessibility and live-runtime acceptance remain pending. |
+| CI on latest PR HEAD checked | PASS | On exact HEAD `388aa6ef53d106f181b8983a7d9021e245d7086c`, Validate website and API run `43409087189` and Build isolated PR Preview run `43409087020` both completed with conclusion `success`. Do not infer runtime or Owner acceptance from CI. |
+| Independent static artifact QA | PARTIAL PASS | Latest artifact 14028672376 (HEAD `388aa6ef`) independently checked: 40 localized HTML routes; 40 canonical/hreflang invariants pass; 36 unique sitemap URLs and 36/36 route files present; 0 duplicates/missing routes/canonical mismatches/noindex sitemap entries; root and `/platform/` asset files intact. Full visual, browser, responsive, accessibility and live-runtime acceptance remain pending. |
 | Critical/high risk disposition | FAIL / OPEN | R-016 remains Critical; R-017 remains High pending full visual/browser/responsive review and Owner acceptance. Other high/critical business, privacy, backend and operational risks remain open. |
 | Gate 2 / Development Authorization | NOT APPROVED | HDO-019 is Draft / For Owner Review. Gate 2 has not been approved; blanket Development Authorization has not been granted. |
 | Phase 0 formal acceptance | NOT ACCEPTED | No formal Project Owner acceptance evidence is recorded. |
@@ -116,10 +116,11 @@ Owner decisions recorded: form + business email notification; destination `info@
 
 ### CI evidence and documentation HEAD
 
-- Latest CI-verified HEAD at the evidence check: `eb0182abeb5baf59bdaab5dd497dbfe5c5f73b0d`.
-- [Validate website and API — run 43407229788](https://github.com/seokillseo-byte/hoiquanweb/actions/runs/43407229788): completed, **success**.
-- [Build isolated PR Preview — run 43407229622](https://github.com/seokillseo-byte/hoiquanweb/actions/runs/43407229622): completed, **success**.
-- Subsequent documentation-only commits added BP-GAP-01, TECHNICAL_BLUEPRINT.md and SECURITY_BLUEPRINT.md and updated cross-references. The latest documentation commits are newer than the CI-verified HEAD; no workflow runs were returned for the current docs-only head at the latest check. Do not describe the earlier CI runs as validation of these later commits.
+- Exact current PR HEAD checked: `388aa6ef53d106f181b8983a7d9021e245d7086c` (2026-11-13).
+- [Validate website and API — run 43409087189](https://github.com/seokillseo-byte/hoiquanweb/actions/runs/43409087189): completed, **success**.
+- [Build isolated PR Preview — run 43409087020](https://github.com/seokillseo-byte/hoiquanweb/actions/runs/43409087020): completed, **success**.
+- Both workflows are associated with the exact current PR HEAD. Their jobs and all listed steps completed successfully. The Preview artifact [14028672376](https://github.com/seokillseo-byte/hoiquanweb/actions/runs/43409087020/artifacts/14028672376) was downloaded and independently checked; see [QA_REVIEW_XC03_XC10.md](QA_REVIEW_XC03_XC10.md), section 9.5.
+- These checks evidence the automated workflows and static artifact only. They do not prove production deployment, real mailbox delivery, hosted Worker/D1/R2 runtime, field Core Web Vitals, full browser/device visual quality or formal acceptance.
 
 These runs evidence automated checks for that commit. They do not prove production deployment, real mailbox delivery, database/Worker runtime readiness, Core Web Vitals field thresholds, full cross-browser visual quality or formal acceptance.
 

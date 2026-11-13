@@ -135,9 +135,9 @@ Blueprint Standard yêu cầu đủ 19 phần. Trạng thái dưới đây phả
 | 04 | Competitor Blueprint | Not started | Chưa có đối thủ/benchmark được xác nhận |
 | 05 | SEO Blueprint | In progress | Có SEO principles; cần keyword map, đồng thời xử lý SEO cho dynamic blog/CMS routes (clean slug, prerender/SSR, sitemap từng bài) |
 | 06 | Content Blueprint | In progress | Có content groups; thiếu proof, pricing và nội dung doanh nghiệp |
-| 07 | UX Blueprint | In progress | Conversion goal đã chốt; persona chưa chốt |
-| 08 | UI Blueprint | Partial | Repo có design tokens; chưa xác nhận brand identity chính thức |
-| 09 | Feature Blueprint | In progress | Core Preview scope được giới hạn trong tài liệu này |
+| 07 | UX Blueprint | In progress | Conversion goal đã chốt; persona và customer journey chi tiết còn TBD |
+| 08 | UI Blueprint | Draft complete — review required | Xem [UI_BLUEPRINT.md](UI_BLUEPRINT.md); tokens hiện tại là code-observed, brand identity chính thức còn TBD |
+| 09 | Feature Blueprint | Draft complete — review required | Xem [FEATURE_BLUEPRINT.md](FEATURE_BLUEPRINT.md); P0 được giới hạn trong Core Preview |
 | 10 | Technical Blueprint | Partial | Repo có implementation hiện hữu; production topology còn TBD |
 | 11 | Architecture Blueprint | Partial | Có architecture doc; một số quyết định production chưa chốt |
 | 12 | Performance Blueprint | Not validated | Cần đo trên Preview thực tế |
@@ -187,6 +187,9 @@ Phase 0 chỉ được đóng khi:
 
 - [ ] Project Input critical fields đã được xác nhận hoặc được ghi nhận rõ là không chặn Core Preview.
 - [ ] 19 Blueprint modules có deliverable/status/owner/dependency/acceptance criteria.
+- [x] Feature Blueprint P0 đã được lập thành draft: [FEATURE_BLUEPRINT.md](FEATURE_BLUEPRINT.md).
+- [x] UI Blueprint Core Preview đã được lập thành draft: [UI_BLUEPRINT.md](UI_BLUEPRINT.md).
+- [ ] UX Blueprint / persona / journey được hoàn thiện sau khi target segment được xác nhận.
 - [ ] Scope P0/P1/P2 không mâu thuẫn với roadmap repository.
 - [x] URL inventory 20 cặp / 40 route đã được đối chiếu với route generator; policy indexation và sitemap vẫn cần triển khai/kiểm thử.
 - [ ] Sitemap chỉ chứa canonical public URLs đủ điều kiện index; blog-detail shell bị loại khỏi sitemap và noindex.
@@ -204,3 +207,10 @@ Phase 0 chỉ được đóng khi:
 - Source of truth: `scripts/build_public_site.mjs`.
 - Detailed route inventory and indexation matrix: [docs/URL_MAP.md](URL_MAP.md).
 - The inventory is source-verified; keyword targets, content approval, indexation recommendations and runtime acceptance remain pending.
+
+
+## Appendix B — Feature and UI specifications
+
+- [Feature Blueprint](FEATURE_BLUEPRINT.md): P0 feature register, functional/non-functional requirements, dependencies and acceptance criteria.
+- [UI Blueprint](UI_BLUEPRINT.md): public site shell, page templates, components, responsive and accessibility rules.
+- Both documents are draft planning specifications and require owner review; neither marks implementation or production runtime as accepted.

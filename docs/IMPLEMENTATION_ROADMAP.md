@@ -2,7 +2,9 @@
 
 **Định hướng sản phẩm:** nền tảng vận hành kinh doanh dịch vụ website gồm website marketing, CMS riêng, kho mẫu WordPress + HTML/CSS, cổng khách hàng, CRM/bán hàng, chatbot hỗ trợ khách hàng, SEO/AI content, tự động hóa, đơn hàng/thanh toán và quản lý hosting/domain. Các module được chia giai đoạn; không có nghĩa là đã triển khai.
 
-**Nguồn Planning:** [Master Blueprint](MASTER_BLUEPRINT.md), [URL Map](URL_MAP.md) và [BP-17 Risk Assessment](RISK_ASSESSMENT.md). Đây là các tài liệu điều hướng phạm vi, quyết định đã xác nhận, TBD và rủi ro; chúng không thay thế các acceptance gates bên dưới.
+**Nguồn Planning:** [Master Blueprint](MASTER_BLUEPRINT.md), [URL Map](URL_MAP.md), [Feature Blueprint](FEATURE_BLUEPRINT.md), [UI Blueprint](UI_BLUEPRINT.md) và [BP-17 Risk Assessment](RISK_ASSESSMENT.md). Đây là các tài liệu điều hướng phạm vi, quyết định đã xác nhận, TBD và rủi ro; chúng không thay thế các acceptance gates bên dưới.
+
+**Phân biệt phạm vi:** Core Preview P0 là website công khai đa trang song ngữ theo Master Blueprint. Các phase bên dưới mô tả roadmap sản phẩm/nền tảng dài hạn; các module CMS nâng cao, CRM, customer portal, commerce, chatbot và hosting không tự động trở thành P0 của Core Preview. Chỉ triển khai theo phase và approval gate riêng.
 
 **Nguyên tắc trạng thái:** “Có mã nguồn” không đồng nghĩa “đã deploy” hay “đã nghiệm thu”. Chỉ đánh dấu hoàn thành khi có kiểm thử phù hợp và xác minh môi trường chạy. Baseline kiến trúc được mô tả tại [docs/ARCHITECTURE.md](ARCHITECTURE.md).
 
@@ -22,6 +24,10 @@
 - [x] Xác định kho mẫu gồm WordPress và HTML/CSS.
 - [x] Xác định cổng khách hàng là yêu cầu của bản đầu tiên.
 - [x] Tạo tài liệu kiến trúc đích, vùng chức năng, dữ liệu logic, bảo mật và tiêu chí chất lượng.
+- [x] Lập URL Map source-verified cho 40 route song ngữ; policy indexation và runtime SEO còn chờ triển khai/kiểm thử.
+- [x] Lập Feature Blueprint cho Core Preview P0; chờ owner review.
+- [x] Lập UI Blueprint cho website công khai; chờ owner review.
+- [ ] Hoàn thiện UX Blueprint, persona và customer journey sau khi target audience được xác nhận.
 - [ ] Chốt host frontend production, auth/session, object storage và chiến lược triển khai template WordPress.
 - [x] Viết API contract ban đầu, mô hình dữ liệu logic và ADR stack; các quyết định auth/session, storage và production host vẫn chờ review.
 

@@ -53,7 +53,7 @@ Priority meanings:
 | F-006 | Seven service detail pages | P0-Must | Service scope and deliverables approved | Each page explains service scope, deliverables/process where confirmed, relevant questions and inquiry CTA; no unsupported guarantees |
 | F-007 | Projects/portfolio | P0-Conditional | Verified project records and publication rights (TBD-005) | Only owner-approved projects are rendered; when none are approved, hide project claims/cards or show a neutral empty state; no fabricated metrics/logos |
 | F-008 | Knowledge/blog | P0-Conditional | Editorial ownership and approved useful articles | Only published, reviewed articles appear; no placeholder articles; article routes must meet the SEO rendering requirements before indexation |
-| F-009 | Consultation/quotation form | P0-Must | API endpoint and privacy/consent wording | Client validation works; submitting state prevents duplicate clicks; success appears only after API confirms acceptance; failure preserves entered data and gives retry guidance |
+| F-009 | Consultation/quotation form + business email notification | P0-Must | Owner-approved destination email/recipient; privacy/consent wording; configured inquiry API and email sender | Client validation works; submitting state prevents duplicate clicks; success appears only after API confirms acceptance; notification delivery is verified; failure preserves entered data and gives retry guidance; no false success |
 | F-010 | Page-level SEO metadata | P0-Must | URL Map, approved page content | Unique title/description, canonical, language, robots, OG and supported structured data are emitted correctly for each eligible route |
 | F-011 | Sitemap, robots and 404 behavior | P0-Must | Route/indexation policy | Sitemap contains only eligible canonical public URLs; 404 returns a not-found experience; drafts/private routes are not exposed |
 | F-012 | Responsive and accessible interaction | P0-Must | UI Blueprint | Navigation, forms, controls and content work by keyboard and touch; no horizontal overflow at required viewport sizes; accessibility checks meet the documented target |
@@ -80,10 +80,11 @@ Priority meanings:
 - Empty catalog/content states must be intentional and useful; never populate them with fabricated content.
 - Dynamic blog posts must not be considered SEO-ready until clean per-article URLs and server-rendered/prerendered/static initial HTML, metadata and sitemap inclusion are implemented.
 
-### 3.4 Inquiry form
+### 3.4 Inquiry form and email notification
 Minimum fields currently described by the public form contract:
 - Name
 - Email
+- On API acceptance, notify the owner-approved business recipient using the configured email provider. The recipient address and sender/provider configuration must come from the owner/approved environment; never hardcode credentials.
 - Service
 - Consent
 - Optional budget
@@ -96,7 +97,8 @@ Required behavior:
 4. Show success only when the API returns an accepted success response.
 5. On API/network failure, show an error and preserve form values.
 6. If no API is configured, any local download/fallback must explicitly state that no server submission occurred; it must never be described as a received lead.
-7. Consent wording, privacy destination and retention explanation require owner/legal approval before production.
+7. Consent wording, privacy destination and retention explanation require owner/legal approval before live collection.
+8. The owner has approved website form + business email notification as the inquiry channel (DEC-015). The destination email, responsible recipient, privacy/consent wording, API/email configuration and delivery tests remain outstanding; do not enable live submission until these prerequisites are met.
 
 ### 3.5 SEO and indexation
 - Use `docs/URL_MAP.md` as the route inventory.
@@ -137,7 +139,7 @@ Required behavior:
 - TBD-010 target English market affects localization and keyword validation.
 
 ### External/runtime dependencies
-- A configured and tested public inquiry API is required to accept a lead as received.
+- A configured and tested public inquiry API is required to accept a lead as received; the approved email notification must also be delivered and verified for F-009 end-to-end acceptance.
 - Cloudflare Worker/D1, R2 and email provider setup must be verified separately; CI/source presence is not runtime acceptance.
 - A live Preview URL is required for direct-navigation, form, responsive, accessibility and performance acceptance.
 

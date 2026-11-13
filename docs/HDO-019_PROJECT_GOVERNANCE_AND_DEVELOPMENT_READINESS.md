@@ -261,3 +261,15 @@ The next authorized activity is to close or formally disposition these readiness
 - [Independent QA Review XC-03 / XC-10](QA_REVIEW_XC03_XC10.md)
 - [PR #42 — Security and authorization](https://github.com/seokillseo-byte/hoiquanweb/pull/42)
 - [PR #43 — Phase 0 planning and bounded remediation](https://github.com/seokillseo-byte/hoiquanweb/pull/43)
+
+
+### 6.5 Admin UI refresh — PR #49 (separate, unmerged workstream)
+
+- PR #49 introduces a bounded visual refresh to the existing `admin.html` workspace. It changes presentation and navigation only; API, authentication/session behavior, role checks, data model and business workflows are intended to remain unchanged.
+- Latest implementation commit: `bf8292f289e78842d7a890559d0159cdbf6afa3c`.
+- Validate website/API run 43451427869 and isolated Preview run 43451427714 completed successfully.
+- Codex code review completed without findings on the latest commit; the three earlier inline responsive/contrast/reduced-motion findings are resolved.
+- PR #49 remains Draft and unmerged. Its Preview artifact 14051055530 is based on the current `main` baseline and does not contain the separate PR #43 public-site/SEO changes. A combined full-site Preview has not been generated or CI-verified.
+- Browser-based visual inspection, responsive/accessibility acceptance, Worker/D1 staging integration and authenticated end-to-end workflow tests remain outstanding. Static HTML Preview and CI do not establish operational acceptance.
+
+**Disposition:** PR #49 is ready for bounded Admin UI visual review only; it is not accepted for production. Keep it Draft until the missing review/runtime evidence is completed and the Project Owner accepts the UI. No merge or deployment is authorized.

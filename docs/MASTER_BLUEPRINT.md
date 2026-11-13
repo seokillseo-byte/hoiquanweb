@@ -44,6 +44,7 @@ Thứ tự ưu tiên nguồn thông tin:
 | DEC-014 | Interim visual system for Core Preview | Use interim blue/white visual system and retain five existing source-observed colors as provisional tokens; this is not the official brand identity | Approved (Preview only) |
 | DEC-015 | Inquiry channel for Core Preview | Website consultation/quotation form with business email notification; destination, privacy/consent, backend/email setup and runtime acceptance remain prerequisites for live lead collection | Approved (channel only) |
 | DEC-016 | Inquiry notification destination and handling owner | Use `info@hoiquanweb.io.vn` as the notification destination; the Project Owner personally monitors and manages incoming inquiries; mailbox delivery remains unverified | Approved (destination and handling ownership supplied) |
+| DEC-017 | Inquiry data retention period | Retain customer inquiry data for 24 months from the last interaction; event semantics, expiry/deletion or anonymization procedure and backup treatment remain to be specified | Approved (duration and starting point) |
 
 ### 2.1 Bảy nhóm dịch vụ đã chốt
 
@@ -76,7 +77,7 @@ Các mục dưới đây chưa được người dùng xác nhận. Chúng là g
 | TBD-009 | Chính sách vận hành, bảo hành, hỗ trợ và SLA | Service content, legal, conversion | Open |
 | TBD-010 | Thị trường/quốc gia tiếng Anh ưu tiên | Localization, keyword research, legal | Open |
 | TBD-011 | Mailbox access, monitoring procedure and operational availability | F-009, notification routing and operations | Open — Project Owner confirmed as direct handler under DEC-016; mailbox delivery/access and monitoring procedure still require verification |
-| TBD-012 | Privacy notice, consent wording and data-retention/handling details for inquiry form | F-009, Security & Compliance, legal acceptance | Open — owner approval required before live lead collection |
+| TBD-012 | Privacy notice, consent wording and detailed data-retention/handling rules for inquiry form | F-009, Security & Compliance, legal acceptance | Partially resolved — 24 months from last interaction approved under DEC-017; event semantics, expiry/deletion or anonymization, backup treatment and final notice/consent remain open |
 | TBD-013 | Configured inquiry API, verified mailbox delivery, email sender/provider and end-to-end delivery evidence | F-009, Architecture, QA and deployment | Open — destination supplied; runtime configuration and testing required |
 
 Không được dùng nội dung mẫu như dữ liệu thật. Khi cần thiết kế layout trước khi có dữ liệu, dùng placeholder nội bộ có nhãn CONTENT REQUIRED; không xuất bản placeholder.

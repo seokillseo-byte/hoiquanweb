@@ -9,7 +9,7 @@
 **Reviewed PR:** [#43](https://github.com/seokillseo-byte/hoiquanweb/pull/43)  
 **Previously reviewed HEAD:** `e68049e96ae55e001a00cc5f81d3d5f7ab4be52e`  
 **Latest CI-verified HEAD:** `eb0182abeb5baf59bdaab5dd497dbfe5c5f73b0d` (2026-11-13)  
-**Latest documentation HEAD after this update:** `ac7da0524eba22483278209c04104415353a087b` (CI runs not yet reported for this docs-only HEAD)
+**Subsequent documentation-only commits:** Added BP-GAP-01, TECHNICAL_BLUEPRINT.md and SECURITY_BLUEPRINT.md and updated cross-references. The current branch head is newer than the CI-verified HEAD below; no workflow runs were returned for the current docs-only head at the latest check.
 
 > This report records the evidence and gaps visible at the assessment time. It is not an Owner acceptance, a Gate 2 approval, a Development Authorization, a release approval or a production-readiness certificate.
 
@@ -119,7 +119,7 @@ Owner decisions recorded: form + business email notification; destination `info@
 - Latest CI-verified HEAD at the evidence check: `eb0182abeb5baf59bdaab5dd497dbfe5c5f73b0d`.
 - [Validate website and API — run 43407229788](https://github.com/seokillseo-byte/hoiquanweb/actions/runs/43407229788): completed, **success**.
 - [Build isolated PR Preview — run 43407229622](https://github.com/seokillseo-byte/hoiquanweb/actions/runs/43407229622): completed, **success**.
-- Subsequent documentation-only commits added BP-GAP-01, TECHNICAL_BLUEPRINT.md and SECURITY_BLUEPRINT.md and updated cross-references. The latest documentation HEAD is `ac7da0524eba22483278209c04104415353a087b`; no workflow runs were returned for that HEAD at the latest check. Do not describe the earlier CI runs as validation of these later commits.
+- Subsequent documentation-only commits added BP-GAP-01, TECHNICAL_BLUEPRINT.md and SECURITY_BLUEPRINT.md and updated cross-references. The latest documentation commits are newer than the CI-verified HEAD; no workflow runs were returned for the current docs-only head at the latest check. Do not describe the earlier CI runs as validation of these later commits.
 
 These runs evidence automated checks for that commit. They do not prove production deployment, real mailbox delivery, database/Worker runtime readiness, Core Web Vitals field thresholds, full cross-browser visual quality or formal acceptance.
 

@@ -3,7 +3,8 @@
 **Status:** Phase 0 UX specification — draft complete, owner review required  
 **Scope:** Public bilingual Core Preview  
 **Primary user outcome:** Understand relevant services and submit a consultation/quotation request  
-**Audience/personas:** Not finalized; see open decisions
+**Audience priority:** B2C first, then B2B (owner-approved 2026-11-13)  
+**Personas:** Detailed profiles remain TBD; do not invent demographics or needs
 
 ---
 
@@ -11,25 +12,28 @@
 
 The public website must help a visitor move from discovering HOIQUANWEB to understanding the seven approved service groups and deciding whether to request consultation or a quotation.
 
-This document defines a baseline journey without inventing demographic personas, company sizes, industries, budgets or customer pain points. Those inputs remain TBD and must be added after owner confirmation.
+This document defines a B2C-first baseline journey, followed by planned B2B expansion, without inventing demographic personas, company sizes, industries, budgets or customer pain points. The owner has confirmed that both B2C and B2B are in scope, with individual customers prioritized first. Detailed audience research remains TBD.
 
 ## 2. Users and assumptions
 
 ### 2.1 Confirmed user contexts
-- Visitor reading the website in Vietnamese.
-- Visitor reading the website in English.
+- **First priority — B2C:** individual customer exploring a technology service and considering consultation/quotation.
+- **Next priority — B2B:** business/organizational buyer exploring services for an organization.
+- Visitor reading the website in Vietnamese or English.
 - Visitor exploring one or more of the seven approved service groups.
 - Visitor who wants to contact the business for consultation/quotation.
 
+The B2C-first order controls content emphasis and UX prioritization; it does not exclude B2B visitors from the public website.
+
 ### 2.2 Not yet confirmed
-- Primary customer segment and priority industry.
-- Small business, startup, SME, enterprise or individual weighting.
+- Specific B2C persona, age range, needs, use cases and purchasing triggers.
+- B2B company-size weighting (startup, SME, enterprise) and detailed individual customer segments.
 - Buyer roles (owner, marketing, IT, product, procurement).
 - Typical project size, budget range and decision cycle.
 - Main objections, urgency and buying triggers.
 - Priority English-speaking countries and localization conventions.
 
-Do not turn these unknowns into persona facts. Use neutral language and validate through owner input, real inquiry data and customer research.
+Do not turn these unknowns into persona facts. Design the first content/UX pass for B2C as the approved priority, while retaining a clear path for B2B visitors. Validate detailed needs through owner input, real inquiry data and customer research.
 
 ## 3. Core visitor journey
 
@@ -173,7 +177,7 @@ Do not add analytics or tracking until provider, consent/legal basis, retention 
 ## 10. Open decisions and validation plan
 
 ### Owner input required
-- TBD-001: priority customer segment/persona.
+- TBD-001: detailed B2C persona, needs, use cases and demographics; then detailed B2B buyer roles/company sizes.
 - TBD-004: customer size, buyer roles, pain points and objections.
 - TBD-010: English-speaking target markets.
 - TBD-002 / TBD-003: company description and value proposition.
@@ -186,4 +190,4 @@ Do not add analytics or tracking until provider, consent/legal basis, retention 
 4. Review form abandonment and inquiry quality only after consent-compliant analytics/data collection is configured.
 5. Revise the journey and content hierarchy from observed evidence.
 
-Until those inputs are available, this remains a neutral baseline UX specification and does not claim validated persona research.
+Until those inputs are available, this remains a B2C-first baseline UX specification and does not claim validated persona research.

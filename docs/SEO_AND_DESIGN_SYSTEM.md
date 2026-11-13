@@ -31,10 +31,11 @@
 
 ### 1.3 Dynamic blog and CMS route limitation
 
-- The generated static site includes generic blog detail shells at /blog/post/ and /en/blog/post/.
+- The generated static site includes generic blog detail shells at /blog/post/ and /en/blog/post/. The current generator also places these shells in the 40-route sitemap and gives them index,follow; this is observed behavior, not the desired target policy.
 - The current browser code reads the article slug from a query parameter and updates canonical/title/description after JavaScript runs.
 - Individual published blog posts are not emitted as individual URLs in the 40-page static sitemap. Arbitrary new CMS pages are also not generated as routes.
 - Do not treat dynamic blog/CMS content as fully SEO-ready. Before indexation, use clean slug routes with SSR, prerendering or static generation; include only published URLs in sitemap; ensure metadata and Article structured data are present in the initial HTML.
+- Required correction: mark the generic blog-detail shells noindex and exclude them from the sitemap until clean per-article routes exist. The current generator does not yet implement this correction.
 - Until then, keep unsupported dynamic routes out of the indexable sitemap and do not claim full dynamic SEO coverage.
 
 ## 2. Target information architecture
@@ -51,7 +52,7 @@ The approved business scope is a multi-page bilingual services website. The high
 - Contact / consultation and quotation request.
 - Legal and privacy information required for the actual operation.
 
-The final URL map, page count, keyword map and indexation policy remain deliverables of Phase 0. Do not create thin or duplicate pages merely to increase the URL count.
+The source-verified route inventory is documented in [URL_MAP.md](URL_MAP.md): 20 VI/EN pairs and 40 generated routes. Topic seeds in that document are not validated keyword research. Indexation recommendations remain subject to owner approval and implementation. Do not create thin or duplicate pages merely to increase the URL count.
 
 ## 3. SEO rules per page
 

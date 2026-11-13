@@ -39,6 +39,7 @@ Thứ tự ưu tiên nguồn thông tin:
 | DEC-009 | Delivery approach | Preview-first / Core-first; nghiệm thu trước khi mở rộng | Approved |
 | DEC-010 | Scope control | Chỉ triển khai P0 trước; P1/P2 sau khi được duyệt | Approved |
 | DEC-011 | Customer scope and rollout priority | Phục vụ cả B2C và B2B; ưu tiên B2C trước, sau đó mở rộng B2B; persona chi tiết còn TBD | Approved |
+| DEC-012 | Factual business description | Owner-approved wording recorded in OWNER_DECISION_REVIEW.md; formal industry classification and operating/revenue model remain TBD | Approved (description only) |
 
 ### 2.1 Bảy nhóm dịch vụ đã chốt
 
@@ -61,7 +62,7 @@ Các mục dưới đây chưa được người dùng xác nhận. Chúng là g
 | ID | Thông tin cần xác nhận | Ảnh hưởng | Trạng thái |
 |---|---|---|---|
 | TBD-001 | Persona, nhu cầu, use case và demographic cụ thể của B2C (ưu tiên trước); buyer roles/company size của B2B (giai đoạn sau) | Messaging, IA, UX, CTA, content | Open — sequencing approved |
-| TBD-002 | Mô tả doanh nghiệp, ngành phân loại chính thức và mô hình vận hành/nguồn doanh thu | Business Blueprint, trust, legal content | Open |
+| TBD-002 | Ngành phân loại chính thức và mô hình vận hành/nguồn doanh thu (mô tả doanh nghiệp đã được duyệt tại DEC-012) | Business Blueprint, trust, legal content | Partially resolved |
 | TBD-003 | USP / Value Proposition | Homepage, service pages, conversion | Open |
 | TBD-004 | Quy mô khách hàng và pain points | Persona, solution mapping | Open |
 | TBD-005 | Portfolio/case study có quyền công bố | Trust, proof, E-E-A-T signals | Open |

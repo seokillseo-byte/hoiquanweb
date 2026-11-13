@@ -43,6 +43,7 @@ Thứ tự ưu tiên nguồn thông tin:
 | DEC-013 | Public USP and comparative claims for Core Preview | No public USP/comparative claim; use factual service descriptions only until a claim and evidence are separately approved | Approved (Preview content restriction) |
 | DEC-014 | Interim visual system for Core Preview | Use interim blue/white visual system and retain five existing source-observed colors as provisional tokens; this is not the official brand identity | Approved (Preview only) |
 | DEC-015 | Inquiry channel for Core Preview | Website consultation/quotation form with business email notification; destination, privacy/consent, backend/email setup and runtime acceptance remain prerequisites for live lead collection | Approved (channel only) |
+| DEC-016 | Inquiry notification destination | Use the owner-provided business inbox `info@hoiquanweb.io.vn` as the notification destination; mailbox delivery and operational handling are not yet verified | Approved (destination supplied) |
 
 ### 2.1 Bảy nhóm dịch vụ đã chốt
 
@@ -74,9 +75,9 @@ Các mục dưới đây chưa được người dùng xác nhận. Chúng là g
 | TBD-008 | Production hosting, deployment và ownership | Technical/Architecture Blueprint | Open |
 | TBD-009 | Chính sách vận hành, bảo hành, hỗ trợ và SLA | Service content, legal, conversion | Open |
 | TBD-010 | Thị trường/quốc gia tiếng Anh ưu tiên | Localization, keyword research, legal | Open |
-| TBD-011 | Approved inquiry destination email and responsible recipient | F-009, notification routing and operations | Open — channel approved under DEC-015; recipient details not supplied |
+| TBD-011 | Operational owner/team responsible for monitoring and handling inquiry messages | F-009, notification routing and operations | Open — destination `info@hoiquanweb.io.vn` supplied under DEC-016; handler/monitoring ownership not confirmed |
 | TBD-012 | Privacy notice, consent wording and data-retention/handling details for inquiry form | F-009, Security & Compliance, legal acceptance | Open — owner approval required before live lead collection |
-| TBD-013 | Configured inquiry API, email sender/provider and end-to-end delivery evidence | F-009, Architecture, QA and deployment | Open — runtime configuration and testing required |
+| TBD-013 | Configured inquiry API, verified mailbox delivery, email sender/provider and end-to-end delivery evidence | F-009, Architecture, QA and deployment | Open — destination supplied; runtime configuration and testing required |
 
 Không được dùng nội dung mẫu như dữ liệu thật. Khi cần thiết kế layout trước khi có dữ liệu, dùng placeholder nội bộ có nhãn CONTENT REQUIRED; không xuất bản placeholder.
 

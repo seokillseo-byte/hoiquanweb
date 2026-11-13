@@ -68,17 +68,14 @@ Until approved, the site must not publish claims such as “best”, “leading�
 
 Current source code contains a blue/navy/cyan visual palette. These are code-observed tokens, not an approved official brand identity.
 
-**Please choose one path:**
-- [ ] Approve an interim blue/white technology visual system for Core Preview only. It does not become the official brand identity.
-- [ ] I will provide an official logo and brand guideline; keep final visual approval pending.
-- [ ] Create a new logo/brand identity as a separate approved scope before final UI sign-off.
-
-If approving an interim palette, confirm whether the existing source-observed colors may be retained as provisional tokens:
+**Owner decision — Approved (2026-11-13):** Use the interim blue/white technology visual system for Core Preview only and retain the five existing source-observed colors as provisional design tokens:
 - Primary blue: `#155EEF`
 - Navy: `#0B1F3A`
 - Cyan accent: `#38BDF8`
 - Light surface: `#F5F8FC`
 - White: `#FFFFFF`
+
+**Approval boundary:** These tokens and the blue/white direction are approved only as an interim Core Preview system. They are not the official HOIQUANWEB brand identity. Official logo, brand guidelines, final typography and final identity approval remain TBD.
 
 ### D-05 — Inquiry handling and contact/privacy details
 
@@ -131,7 +128,7 @@ Reply in normal text using the decision IDs; short answers are sufficient:
 - D-01: Approve / edit / replace.
 - D-02: **Approved — B2C first, then B2B** (2026-11-13); both remain in scope. Detailed personas and demographics remain TBD.
 - D-03: No public USP/comparative claim for Core Preview; use factual service descriptions only (owner-approved 2026-11-13).
-- D-04: Interim blue/white / provide brand guideline / separate brand project.
+- D-04: Interim blue/white system and five provisional tokens approved for Core Preview only (2026-11-13); official identity remains TBD.
 - D-05: Form only / form + email / other / no lead submission; approved contact/privacy details to follow.
 
 Partial answers are acceptable. Any unanswered item remains **TBD** and is not treated as approved.

@@ -2,11 +2,15 @@
 
 **Định hướng sản phẩm:** nền tảng vận hành kinh doanh dịch vụ website gồm website marketing, CMS riêng, kho mẫu WordPress + HTML/CSS, cổng khách hàng, CRM/bán hàng, chatbot hỗ trợ khách hàng, SEO/AI content, tự động hóa, đơn hàng/thanh toán và quản lý hosting/domain. Các module được chia giai đoạn; không có nghĩa là đã triển khai.
 
+**Nguồn Planning:** [Master Blueprint](MASTER_BLUEPRINT.md), [Blueprint Cross-check — 19 modules](BLUEPRINT_CROSS_CHECK.md), [URL Map](URL_MAP.md), [Feature Blueprint](FEATURE_BLUEPRINT.md), [UI Blueprint](UI_BLUEPRINT.md), [UX Blueprint](UX_BLUEPRINT.md) và [BP-17 Risk Assessment](RISK_ASSESSMENT.md). Đây là các tài liệu điều hướng phạm vi, quyết định đã xác nhận, TBD và rủi ro; chúng không thay thế các acceptance gates bên dưới.
+
+**Phân biệt phạm vi:** Core Preview P0 là website công khai đa trang song ngữ theo Master Blueprint. Các phase bên dưới mô tả roadmap sản phẩm/nền tảng dài hạn; các module CMS nâng cao, CRM, customer portal, commerce, chatbot và hosting không tự động trở thành P0 của Core Preview. Chỉ triển khai theo phase và approval gate riêng.
+
 **Nguyên tắc trạng thái:** “Có mã nguồn” không đồng nghĩa “đã deploy” hay “đã nghiệm thu”. Chỉ đánh dấu hoàn thành khi có kiểm thử phù hợp và xác minh môi trường chạy. Baseline kiến trúc được mô tả tại [docs/ARCHITECTURE.md](ARCHITECTURE.md).
 
 ## Baseline đã kiểm tra
 
-- Public website đã có generator tĩnh song ngữ Việt/Anh với 40 trang nội dung, metadata theo trang, hreflang, canonical, sitemap, blog listing/detail và biểu mẫu tư vấn. CMS pages/posts/services có admin UI + API, draft-first workflow và revision history; blog có taxonomy; CMS media library upload R2, alt text, preview, publish/archive đã merge vào main và CI/Pages deploy xanh. Public renderer có thể đọc page đã xuất bản để ghi đè route tĩnh cùng slug khi HQ_API_BASE được cấu hình; biến này chưa được cấu hình và chưa xác minh runtime với Worker/D1.
+- scripts/build_public_site.mjs khai báo 40 localized page objects và sinh HTML/sitemap từ cùng route array; scripts/validate_public_site.mjs kiểm tra sitemap count, uniqueness và canonical parity. Pages workflow chạy generator + validator rồi deploy public-site/dist. sitemap.xml ở repository root chỉ có homepage nhưng không được Pages workflow copy trực tiếp; file này đã stale. Cần kiểm tra CI/build artifact và preview thực tế trước khi đánh dấu SEO runtime acceptance. Repository có CMS pages/posts/services admin UI + API, draft-first workflow và revision history; blog có taxonomy; CMS media library upload R2, alt text, preview, publish/archive. Public renderer có thể đọc page đã xuất bản để ghi đè route tĩnh cùng slug khi HQ_API_BASE được cấu hình; biến này chưa được cấu hình và chưa xác minh runtime với Worker/D1.
 - Có Worker scaffold và D1 migration cho lead, lead events và rate limiting.
 - `backend/wrangler.toml` vẫn chứa database ID placeholder; API base trên frontend hiện để trống.
 - Better Auth và role checks có integration tests; CMS API/UI cho pages/posts/services có kiểm thử. D1 migrations chưa deploy; public CMS rendering chưa xác minh runtime; template package/provisioning chưa hoàn thiện. CMS media code đã có nhưng cần R2 bucket và migration trên Cloudflare. Customer portal đã có báo giá, đơn hàng, dự án/milestone/bình luận và ticket hỗ trợ ở mức nền tảng; CRM order/project/ticket admin UI và membership onboarding đã có. Các tích hợp production, file riêng tư và thanh toán chưa hoàn thiện.
@@ -18,8 +22,12 @@
 - [x] Kiểm tra cấu trúc repo và ghi lại giới hạn hiện tại.
 - [x] Xác định hướng CMS riêng + WordPress cho website khách hàng.
 - [x] Xác định kho mẫu gồm WordPress và HTML/CSS.
-- [x] Xác định cổng khách hàng là yêu cầu của bản đầu tiên.
+- [x] Xác định cổng khách hàng cho bản phát hành nền tảng dài hạn (Phase 4), ngoài Core Preview P0.
 - [x] Tạo tài liệu kiến trúc đích, vùng chức năng, dữ liệu logic, bảo mật và tiêu chí chất lượng.
+- [x] Lập URL Map source-verified cho 40 route song ngữ; policy indexation và runtime SEO còn chờ triển khai/kiểm thử.
+- [x] Lập Feature Blueprint cho Core Preview P0; chờ owner review.
+- [x] Lập UI Blueprint cho website công khai; chờ owner review.
+- [x] Lập UX Blueprint baseline và visitor journey; persona/customer validation vẫn chờ target audience.
 - [ ] Chốt host frontend production, auth/session, object storage và chiến lược triển khai template WordPress.
 - [x] Viết API contract ban đầu, mô hình dữ liệu logic và ADR stack; các quyết định auth/session, storage và production host vẫn chờ review.
 
@@ -83,7 +91,9 @@ Mục tiêu: dựng nền tảng có thể mở rộng, không chỉ thêm HTML 
 - [ ] Malware/source scan, license evidence storage, compatibility test và rollback.
 - [ ] Provisioning riêng biệt cho WordPress và HTML/CSS; chưa hứa one-click installation.
 
-## Phase 4 — Cổng khách hàng (bắt buộc trong bản phát hành đầu tiên)
+## Phase 4 — Cổng khách hàng (bắt buộc trong bản phát hành nền tảng; KHÔNG thuộc Core Preview P0)
+
+**Scope clarification:** “Bản phát hành nền tảng” ở tiêu đề Phase 4 là giai đoạn sản phẩm dài hạn sau Core Preview. Không được hiểu là yêu cầu đưa customer portal vào Core Preview P0. Việc đưa portal vào P0 cần Project Owner phê duyệt thay đổi phạm vi riêng.
 
 - Đăng nhập/đăng xuất, phục hồi tài khoản, quản lý phiên và hồ sơ.
 - **Đã có UI cổng khách hàng song ngữ:** đăng nhập, xem danh sách/chi tiết báo giá và xác nhận báo giá. Khách xem đơn hàng, dự án, milestone, file được phép xem, bình luận và yêu cầu hỗ trợ vẫn chưa hoàn thiện.

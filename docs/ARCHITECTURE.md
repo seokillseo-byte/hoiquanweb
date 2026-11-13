@@ -9,7 +9,7 @@ Hội Quán Web is to become a website-services business platform with:
 1. A public, SEO-first multi-page marketing website.
 2. A private, custom-built CMS and business operations console.
 3. A catalog for both WordPress and standalone HTML/CSS website templates.
-4. A secure customer portal from the first usable product release.
+4. A secure customer portal in a later platform release, outside Core Preview P0; its phase and timing require separate approval.
 5. A backend API and database as the authoritative source for business data.
 6. Later, controlled integrations for provisioning, payments, AI generation, hosting, domains, CRM, and support.
 
@@ -17,7 +17,7 @@ This is not just a static marketing site. Existing lead API scaffolding should b
 
 ## Current verified baseline and gaps
 
-- Public website is generated as a bilingual static site with 34 content pages, per-page SEO metadata, canonical/hreflang, sitemap, robots and a working project-pages base-path build.
+- scripts/build_public_site.mjs defines 40 localized page objects and generates HTML plus sitemap.xml from the same pages array. scripts/validate_public_site.mjs checks sitemap count, uniqueness and canonical path parity. The Pages workflow runs the generator and validator and deploys public-site/dist. The repository-root sitemap.xml currently contains only the homepage but is not the sitemap copied by the Pages workflow; it is stale. CI run 43364707457 confirms the generator produced 40 localized pages and the public-site validator passed canonical sitemap and route checks. Isolated PR preview build run 43364707609 also succeeded. The Pages workflow deploys public-site/dist, not the stale repository-root sitemap.xml. A live deployed preview was not inspected, so runtime SEO acceptance remains pending. The previous 34-page count and one-page description are outdated.
 - `admin.html` contains a session-protected CMS workspace for pages, posts and services. Staff/admin can create/edit drafts; admin can publish/archive. Content revisions are stored by the Worker API.
 - Worker APIs include Better Auth session handling, server-assigned roles, public published-content reads, protected CMS writes, lead intake and the initial CRM identity/customer foundations.
 - D1 migrations include CMS content and revision tables, identity/authorization and CRM foundations. They have not yet been applied to a real Cloudflare database.
@@ -83,7 +83,7 @@ The identity/session baseline now uses Better Auth with database-backed sessions
 - Shared fields: slug, name, category, tags, description, preview media, demo URL, price model, status, compatibility, version, rights/license, created/updated timestamps.
 - Do not promise one-click provisioning until an isolated, secure provisioning pipeline exists and is tested.
 
-### Customer portal — required in first usable release
+### Customer portal — future platform capability (outside Core Preview P0)
 - Secure sign-in and sign-out, account recovery, and server-enforced session lifecycle.
 - Customer can only see their own profile, quotes, orders, project milestones, approved files, comments and support requests.
 - Quote review/acceptance and project feedback must be recorded with actor and timestamp.

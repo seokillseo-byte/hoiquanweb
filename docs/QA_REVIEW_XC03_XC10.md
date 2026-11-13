@@ -319,3 +319,18 @@ The artifact was generated successfully by CI. Independent full extraction and r
 **Disposition:** PR #43 latest HEAD has 2/2 CI workflows successful and a newly generated Preview artifact. PR #49 Admin UI code review and CI are successful, but full Admin acceptance is incomplete. R-016 remains Critical/Open; R-017 remains High/Open; F-009 remains blocked for live collection. Gate 2, merge and deployment remain unapproved.
 
 This is a documentation/evidence refresh only. It does not authorize combining branches, changing application code outside existing work packages, merging or deploying.
+
+
+### 9.9 Latest evidence refresh — PR HEAD b7d750e
+
+**Refresh date:** 2026-11-13  
+**PR #43 HEAD:** `b7d750e773218f3914e5e5530ea990e42daff560` (documentation-only QA/governance update; no application code changes after `8bac71d`).  
+**Validation workflow:** [Validate website and API — run 43454693004](https://github.com/seokillseo-byte/hoiquanweb/actions/runs/43454693004) — completed, **success**.  
+**Preview workflow:** [Build isolated PR Preview — run 43454693181](https://github.com/seokillseo-byte/hoiquanweb/actions/runs/43454693181) — completed, **success**.  
+**Artifact:** [hoiquanweb-pr-43-preview — artifact 14053557316](https://github.com/seokillseo-byte/hoiquanweb/actions/runs/43454693181/artifacts/14053557316)  
+**Artifact size:** 203,344 bytes  
+**GitHub artifact SHA-256 digest:** `f11364ed718b8b5e1dcf9694f55a2e3d6ba5f9a66fc1fd7eb0e69772e56ae784`
+
+The artifact was downloaded and made available for inspection. A fresh full route-by-route extraction/audit of this exact artifact has not yet been recorded. Prior route-level static audit evidence remains tied to artifact 14028368167 and must not be represented as a new audit of 14053557316.
+
+**Disposition:** Both workflows pass on the exact latest PR #43 HEAD. This does not close R-016, R-017 or F-009, does not establish hosted runtime or full visual QA, and does not approve Gate 2, merge or deployment.

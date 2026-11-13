@@ -39,7 +39,7 @@ The governing standards require a Core Web Vitals strategy, frontend/backend/API
 3. Keep the critical rendering path small and avoid unnecessary client-side work.
 4. Optimize images, fonts, CSS, JavaScript and delivery without degrading content, accessibility or SEO.
 5. Establish repeatable evidence and a regression baseline.
-6. Agree numeric acceptance thresholds with the Project Owner before final QA; do not silently import example values as approved project targets.
+6. Apply the Project Owner-approved Core Web Vitals thresholds in section 10; do not treat any unapproved Lighthouse, bundle, API or load threshold as a project decision.
 7. Design the public delivery path so static content can be served efficiently and scale is not dependent on unnecessary runtime work.
 
 ## 4. Required metrics and definitions
@@ -177,15 +177,17 @@ For a configured inquiry API, include normal submission, validation rejection, d
 
 Monitoring provider, data retention, alert thresholds and operational ownership are **TBD**.
 
-## 10. Project-specific acceptance thresholds — owner decision required
+## 10. Project-specific acceptance thresholds — owner-approved Core Web Vitals
 
-The project standards require Core Web Vitals to meet Google standards and mobile performance to be prioritized. They do not provide numeric project-specific thresholds in the supplied inputs. The values below are intentionally unfilled pending owner approval.
+**Owner decision D-13 — Approved (2026-11-13):** Core Web Vitals thresholds are approved as LCP ≤ 2.5 seconds, INP ≤ 200 milliseconds and CLS ≤ 0.1. Evaluate field data at p75 separately for mobile and desktop where sufficient data is available. Lab results (including Lighthouse) must be reported separately and must not be represented as field p75. The thresholds are acceptance criteria, not a claim that the current site meets them.
+
+The thresholds below apply to Core Web Vitals only. Lighthouse score, TTFB, asset budgets, API latency and load/concurrency targets remain TBD until separately approved.
 
 | Acceptance item | Proposed measurement basis | Project target | Status |
 |---|---|---|---|
-| LCP | Field p75 where available; lab result reported separately | TBD | Owner decision required |
-| INP | Field p75 where available | TBD | Owner decision required |
-| CLS | Field p75 where available; lab result reported separately | TBD | Owner decision required |
+| LCP | Field p75 separately for mobile and desktop; lab result reported separately | ≤ 2.5 seconds | Owner-approved (D-13) |
+| INP | Field p75 separately for mobile and desktop | ≤ 200 milliseconds | Owner-approved (D-13) |
+| CLS | Field p75 separately for mobile and desktop; lab result reported separately | ≤ 0.1 | Owner-approved (D-13) |
 | Lighthouse Performance — mobile | Median of at least 3 equivalent runs per selected route | TBD | Owner decision required |
 | Lighthouse Performance — desktop | Median of at least 3 equivalent runs per selected route | TBD | Owner decision required |
 | TTFB | Agreed test region/profile; field and lab separated | TBD | Owner decision required |
@@ -193,7 +195,7 @@ The project standards require Core Web Vitals to meet Google standards and mobil
 | API p95 latency and error rate | Only after API/runtime exists and test profile is approved | TBD | Conditional / owner decision required |
 | Load/concurrency capacity | Approved traffic model and test environment | TBD | Conditional / owner decision required |
 
-A “Google good” Core Web Vitals classification may be used as a standards reference during discussion, but it is not recorded here as an approved project threshold until the Project Owner confirms the exact acceptance policy, data source and route coverage.
+For a route/device segment without sufficient field data, record the field result as unavailable and use lab diagnostics for investigation only; do not claim field acceptance from Lighthouse. Record route coverage, p75 sample availability and any data-collection limitations.
 
 ## 11. Dependencies and risks
 
@@ -201,7 +203,7 @@ A “Google good” Core Web Vitals classification may be used as a standards re
 |---|---|---|---|
 | PERF-DEP-01 | Correct assembled Preview homepage and route integrity | Blocked by XC-10/R-017 | Fix packaging and verify final artifact before baseline |
 | PERF-DEP-02 | Accessible Preview URL and stable environment | TBD | Record exact URL, commit and hosting profile |
-| PERF-DEP-03 | Approved numeric performance thresholds | TBD | Obtain explicit Project Owner decision |
+| PERF-DEP-03 | Core Web Vitals thresholds | Approved under D-13; other numeric targets remain TBD | Apply approved thresholds and obtain separate decisions for other metrics |
 | PERF-DEP-04 | Production host/CDN/cache configuration | TBD | Do not assume provider or settings |
 | PERF-DEP-05 | Inquiry API/runtime | Not accepted/configured | API testing remains conditional |
 | PERF-DEP-06 | Field data / RUM availability | Not established | Report unavailable rather than fabricate |
@@ -229,16 +231,17 @@ The Performance Blueprint is ready for owner review when:
 - [x] Metrics and lab-versus-field distinctions are defined.
 - [x] Test protocol, route/device matrix, optimization strategy and evidence requirements are documented.
 - [x] Unknown infrastructure/runtime choices remain explicitly TBD.
-- [ ] Project Owner approves numeric performance thresholds and their data source/coverage.
+- [x] Project Owner approves Core Web Vitals thresholds (LCP ≤ 2.5s, INP ≤ 200ms, CLS ≤ 0.1) and p75 mobile/desktop evaluation under D-13.
+- [ ] Other numeric performance targets (Lighthouse, TTFB, asset budgets, API and load) are separately approved if needed.
 - [ ] A corrected, accessible assembled Preview is measured and a reproducible baseline is attached.
 - [ ] Applicable cache/CDN and API checks are completed against configured environments.
 - [ ] QA records defects, retest evidence and final owner disposition.
 
-**Current status:** Planning draft created; no performance test has been claimed as run or passed by this document. Module 12 remains open until targets are approved and actual Preview evidence is recorded.
+**Current status:** Core Web Vitals acceptance thresholds are owner-approved under D-13. No performance test has been claimed as run or passed by this document. Module 12 remains open until a corrected accessible Preview is measured and evidence is accepted.
 
 ## 14. Change control
 
-- Any change to target thresholds, test profiles, route coverage or production load-test scope requires Project Owner approval.
+- Any change to owner-approved Core Web Vitals thresholds, test profiles, route coverage or production load-test scope requires Project Owner approval.
 - Do not convert lab scores, source observations or generic vendor guidance into owner-approved project targets.
 - Do not mark performance accepted based on build success, CI success or a single Lighthouse run.
 - Keep performance status separate for local, CI, Preview, staging and production environments.

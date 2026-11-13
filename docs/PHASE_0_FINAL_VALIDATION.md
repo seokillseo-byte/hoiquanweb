@@ -59,7 +59,7 @@ Statuses below reflect the current Cross-check and linked source documents, not 
 | 08 | UI Blueprint | Draft / review required | Templates, components, responsive and accessibility direction documented; final identity approval and full visual QA remain open. |
 | 09 | Feature Blueprint | Draft / review required | Feature register exists; F-009 inquiry flow is not end-to-end accepted until privacy/consent, API, sender/mailbox and delivery tests pass. |
 | 10 | Technical Blueprint | Draft / partial | `TECHNICAL_BLUEPRINT.md` now defines the P0 technical contract and observed baseline; production host, API/runtime, database/resource, secrets, ownership and runtime acceptance remain open. |
-| 11 | Architecture Blueprint | Partial | Logical architecture and security boundaries exist in `ARCHITECTURE.md`; complete approved architecture/deployment topology and external service decisions remain open. |
+| 11 | Architecture Blueprint | Draft / partial | `ARCHITECTURE_BLUEPRINT.md` now consolidates all 15 mandatory architecture deliverables, observed repository map, API/data contracts and ADR-0001/0002; production topology, resources and runtime acceptance remain open. |
 | 12 | Performance Blueprint | Draft / partial | CWV thresholds approved (LCP ≤ 2.5s, INP ≤ 200ms, CLS ≤ 0.1); field p75/lab evidence and non-CWV thresholds remain open. |
 | 13 | Security Blueprint | Draft / partial | `SECURITY_BLUEPRINT.md` now defines the P0 security control profile and test plan; privacy/consent, backup lifecycle, staging/runtime tests and security evidence remain open. |
 | 14 | AI Blueprint | Deferred | No AI requirement is approved for Core Preview. Deferral is explicit; a full AI Blueprint is required only if a specific business requirement is approved. |
@@ -129,7 +129,7 @@ See [QA_REVIEW_XC03_XC10.md](QA_REVIEW_XC03_XC10.md). The recorded static checks
 
 ## 6. Technical, Security and QA gap audit
 
-The supporting deliverables [Technical Blueprint](TECHNICAL_BLUEPRINT.md) and [Security Blueprint](SECURITY_BLUEPRINT.md) now define the P0 technical and security planning baselines. [BP-GAP-01 — Technical, Security & QA Gap Register](PHASE_0_TECHNICAL_SECURITY_QA_GAP_REGISTER.md) consolidates GAP-TECH-01, GAP-ARCH-01, GAP-SEC-01, GAP-PERF-01, GAP-QA-01 and GAP-GOV-01, plus a minimum Core Preview QA matrix. It clarifies the missing P0 deployment contract, incomplete dedicated security acceptance profile, absent performance baseline and incomplete full-preview QA. This documentation does not close R-016, R-017 or F-009 and does not approve Gate 2.
+The supporting deliverables [Technical Blueprint](TECHNICAL_BLUEPRINT.md), [Architecture Blueprint](ARCHITECTURE_BLUEPRINT.md) and [Security Blueprint](SECURITY_BLUEPRINT.md) now define the P0 technical, architecture and security planning baselines. [BP-GAP-01 — Technical, Security & QA Gap Register](PHASE_0_TECHNICAL_SECURITY_QA_GAP_REGISTER.md) consolidates GAP-TECH-01, GAP-ARCH-01, GAP-SEC-01, GAP-PERF-01, GAP-QA-01 and GAP-GOV-01, plus a minimum Core Preview QA matrix. It clarifies the missing P0 deployment contract, incomplete dedicated security acceptance profile, absent performance baseline and incomplete full-preview QA. This documentation does not close R-016, R-017 or F-009 and does not approve Gate 2.
 
 ## 7. Phase 0 exit checklist
 

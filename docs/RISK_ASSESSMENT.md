@@ -40,7 +40,8 @@
 | R-012 | Mã nguồn/CI xanh bị hiểu nhầm là runtime production đã sẵn sàng | 3 | 5 | 15 | High | Ghi rõ code/CI/deploy/runtime/acceptance là các trạng thái khác nhau | Open |
 | R-013 | Thiếu xác nhận hosting, secrets, domain routing và ownership | 3 | 5 | 15 | High | Không tạo tài nguyên hoặc thay đổi production; lập checklist owner action và environment separation | Open |
 | R-014 | Nội dung placeholder hoặc claim không có bằng chứng được phát hành | 3 | 5 | 15 | High | Content QA bắt buộc; mọi placeholder phải bị chặn trước publish; kiểm tra legal/contact claims | Open |
-| R-015 | Thiếu user acceptance trên thiết bị, trình duyệt và ngôn ngữ thực tế | 3 | 4 | 12 | High | Kiểm thử responsive, keyboard, accessibility, browser, form, links, 404 và VI/EN trước nghiệm thu | Open |\n| R-016 | Blog detail và CMS dynamic routes chưa được pre-render đầy đủ cho SEO; bài viết dùng query slug và không có URL riêng trong sitemap generated | 4 | 4 | 16 | Critical | Trước khi index blog/CMS dynamic content, triển khai clean slug routes cùng SSR/prerender hoặc static generation; bổ sung URL từng bài vào sitemap và kiểm tra metadata/hreflang trong HTML ban đầu | Open |
+| R-015 | Thiếu user acceptance trên thiết bị, trình duyệt và ngôn ngữ thực tế | 3 | 4 | 12 | High | Kiểm thử responsive, keyboard, accessibility, browser, form, links, 404 và VI/EN trước nghiệm thu | Open |
+| R-016 | Blog detail và CMS dynamic routes chưa được pre-render đầy đủ cho SEO; bài viết dùng query slug và không có URL riêng trong sitemap generated | 4 | 4 | 16 | Critical | Trước khi index blog/CMS dynamic content, triển khai clean slug routes cùng SSR/prerender hoặc static generation; bổ sung URL từng bài vào sitemap và kiểm tra metadata/hreflang trong HTML ban đầu | Open |
 
 ## 4. Priority risks requiring closure before SEO / Core Preview acceptance
 

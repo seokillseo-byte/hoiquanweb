@@ -172,6 +172,22 @@ Do not send credentials, API keys or other secrets in this document or in chat.
 
 **Approval boundary:** This approves only the default-language fallback. It does not approve changes to translation quality, route inventory, target-market localization or indexation eligibility.
 
+### D-12 — Project role-responsibility model
+
+**Related document:** `BLUEPRINT_CROSS_CHECK.md`, section 5.
+
+**Owner decision — Approved (2026-11-13):** Approve the following responsibility boundaries:
+- Project Owner: accountable for business decisions, scope/priority/content approval, risk acceptance and final acceptance.
+- AI Planning Architect: responsible for Project Input analysis, Blueprint planning, traceability, risk documentation and review-ready planning artifacts; planning only.
+- Technical Lead: technical architecture and technical decision coordination.
+- Development: implementation after the applicable requirements/Blueprint are approved.
+- QA: test planning/execution, defect verification, regression and acceptance evidence.
+- SEO / Content: SEO strategy, content structure, language/content quality and indexation review.
+- UX / UI: user journeys, interaction and interface consistency.
+- Security / Operations: security, infrastructure, backups, monitoring and operational readiness.
+
+**Approval boundary:** This approves role responsibilities only. It does not assign named people, confirm that specialist roles are staffed, authorize implementation, or approve merge/deployment. Specialist roles remain placeholders until the Project Owner assigns people or confirms an alternative arrangement. One person may cover multiple roles only if the Project Owner decides so.
+
 ## 3. Decisions that can remain TBD for the initial neutral Preview
 
 These are required or recommended fields in the Project Input Template, but they do not all need to block a neutral public-site shell. They must remain visible as TBD and must not be silently guessed.
@@ -205,6 +221,6 @@ Reply in normal text using the decision IDs; short answers are sufficient:
 - D-03: No public USP/comparative claim for Core Preview; use factual service descriptions only (owner-approved 2026-11-13).
 - D-04: Interim blue/white system and five provisional tokens approved for Core Preview only (2026-11-13); official identity remains TBD.
 - D-05: Website form + business email notification approved (2026-11-13); destination `info@hoiquanweb.io.vn` supplied and Project Owner confirmed as direct handler (2026-11-13). The 24-month inquiry-data retention period, complete deletion of personal information plus inquiry content at expiry, the two reset events (Project Owner sends a quotation; customer replies), and backup handling under D-10 are approved under D-07 through D-10. The exact backup lifecycle duration, any separate legal/operational exceptions, privacy/consent wording, mailbox verification, backend/email configuration and end-to-end acceptance remain outstanding.
-- D-11: Vietnamese (`vi`) approved as the default destination for `hreflang="x-default"` (2026-11-13). Keep reciprocal VI/EN alternates; verify generated HTML and Preview behavior.
+- D-11: Vietnamese (`vi`) approved as the default destination for `hreflang="x-default"` (2026-11-13). Keep reciprocal VI/EN alternates; verify generated HTML and Preview behavior.\n- D-12: Project role-responsibility model approved (2026-11-13); role boundaries only, no named staffing assignments.
 
 Partial answers are acceptable. Any unanswered item remains **TBD** and is not treated as approved.

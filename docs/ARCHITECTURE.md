@@ -9,7 +9,7 @@ Hội Quán Web is to become a website-services business platform with:
 1. A public, SEO-first multi-page marketing website.
 2. A private, custom-built CMS and business operations console.
 3. A catalog for both WordPress and standalone HTML/CSS website templates.
-4. A secure customer portal from the first usable product release.
+4. A secure customer portal in a later platform release, outside Core Preview P0; its phase and timing require separate approval.
 5. A backend API and database as the authoritative source for business data.
 6. Later, controlled integrations for provisioning, payments, AI generation, hosting, domains, CRM, and support.
 
@@ -83,7 +83,7 @@ The identity/session baseline now uses Better Auth with database-backed sessions
 - Shared fields: slug, name, category, tags, description, preview media, demo URL, price model, status, compatibility, version, rights/license, created/updated timestamps.
 - Do not promise one-click provisioning until an isolated, secure provisioning pipeline exists and is tested.
 
-### Customer portal — required in first usable release
+### Customer portal — future platform capability (outside Core Preview P0)
 - Secure sign-in and sign-out, account recovery, and server-enforced session lifecycle.
 - Customer can only see their own profile, quotes, orders, project milestones, approved files, comments and support requests.
 - Quote review/acceptance and project feedback must be recorded with actor and timestamp.

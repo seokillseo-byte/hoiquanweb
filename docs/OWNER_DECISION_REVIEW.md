@@ -221,6 +221,7 @@ Reply in normal text using the decision IDs; short answers are sufficient:
 - D-03: No public USP/comparative claim for Core Preview; use factual service descriptions only (owner-approved 2026-11-13).
 - D-04: Interim blue/white system and five provisional tokens approved for Core Preview only (2026-11-13); official identity remains TBD.
 - D-05: Website form + business email notification approved (2026-11-13); destination `info@hoiquanweb.io.vn` supplied and Project Owner confirmed as direct handler (2026-11-13). The 24-month inquiry-data retention period, complete deletion of personal information plus inquiry content at expiry, the two reset events (Project Owner sends a quotation; customer replies), and backup handling under D-10 are approved under D-07 through D-10. The exact backup lifecycle duration, any separate legal/operational exceptions, privacy/consent wording, mailbox verification, backend/email configuration and end-to-end acceptance remain outstanding.
-- D-11: Vietnamese (`vi`) approved as the default destination for `hreflang="x-default"` (2026-11-13). Keep reciprocal VI/EN alternates; verify generated HTML and Preview behavior.\n- D-12: Project role-responsibility model approved (2026-11-13); role boundaries only, no named staffing assignments.
+- D-11: Vietnamese (`vi`) approved as the default destination for `hreflang="x-default"` (2026-11-13). Keep reciprocal VI/EN alternates; verify generated HTML and Preview behavior.
+- D-12: Project role-responsibility model approved (2026-11-13); role boundaries only, no named staffing assignments.
 
 Partial answers are acceptable. Any unanswered item remains **TBD** and is not treated as approved.

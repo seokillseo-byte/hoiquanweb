@@ -1,0 +1,198 @@
+# HOIQUANWEB — Master Blueprint
+
+**Project:** HOIQUANWEB  
+**Domain:** hoiquanweb.io.vn  
+**Document status:** Working baseline — chưa phải bản Blueprint Final được nghiệm thu  
+**Planning phase:** Phase 0 — Requirements & Blueprint  
+**Language:** Tiếng Việt / English  
+**Primary conversion:** Yêu cầu tư vấn và báo giá  
+**Last reviewed:** 2026-11-13
+
+---
+
+## 1. Mục đích và nguyên tắc kiểm soát
+
+Tài liệu này là điểm điều hướng trung tâm cho Blueprint HOIQUANWEB. Nó tổng hợp các quyết định đã được người dùng xác nhận, các thông tin còn thiếu và các tài liệu chuyên môn cần hoàn thiện.
+
+Thứ tự ưu tiên nguồn thông tin:
+
+1. Quyết định được người dùng xác nhận trong dự án.
+2. Project Input đã được xác nhận.
+3. Blueprint và tài liệu chuyên môn đã được duyệt.
+4. Repository hiện tại — chỉ dùng để mô tả trạng thái mã nguồn/tài liệu, không tự động biến implementation thành yêu cầu nghiệp vụ.
+5. Giả định của AI — không được ghi thành quyết định; nếu cần phải đánh dấu rõ.
+
+**Quy tắc:** Không tự tạo USP, khách hàng mục tiêu ưu tiên, giá, case study, chứng nhận, số liệu hiệu quả, chính sách hoặc năng lực chưa được xác minh.
+
+## 2. Project baseline — các quyết định đã xác nhận
+
+| ID | Nội dung | Giá trị đã xác nhận | Trạng thái |
+|---|---|---|---|
+| DEC-001 | Brand | HOIQUANWEB | Approved |
+| DEC-002 | Domain | hoiquanweb.io.vn | Approved |
+| DEC-003 | Website type | Website doanh nghiệp/dịch vụ nhiều trang | Approved |
+| DEC-004 | Languages | Vietnamese + English | Approved |
+| DEC-005 | Market | Việt Nam và quốc tế; ưu tiên thị trường nói tiếng Anh | Approved |
+| DEC-006 | Primary conversion | Nhận yêu cầu tư vấn và báo giá | Approved |
+| DEC-007 | Service groups | Giữ nguyên 7 nhóm dịch vụ bên dưới | Approved |
+| DEC-008 | SEO direction | SEO-first, kiến trúc SEO đồng bộ toàn website | Approved |
+| DEC-009 | Delivery approach | Preview-first / Core-first; nghiệm thu trước khi mở rộng | Approved |
+| DEC-010 | Scope control | Chỉ triển khai P0 trước; P1/P2 sau khi được duyệt | Approved |
+
+### 2.1 Bảy nhóm dịch vụ đã chốt
+
+1. Website
+2. Software
+3. Mobile App
+4. Game
+5. SEO
+6. AI & Automation
+7. Other Technology Services
+
+Không tự ý gộp, đổi tên hoặc loại bỏ nhóm dịch vụ nếu chưa có phê duyệt.
+
+## 3. Các thông tin quan trọng còn thiếu
+
+Các mục dưới đây chưa được người dùng xác nhận. Chúng là giới hạn đối với việc hoàn thiện định vị, nội dung bán hàng và thiết kế chuyển đổi.
+
+| ID | Thông tin cần xác nhận | Ảnh hưởng | Trạng thái |
+|---|---|---|---|
+| TBD-001 | Phân khúc khách hàng ưu tiên | Messaging, IA, UX, CTA, content | Open |
+| TBD-002 | Mô tả doanh nghiệp và mô hình vận hành | Business Blueprint, trust, legal content | Open |
+| TBD-003 | USP / Value Proposition | Homepage, service pages, conversion | Open |
+| TBD-004 | Quy mô khách hàng và pain points | Persona, solution mapping | Open |
+| TBD-005 | Portfolio/case study có quyền công bố | Trust, proof, E-E-A-T signals | Open |
+| TBD-006 | Giá, cách tính phí, chính sách báo giá | Pricing page, quote flow | Open |
+| TBD-007 | Logo, màu sắc và brand identity chính thức | UI/Design System | Open |
+| TBD-008 | Production hosting, deployment và ownership | Technical/Architecture Blueprint | Open |
+| TBD-009 | Chính sách vận hành, bảo hành, hỗ trợ và SLA | Service content, legal, conversion | Open |
+| TBD-010 | Thị trường/quốc gia tiếng Anh ưu tiên | Localization, keyword research, legal | Open |
+
+Không được dùng nội dung mẫu như dữ liệu thật. Khi cần thiết kế layout trước khi có dữ liệu, dùng placeholder nội bộ có nhãn CONTENT REQUIRED; không xuất bản placeholder.
+
+## 4. Mục tiêu và phạm vi Core Preview
+
+### 4.1 Mục tiêu
+
+Tạo bản Preview website công khai đa trang để người dùng nghiệm thu cấu trúc, giao diện, nội dung nền tảng, khả năng chuyển đổi và SEO kỹ thuật cơ bản trước khi phát triển các module vận hành nâng cao.
+
+### 4.2 Trong phạm vi Core Preview (P0)
+
+- Trang chủ.
+- Giới thiệu HOIQUANWEB.
+- Trang tổng quan dịch vụ.
+- Trang chi tiết cho 7 nhóm dịch vụ đã chốt.
+- Trang dự án/portfolio; chỉ hiển thị dự án có dữ liệu và quyền công bố.
+- Trang kiến thức/blog nếu nội dung được xác nhận; không tạo bài viết giả để lấp trang.
+- Trang liên hệ/yêu cầu tư vấn và báo giá.
+- Điều hướng song ngữ Việt/Anh.
+- Responsive cho mobile, tablet và desktop.
+- Metadata SEO theo trang, canonical, hreflang, sitemap, robots, Open Graph, structured data phù hợp.
+- Trạng thái form: validation, submitting, success, error; không thông báo gửi thành công nếu backend không xác nhận.
+- Trang 404 và các trạng thái lỗi/empty cần thiết.
+
+### 4.3 Ngoài phạm vi Core Preview
+
+Không triển khai trong đợt này nếu chưa có phê duyệt riêng:
+
+- CMS nâng cao/page builder.
+- CRM mở rộng và workflow nội bộ.
+- Customer Portal.
+- Thanh toán, hóa đơn, booking.
+- AI chatbot, AI content automation.
+- Hosting/domain provisioning.
+- Template marketplace provisioning/checkout.
+- Các tích hợp vận hành production chưa được lựa chọn.
+
+Các module này có thể tồn tại trong roadmap dài hạn của repository; điều đó không làm chúng trở thành P0 của Core Preview.
+
+## 5. Information Architecture — cấu trúc cấp cao
+
+Đây là cấu trúc nội dung mục tiêu để hoàn thiện; URL cuối cùng phải được xác minh trong URL Map trước khi implementation.
+
+| Page group | Nội dung/chức năng | Ngôn ngữ |
+|---|---|---|
+| Home | Brand, service overview, value proposition đã xác nhận, process, proof hợp lệ, CTA | VI/EN |
+| About | Thông tin doanh nghiệp đã xác nhận, năng lực có bằng chứng | VI/EN |
+| Services | Tổng quan 7 nhóm dịch vụ | VI/EN |
+| Service detail | Vấn đề, phạm vi, deliverables, quy trình, FAQ, CTA theo từng nhóm | VI/EN |
+| Portfolio | Dự án được phép công bố | VI/EN |
+| Knowledge/Blog | Bài viết có nguồn, tác giả/người duyệt và nội dung hữu ích | VI/EN |
+| Contact / Request a quote | Form tư vấn/báo giá, consent và thông tin liên hệ xác minh | VI/EN |
+| Legal / Policy | Điều khoản, quyền riêng tư và các chính sách cần thiết | VI/EN |
+
+Không chốt số lượng URL từ con số 40 trong README/Roadmap cho đến khi có route inventory và sitemap được kiểm chứng.
+
+## 6. Blueprint deliverable register
+
+Blueprint Standard yêu cầu đủ 19 phần. Trạng thái dưới đây phản ánh tiến độ tài liệu, không phải trạng thái hoàn thành phần mềm.
+
+| # | Blueprint module | Trạng thái | Ghi chú |
+|---:|---|---|---|
+| 01 | Executive Summary | In progress | Đã có project baseline; còn các TBD trọng yếu |
+| 02 | Business Blueprint | In progress | Primary conversion và service groups đã chốt |
+| 03 | Brand Blueprint | Blocked / partial | Thiếu brand identity và USP |
+| 04 | Competitor Blueprint | Not started | Chưa có đối thủ/benchmark được xác nhận |
+| 05 | SEO Blueprint | In progress | Có SEO principles; cần route/keyword map và xác minh sitemap |
+| 06 | Content Blueprint | In progress | Có content groups; thiếu proof, pricing và nội dung doanh nghiệp |
+| 07 | UX Blueprint | In progress | Conversion goal đã chốt; persona chưa chốt |
+| 08 | UI Blueprint | Partial | Repo có design tokens; chưa xác nhận brand identity chính thức |
+| 09 | Feature Blueprint | In progress | Core Preview scope được giới hạn trong tài liệu này |
+| 10 | Technical Blueprint | Partial | Repo có implementation hiện hữu; production topology còn TBD |
+| 11 | Architecture Blueprint | Partial | Có architecture doc; một số quyết định production chưa chốt |
+| 12 | Performance Blueprint | Not validated | Cần đo trên Preview thực tế |
+| 13 | Security Blueprint | Partial | Có security controls và test trong repo; runtime chưa nghiệm thu |
+| 14 | AI Blueprint | Deferred | Không thuộc Core Preview |
+| 15 | Marketing Blueprint | Not started | Cần audience, positioning và market inputs |
+| 16 | Development Roadmap | In progress | Dùng roadmap hiện tại, cần tách Core Preview khỏi roadmap dài hạn |
+| 17 | Risk Assessment | Draft complete | Xem RISK_ASSESSMENT.md; rủi ro chưa được đóng |
+| 18 | Project Timeline | Not baselined | Chưa ước lượng trước khi scope/inputs được xác nhận |
+| 19 | Final Validation | Pending | Chỉ thực hiện sau khi các deliverables và TBD cần thiết được xử lý |
+
+## 7. Requirement traceability
+
+| Requirement ID | Nguồn | Requirement | Deliverable | Acceptance evidence |
+|---|---|---|---|---|
+| REQ-BIZ-001 | User-confirmed decision | Primary conversion là yêu cầu tư vấn/báo giá | BP-02, BP-07, BP-09 | CTA và form hoạt động đúng, có trạng thái backend rõ ràng |
+| REQ-BIZ-002 | User-confirmed decision | Giữ 7 nhóm dịch vụ | BP-02, BP-06, BP-09 | Có đủ 7 nhóm trong IA và service overview |
+| REQ-WEB-001 | User-confirmed decision | Website nhiều trang | BP-05, BP-06, BP-07, BP-09 | URL inventory và từng route được kiểm thử trực tiếp |
+| REQ-I18N-001 | User-confirmed decision | Việt/Anh | BP-05, BP-06, BP-08 | Nội dung, navigation, metadata, hreflang tương ứng |
+| REQ-SEO-001 | User-confirmed decision | SEO-first toàn website | BP-05, BP-06, BP-08 | Per-route metadata, canonical, hreflang, sitemap, robots, structured data |
+| REQ-QA-001 | Project standards | Không nghiệm thu khi có placeholder/dữ liệu giả/lỗi nghiêm trọng | BP-19 | QA evidence và danh sách lỗi được đóng |
+
+Requirement IDs là mã truy vết trong Blueprint; không thay thế mã requirement của hệ thống quản lý khác nếu dự án đã có quy ước riêng.
+
+## 8. Dependencies và blockers
+
+1. Target audience/primary segment để hoàn thiện persona và messaging.
+2. Business description, USP và competitive advantages để hoàn thiện homepage/service content.
+3. Portfolio evidence và publishing permission để hoàn thiện trust sections.
+4. Pricing policy để quyết định có public pricing hay chỉ quote CTA.
+5. Brand identity để khóa UI tokens và visual direction.
+6. Production domain/hosting/API decisions để hoàn tất technical deployment plan.
+7. Route inventory và sitemap generation phải đồng nhất trước SEO acceptance.
+
+## 9. Change control
+
+- Mọi thay đổi phạm vi P0 phải có lý do, tác động, priority và xác nhận.
+- Không thêm feature chỉ vì repository đã có code hoặc vì dễ triển khai.
+- Không đánh dấu Approved khi chỉ mới có đề xuất.
+- Không đánh dấu Complete nếu thiếu acceptance evidence.
+- Mọi thay đổi ảnh hưởng URL phải cập nhật URL Map, internal links, canonical, hreflang, sitemap và redirect plan.
+- PR chỉ được merge sau review, CI và nghiệm thu phù hợp; production deployment cần phê duyệt riêng.
+
+## 10. Exit criteria cho Phase 0
+
+Phase 0 chỉ được đóng khi:
+
+- [ ] Project Input critical fields đã được xác nhận hoặc được ghi nhận rõ là không chặn Core Preview.
+- [ ] 19 Blueprint modules có deliverable/status/owner/dependency/acceptance criteria.
+- [ ] Scope P0/P1/P2 không mâu thuẫn với roadmap repository.
+- [ ] URL inventory khớp với route implementation và sitemap.
+- [ ] VI/EN language architecture và hreflang rules được định nghĩa.
+- [ ] Brand/Content placeholders không bị trình bày như dữ liệu thật.
+- [ ] Technical decisions cần cho Preview được phân biệt với quyết định production.
+- [ ] Risk Assessment có mitigation và residual risk.
+- [ ] User review và phê duyệt Blueprint trước khi chuyển sang UI/Development.
+
+**Current decision:** Phase 0 chưa được tuyên bố hoàn tất. Core Preview được phép chuẩn bị theo các quyết định đã xác nhận, nhưng không được tự điền các dữ liệu nghiệp vụ còn thiếu.

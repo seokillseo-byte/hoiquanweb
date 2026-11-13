@@ -1,6 +1,6 @@
 # HOIQUANWEB — SEO Indexation & PR Preview Remediation Plan
 
-**Status:** Development authorized by Project Owner for XC-03 and XC-10; implementation and acceptance evidence pending  
+**Status:** Development implemented; automated CI evidence passed; independent QA review pending  
 **Phase:** Phase 0 — Core Preview P0  
 **Related cross-checks:** XC-03, XC-10  
 **Related risks:** R-016, R-017  
@@ -144,15 +144,15 @@ For each run, retain:
 - Validator output and explicit negative/positive test results.
 - Artifact extraction/inspection record.
 
-Current status:
+Current status (2026-11-13):
 
-- XC-03: Open; source and validator behavior confirmed; target behavior and tests specified here; no implementation evidence.
-- XC-10: Open; workflow collision confirmed; target assembly and final-artifact assertions specified here; no implementation evidence.
-- R-016 and R-017 remain open until the acceptance tests pass on a newly built artifact.
+- XC-03: Development implemented. CI run 43395058445 passed SEO-IX-01..07; 40 generated HTML routes, 36 indexable and 4 noindex. Dynamic article clean-slug/initial-HTML support remains unimplemented and is intentionally excluded from indexation. Independent QA pending.
+- XC-10: Development implemented. CI run 43395058389 passed PREV-01..06 against the final assembled artifact, including HTTP direct-load/refresh smoke tests. Independent QA pending.
+- R-016 and R-017 remain open until independent QA review and acceptance evidence are approved; R-016 also retains the future dynamic-article implementation gap.
 
 ## 7. Change control
 
-- This is an implementation-ready planning specification, not permission to modify code or workflows.
-- Confirm the frontend app router/base path and admin/portal entrypoint requirements before choosing any application subpath.
+- This document records the implementation scope and acceptance rules; implementation evidence is in `DEVELOPMENT_REPORT_XC03_XC10.md`.
+- The isolated Preview app path `/platform/` uses the existing Vite base-path configuration and is not a new public production route.
 - Do not change production Pages workflow, deploy, merge or alter production configuration without explicit Project Owner approval.
 - Any change to public routes, language strategy, CMS/article scope or indexation policy requires an updated URL Map and owner review.

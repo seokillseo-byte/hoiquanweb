@@ -186,7 +186,7 @@ The thresholds below apply to Core Web Vitals only. Lighthouse score, TTFB, asse
 | Acceptance item | Proposed measurement basis | Project target | Status |
 |---|---|---|---|
 | LCP | Field p75 separately for mobile and desktop; lab result reported separately | ≤ 2.5 seconds | Owner-approved (D-13 / DEC-022) |
-| INP | Field p75 separately for mobile and desktop | ≤ 200 milliseconds | Owner-approved (D-13) |
+| INP | Field p75 separately for mobile and desktop | ≤ 200 milliseconds | Owner-approved (D-13 / DEC-022) |
 | CLS | Field p75 separately for mobile and desktop; lab result reported separately | ≤ 0.1 | Owner-approved (D-13) |
 | Lighthouse Performance — mobile | Median of at least 3 equivalent runs per selected route | TBD | Owner decision required |
 | Lighthouse Performance — desktop | Median of at least 3 equivalent runs per selected route | TBD | Owner decision required |
@@ -237,7 +237,7 @@ The Performance Blueprint is ready for owner review when:
 - [ ] Applicable cache/CDN and API checks are completed against configured environments.
 - [ ] QA records defects, retest evidence and final owner disposition.
 
-**Current status:** Core Web Vitals acceptance thresholds are owner-approved under D-13. No performance test has been claimed as run or passed by this document. Module 12 remains open until a corrected accessible Preview is measured and evidence is accepted.
+**Current status:** Core Web Vitals acceptance thresholds are owner-approved under D-13 / DEC-022. No performance test has been claimed as run or passed by this document. Module 12 remains open until a corrected accessible Preview is measured and evidence is accepted.
 
 ## 14. Change control
 

@@ -121,7 +121,7 @@ Các module này có thể tồn tại trong roadmap dài hạn của repository
 | Contact / Request a quote | Form tư vấn/báo giá, consent và thông tin liên hệ xác minh | VI/EN |
 | Legal / Policy | Điều khoản, quyền riêng tư và các chính sách cần thiết | VI/EN |
 
-Build generator scripts/build_public_site.mjs khai báo 40 localized page routes theo cấu trúc dữ liệu hiện tại (7 service pairs, 3 project pairs và các page groups VI/EN). Tuy nhiên, output build chưa được thực thi/xác minh trực tiếp trong lần rà soát này. File sitemap.xml ở repository root chỉ có homepage; Pages workflow tạo website từ public-site/dist và sitemap được sinh trong build output. Cần xác minh artifact generated và CI validation trước khi coi sitemap đã được nghiệm thu.
+Build generator scripts/build_public_site.mjs khai báo 40 localized page routes theo cấu trúc dữ liệu hiện tại (7 service pairs, 3 project pairs và các page groups VI/EN). CI run 43364707457 đã chạy generator và validator thành công: log xác nhận Generated 40 localized pages và Public site validation passed: 40 pages, internal links/assets, localized metadata, canonical sitemap, brand tokens and inquiry fallback. File sitemap.xml ở repository root chỉ có homepage; Pages workflow tạo website từ public-site/dist và deploy sitemap được sinh trong build output. Preview artifact build cũng thành công ở run 43364707609. Live production deployment vẫn chưa được thực hiện hoặc nghiệm thu.
 
 ## 6. Blueprint deliverable register
 

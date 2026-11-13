@@ -193,3 +193,14 @@ These are observations from the extracted public HTML and script, not authorizat
 - **Content acceptance:** remains pending Owner confirmation of tagline/positioning, project publication rights/status, and process/service claims.
 
 The latest two CI workflows succeeded on the exact reviewed PR HEAD. This does not convert the static artifact into a hosted Preview URL or prove Worker/D1/R2, authentication, email, performance field data or production operation.
+### 9.4 Artifact refresh on latest checked PR HEAD
+
+After the documentation updates, the isolated Preview workflow was rerun on latest checked PR HEAD 2d83b9d6d56c3b1a647d33eaac9845438dbf0763:
+
+- Validate website and API — [run 43408897535](https://github.com/seokillseo-byte/hoiquanweb/actions/runs/43408897535): completed, success.
+- Build isolated PR Preview — [run 43408897677](https://github.com/seokillseo-byte/hoiquanweb/actions/runs/43408897677): completed, success.
+- Latest artifact — [artifact 14028652129](https://github.com/seokillseo-byte/hoiquanweb/actions/runs/43408897677/artifacts/14028652129), 203,344 bytes; ZIP SHA-256 d6d68da24e0cee651802c85e8151e59fd5cfe9cf34c5baadfd026f78e6590551.
+- The artifact was downloaded and rechecked: 51 files, 44 HTML documents, 40 localized public route documents, 36 unique sitemap URLs, 36/36 route files present, zero sitemap canonical mismatches, zero noindex sitemap entries, zero localized canonical/hreflang/x-default invariant failures, and both /platform/ JS/CSS asset references resolve.
+- The latest artifact contains the same public static route and indexation behavior as the previously inspected artifact. Full visual/browser/responsive/accessibility and live-runtime checks remain unperformed.
+
+This refresh is the latest artifact evidence for PR HEAD 2d83b9d. The current QA disposition and open risks in section 9.3 are unchanged.

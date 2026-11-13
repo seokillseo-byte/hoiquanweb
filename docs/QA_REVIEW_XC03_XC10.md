@@ -136,3 +136,60 @@ This review is not Final Acceptance, Gate 2 approval, merge approval or Producti
 - [Risk Assessment](RISK_ASSESSMENT.md)
 - [HDO-019 — Project Governance & Development Readiness](HDO-019_PROJECT_GOVERNANCE_AND_DEVELOPMENT_READINESS.md)
 - [PR #43](https://github.com/seokillseo-byte/hoiquanweb/pull/43)
+
+---
+
+## 9. Supplemental independent review — latest PR artifact
+
+**Review refresh:** 2026-11-13  
+**PR HEAD reviewed:** 81b8cd4937c6c88cbd22f4af604ee6748fd66ba5  
+**Validation workflow:** [Validate website and API — run 43408429570](https://github.com/seokillseo-byte/hoiquanweb/actions/runs/43408429570) — completed, **success**  
+**Preview workflow:** [Build isolated PR Preview — run 43408429572](https://github.com/seokillseo-byte/hoiquanweb/actions/runs/43408429572) — completed, **success**  
+**Artifact:** [hoiquanweb-pr-43-preview — artifact 14028885257](https://github.com/seokillseo-byte/hoiquanweb/actions/runs/43408429572/artifacts/14028885257)  
+**Artifact ZIP size:** 203,344 bytes  
+**Artifact ZIP SHA-256:** f9376ac68d6dbdb4ae659c03f34fdd6185c0c91851ad45c55ece4a14ca210d78  
+**Extracted structure:** 51 files, including 44 HTML files; 40 localized public route HTML documents.
+
+### 9.1 Repeated artifact and SEO checks
+
+The latest artifact was downloaded from the recorded GitHub Actions artifact, extracted and independently inspected. A local static HTTP server was used for route checks.
+
+| Check | Result | Evidence |
+|---|---|---|
+| Artifact integrity | PASS | Artifact ID 14028885257; SHA-256 above |
+| Localized public HTML routes | PASS | 40 generated VI/EN route documents found |
+| Canonical/hreflang checks across localized routes | PASS | All 40 had exactly one canonical and vi/en/x-default alternates; zero invariant failures |
+| Vietnamese x-default | PASS | All 40 localized route documents had x-default equal to their Vietnamese alternate |
+| Sitemap URLs | PASS | 36 unique URLs |
+| Sitemap route HTTP checks | PASS | 36/36 returned HTTP 200 |
+| Sitemap route files missing | PASS | 0 |
+| Sitemap canonical mismatches | PASS | 0 |
+| Sitemap entries marked noindex | PASS | 0 |
+| Blog listing and generic article shells | PASS | Both VI/EN listing routes and both generic article shells are noindex and excluded from sitemap |
+| Root homepage | PASS | Root title, canonical and VI/EN/x-default metadata belong to the Vietnamese public homepage |
+| Platform application assets | PASS | /platform/assets/index-CHgcRs-R.js and /platform/assets/index-CCT5DBxr.css both exist and resolve in the extracted artifact |
+| Admin/Portal/Platform metadata | PASS | Static entrypoints are noindex and excluded from sitemap |
+
+Additional local HTTP smoke checks returned HTTP 200 for /, /en/, /admin.html, /portal.html, /platform/, platform JS/CSS, /sitemap.xml, /robots.txt, both generic article shells, both blog listing paths, a project detail route and an English service detail route.
+
+### 9.2 Content and inquiry observations — acceptance blockers
+
+These are observations from the extracted public HTML and script, not authorization to change copy or behavior:
+
+1. **Unapproved positioning/tagline:** the phrase “Your All-in-One Technology Partner” appears repeatedly in the public header/footer; the Vietnamese equivalent “Đối tác công nghệ của bạn” is used in the homepage hero. DEC-013 does not authorize an unsupported USP or differentiating claim. The Owner must approve this positioning with evidence or the copy must be revised to the approved factual description before public content acceptance.
+2. **Portfolio publication status:** the homepage labels the section “DỰ ÁN ĐÃ THỰC HIỆN” and lists FunLink, Entity Manager and Social Media Automation. Project Input Traceability marks these descriptions/publication rights/status as conditional on Owner approval. Verify each project's public status, factual description and publication permission before treating this section as accepted.
+3. **Process and service claims:** phrases about project requirements, scope, milestones, handover and support appear in public copy. Confirm that they describe actual operating practice and approved service scope; do not treat the existence of the text as evidence of an established policy or SLA.
+4. **Privacy notice remains incomplete:** the VI/EN privacy pages explicitly state that legal identity, contact channel and applicable retention/deletion policy must be completed before real submissions. The Owner-approved 24-month retention and reset/deletion rules must be reflected accurately, and the legal/contact details and backup lifecycle must be resolved before F-009 can pass.
+5. **Inquiry fallback behavior:** the current public script checks the API base. With an empty API base, it downloads a local project-brief text file and explicitly tells the visitor that no data was sent to a server. It does not show a server-received success message in that branch. This is appropriate for a static Preview, but the live API/email path remains unconfigured and untested.
+6. **Administrative entrypoints:** admin.html and portal.html are present as static files, with example API URL fields and empty hq-api-base. They are not proof of live protected application runtime. Do not enter real credentials or customer data in this artifact.
+
+### 9.3 Updated QA disposition
+
+- **XC-03 generic-shell guard:** PASS at static artifact level.
+- **XC-10 root collision / platform path:** PASS at static artifact level.
+- **R-016:** remains **CRITICAL / OPEN** because individual published articles still lack clean-slug URLs and article-specific initial HTML. The bounded handoff explicitly says not to create or enable new article routes or CMS publishing features in this work package.
+- **R-017:** remains **HIGH / OPEN** because this static artifact inspection does not include full visual/browser/responsive/accessibility/usability QA or Project Owner acceptance.
+- **F-009:** remains **BLOCKED** because privacy/legal details, live API, verified mailbox/sender, email delivery and end-to-end retention/deletion evidence are incomplete.
+- **Content acceptance:** remains pending Owner confirmation of tagline/positioning, project publication rights/status, and process/service claims.
+
+The latest two CI workflows succeeded on the exact reviewed PR HEAD. This does not convert the static artifact into a hosted Preview URL or prove Worker/D1/R2, authentication, email, performance field data or production operation.

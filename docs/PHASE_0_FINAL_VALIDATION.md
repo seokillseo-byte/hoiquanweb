@@ -9,7 +9,7 @@
 **Reviewed PR:** [#43](https://github.com/seokillseo-byte/hoiquanweb/pull/43)  
 **Previously reviewed HEAD:** `e68049e96ae55e001a00cc5f81d3d5f7ab4be52e`  
 **Latest code-bearing PR HEAD with CI/Preview evidence:** `388aa6ef53d106f181b8983a7d9021e245d7086c` (2026-11-13). Subsequent commits on the PR branch are documentation-only evidence refreshes; no application code changed after this tested code-bearing HEAD.  
-**Current evidence:** Both CI workflows and the isolated Preview artifact have now been verified on the exact current PR HEAD. The independent static artifact refresh is recorded in QA_REVIEW_XC03_XC10.md section 9.5.
+**Current evidence:** Both CI workflows and the isolated Preview artifact have now been verified on the exact current PR HEAD. The independent static artifact refresh is recorded in QA_REVIEW_XC03_XC10.md section 9.6.
 
 > This report records the evidence and gaps visible at the assessment time. It is not an Owner acceptance, a Gate 2 approval, a Development Authorization, a release approval or a production-readiness certificate.
 
@@ -38,7 +38,7 @@
 | Cross-document consistency | PARTIAL | Cross-check records resolved and open items; route/indexability, inquiry runtime, production architecture and full QA evidence remain outstanding. |
 | Bounded development remediation | PARTIAL | XC-03/R-016 guard and XC-10/R-017 isolated Preview assembly are implemented within the existing bounded authorization. |
 | CI on latest PR HEAD checked | PASS | On exact HEAD `388aa6ef53d106f181b8983a7d9021e245d7086c`, Validate website and API run `43409087189` and Build isolated PR Preview run `43409087020` both completed with conclusion `success`. Do not infer runtime or Owner acceptance from CI. |
-| Independent static artifact QA | PARTIAL PASS | Latest artifact 14028672376 (HEAD `388aa6ef`) independently checked: 40 localized HTML routes; 40 canonical/hreflang invariants pass; 36 unique sitemap URLs and 36/36 route files present; 0 duplicates/missing routes/canonical mismatches/noindex sitemap entries; root and `/platform/` asset files intact. Full visual, browser, responsive, accessibility and live-runtime acceptance remain pending. |
+| Independent static artifact QA | PARTIAL PASS | Latest artifact 14028368167 (HEAD `29a189a`) independently checked: 40 localized HTML routes; 40 canonical/hreflang invariants pass; 36 unique sitemap URLs and 36/36 route files present; 0 duplicates/missing routes/canonical mismatches/noindex sitemap entries; root and `/platform/` asset files intact. Full visual, browser, responsive, accessibility and live-runtime acceptance remain pending. |
 | Critical/high risk disposition | FAIL / OPEN | R-016 remains Critical; R-017 remains High pending full visual/browser/responsive review and Owner acceptance. Other high/critical business, privacy, backend and operational risks remain open. |
 | Gate 2 / Development Authorization | NOT APPROVED | HDO-019 is Draft / For Owner Review. Gate 2 has not been approved; blanket Development Authorization has not been granted. |
 | Phase 0 formal acceptance | NOT ACCEPTED | No formal Project Owner acceptance evidence is recorded. |
@@ -116,13 +116,13 @@ Owner decisions recorded: form + business email notification; destination `info@
 
 ### CI evidence and documentation HEAD
 
-- Latest code-bearing PR HEAD with CI/Preview evidence: `388aa6ef53d106f181b8983a7d9021e245d7086c` (2026-11-13). Later commits updated only QA/governance documentation; those commits were not represented as a new code validation run.
-- [Validate website and API — run 43409087189](https://github.com/seokillseo-byte/hoiquanweb/actions/runs/43409087189): completed, **success**.
-- [Build isolated PR Preview — run 43409087020](https://github.com/seokillseo-byte/hoiquanweb/actions/runs/43409087020): completed, **success**.
-- Both workflows are associated with the exact current PR HEAD. Their jobs and all listed steps completed successfully. The Preview artifact [14028672376](https://github.com/seokillseo-byte/hoiquanweb/actions/runs/43409087020/artifacts/14028672376) was downloaded and independently checked; see [QA_REVIEW_XC03_XC10.md](QA_REVIEW_XC03_XC10.md), section 9.5.
+- Exact PR HEAD checked: `29a189a787281c925fb034be16f42e118ac8ca8a` (2026-11-13).
+- [Validate website and API — run 43409687056](https://github.com/seokillseo-byte/hoiquanweb/actions/runs/43409687056): completed, **success**.
+- [Build isolated PR Preview — run 43409687119](https://github.com/seokillseo-byte/hoiquanweb/actions/runs/43409687119): completed, **success**.
+- Both workflows are associated with the exact current PR HEAD. Their jobs and all listed steps completed successfully. The Preview artifact [14028368167](https://github.com/seokillseo-byte/hoiquanweb/actions/runs/43409087020/artifacts/14028672376) was downloaded and independently checked; see [QA_REVIEW_XC03_XC10.md](QA_REVIEW_XC03_XC10.md), section 9.5.
 - These checks evidence the automated workflows and static artifact only. They do not prove production deployment, real mailbox delivery, hosted Worker/D1/R2 runtime, field Core Web Vitals, full browser/device visual quality or formal acceptance.
 
-The PR branch subsequently received documentation-only QA/governance evidence updates (latest recorded docs commit: `318b789f1465c59b6d3982cbabaaaacb931ef6fc`). No application code changed in those updates. The two runs evidence automated checks for the tested code-bearing commit; they do not prove production deployment, real mailbox delivery, hosted Worker/D1/R2 runtime, Core Web Vitals field thresholds, full cross-browser visual quality or formal acceptance.
+The two runs evidence the exact PR HEAD and static artifact only; they do not prove production deployment, real mailbox delivery, hosted Worker/D1/R2 runtime, Core Web Vitals field thresholds, full cross-browser visual quality or formal acceptance.
 
 ### Independent static artifact QA
 

@@ -174,7 +174,7 @@ Blueprint Standard yêu cầu đủ 19 phần. Trạng thái dưới đây phả
 
 ## 7. Requirement traceability
 
-Cross-check đầy đủ 19 module, owner role, priority, dependencies, acceptance evidence, Project Input gaps và các điểm mâu thuẫn liên tài liệu được quản lý tại [BLUEPRINT_CROSS_CHECK.md](BLUEPRINT_CROSS_CHECK.md). Tài liệu này là bản rà soát, không thay thế quyết định của Project Owner.
+Traceability chi tiết cho toàn bộ 55 trường Project Input được đánh dấu Required nằm tại [PROJECT_INPUT_TRACEABILITY.md](PROJECT_INPUT_TRACEABILITY.md). Cross-check đầy đủ 19 module, owner role, priority, dependencies, acceptance evidence, Project Input gaps và các điểm mâu thuẫn liên tài liệu được quản lý tại [BLUEPRINT_CROSS_CHECK.md](BLUEPRINT_CROSS_CHECK.md). Các tài liệu này là bản rà soát, không thay thế quyết định của Project Owner.
 
 | Requirement ID | Nguồn | Requirement | Deliverable | Acceptance evidence |
 |---|---|---|---|---|

@@ -128,7 +128,7 @@ This table is a gap check, not a replacement Project Input form. No missing fiel
 
 1. Owner response to required Project Input fields for business description, business model, industry, USP, target audience and measurable success criteria — or an explicit owner decision that named fields are non-blocking for this public-site scope.
 2. Official brand identity/logo/final typography remain TBD; interim blue/white Preview system is owner-approved under DEC-014 and must not be represented as final brand identity.
-3. Confirm whether Vietnamese is the `x-default` language fallback.
+3. ~~Confirm whether Vietnamese is the `x-default` language fallback.~~ Resolved by DEC-021 (Vietnamese approved); generated-artifact and Preview verification remain open.
 4. Confirm module owner roles and approve the scope boundary between Core Preview and the later platform release.
 5. Complete Competitor, Marketing, Performance, Timeline and Final Validation planning at the level required by the applicable Blueprint Standard, or formally defer the non-P0 deliverable with reason and approval.
 

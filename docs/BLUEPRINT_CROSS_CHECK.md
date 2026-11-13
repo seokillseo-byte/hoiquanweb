@@ -73,6 +73,7 @@ The Project Input Template labels multiple fields as Required. The current proje
 - Core service groups: the seven approved groups in Master Blueprint.
 - Primary conversion: consultation and quotation requests.
 - Customer scope and sequence: B2C first, then B2B; both remain in scope (owner-confirmed 2026-11-13). Detailed personas remain TBD.
+- Factual business description: owner-approved wording recorded in `OWNER_DECISION_REVIEW.md` and `MASTER_BLUEPRINT.md` (2026-11-13).
 - Website direction: SEO-first; Preview-first / Core-first.
 
 ### Required inputs still open or only partially specified
@@ -80,9 +81,7 @@ The Project Input Template labels multiple fields as Required. The current proje
 | Project Input field | Current state | Impact |
 |---|---|---|
 | 00.2 / 01.3 Industry | Technology/service context is apparent, but the owner has not supplied a formal industry classification | Business/SEO best practices |
-| 00.4 Project Description | Factual business description wording owner-approved on 2026-11-13; formal industry classification and operating/revenue model remain TBD | Executive summary and positioning |
 | 01.2 Business Model | Customer scope and priority order confirmed: B2C first, then B2B; operating/revenue model remains TBD | Funnel and business blueprint |
-| 01.4 Business Description | Factual business description wording owner-approved on 2026-11-13; no unverified operating/legal claims included | About page, trust and Organization information |
 | 01.6 USP | TBD | Homepage, service messaging and differentiation |
 | 01.9 Primary Conversion Goal | Confirmed: consultation/quotation request | CTA and inquiry flow |
 | 01.12 Geographic Market | Vietnam + international; target English-speaking countries TBD | Localization, legal and SEO targeting |

@@ -1075,6 +1075,44 @@ test("customer portal scopes orders, projects, milestones, comments and support 
     body: JSON.stringify({ email: "not-registered@example.test", membership_role: "member" })
   });
   assert.equal(missingAccount.status, 404, "staff must not create a membership for an unknown identity");
+
+  const customerRevocation = await server.fetch(origin + "/api/v1/admin/customers/test-customer-a/members/" + encodeURIComponent(userB.id), {
+    method: "DELETE", headers: { origin, cookie: userB.cookie }
+  });
+  assert.equal(customerRevocation.status, 403, "customers cannot revoke customer memberships through admin APIs");
+
+  const lastOwnerDemotion = await server.fetch(origin + "/api/v1/admin/customers/test-customer-a/members", {
+    method: "POST",
+    headers: { origin, cookie: admin.cookie, "content-type": "application/json" },
+    body: JSON.stringify({ email: userA.email, membership_role: "member" })
+  });
+  assert.equal(lastOwnerDemotion.status, 409, "the final customer owner must not be demoted to a non-owner role");
+  const ownersAfterDemotionAttempt = await getFor("/api/v1/admin/customers/test-customer-a/members", admin.cookie);
+  assert.ok((await ownersAfterDemotionAttempt.json()).data.some(item => item.user_id === userA.id && item.membership_role === "owner"),
+    "a rejected demotion must leave the final owner unchanged");
+
+  const lastOwnerRevocation = await server.fetch(origin + "/api/v1/admin/customers/test-customer-a/members/" + encodeURIComponent(userA.id), {
+    method: "DELETE", headers: { origin, cookie: admin.cookie }
+  });
+  assert.equal(lastOwnerRevocation.status, 409, "the final customer owner must not be removable");
+
+  const revokeMember = await server.fetch(origin + "/api/v1/admin/customers/test-customer-a/members/" + encodeURIComponent(userB.id), {
+    method: "DELETE", headers: { origin, cookie: admin.cookie }
+  });
+  assert.equal(revokeMember.status, 200, await revokeMember.clone().text());
+  assert.equal((await revokeMember.json()).data.revoked, true);
+  const projectsAfterRevocation = await getFor("/api/v1/me/projects", userB.cookie);
+  assert.ok(!(await projectsAfterRevocation.json()).data.some(item => item.id === project.id),
+    "revoking membership must immediately remove access to that customer's projects");
+  const membersAfterRevocation = await getFor("/api/v1/admin/customers/test-customer-a/members", admin.cookie);
+  assert.ok(!(await membersAfterRevocation.json()).data.some(item => item.user_id === userB.id));
+  const customerAudit = await getFor("/_test/customer-audit-count", admin.cookie);
+  assert.ok((await customerAudit.json()).data.some(item => item.action === "customer.member.unlinked" && item.count >= 1),
+    "membership revocation must create an audit event");
+  const membershipAudit = await getFor("/_test/resource-audit?resource_type=customer&resource_id=test-customer-a", admin.cookie);
+  const unlinkEvent = (await membershipAudit.json()).data.find(item => item.action === "customer.member.unlinked");
+  assert.deepEqual(JSON.parse(unlinkEvent.metadata_json), { user_id: userB.id, membership_role: "member" },
+    "membership audit must retain only the identity and role needed to explain revocation");
 });
 
 test("private project files enforce customer membership and staff-only internal visibility", async () => {
@@ -1267,6 +1305,169 @@ test("in-app notifications are generated for project and ticket events and isola
   });
   assert.equal(readAll.status, 200, await readAll.clone().text());
   assert.equal((await getNotifications(admin.cookie).then(response => response.json())).meta.unread_count, 0);
+
+  const milestoneCreate = await server.fetch(origin + "/api/v1/admin/projects/" + project.id + "/milestones", {
+    method: "POST",
+    headers: { origin, cookie: admin.cookie, "content-type": "application/json" },
+    body: JSON.stringify({ title: "Audit milestone" })
+  });
+  assert.equal(milestoneCreate.status, 201, await milestoneCreate.clone().text());
+  const milestone = (await milestoneCreate.json()).data;
+  const milestoneUpdate = await server.fetch(origin + "/api/v1/admin/milestones/" + milestone.id, {
+    method: "PATCH",
+    headers: { origin, cookie: admin.cookie, "content-type": "application/json" },
+    body: JSON.stringify({ status: "in_progress" })
+  });
+  assert.equal(milestoneUpdate.status, 200, await milestoneUpdate.clone().text());
+
+  const projectAudit = await server.fetch(origin + "/_test/resource-audit?resource_type=project&resource_id=" + encodeURIComponent(project.id), { headers: { origin } });
+  const projectEvents = (await projectAudit.json()).data;
+  const projectUpdateEvent = projectEvents.find(item => item.action === "project.updated");
+  assert.deepEqual(JSON.parse(projectUpdateEvent.metadata_json).changes.status, { from: "planning", to: "in_progress" });
+
+  const milestoneAuditEvent = projectEvents.find(item => item.action === "project.milestone.updated");
+  assert.deepEqual(JSON.parse(milestoneAuditEvent.metadata_json).changes.status, { from: "pending", to: "in_progress" });
+
+  const ticketUpdate = await server.fetch(origin + "/api/v1/admin/tickets/" + ticketId, {
+    method: "PATCH",
+    headers: { origin, cookie: admin.cookie, "content-type": "application/json" },
+    body: JSON.stringify({ status: "in_progress", priority: "high" })
+  });
+  assert.equal(ticketUpdate.status, 200, await ticketUpdate.clone().text());
+  const ticketAudit = await server.fetch(origin + "/_test/resource-audit?resource_type=ticket&resource_id=" + encodeURIComponent(ticketId), { headers: { origin } });
+  const ticketEvents = (await ticketAudit.json()).data;
+  const ticketUpdateEvent = ticketEvents.find(item => item.action === "ticket.updated");
+  const ticketChanges = JSON.parse(ticketUpdateEvent.metadata_json).changes;
+  assert.deepEqual(ticketChanges.status, { from: "waiting_customer", to: "in_progress" });
+  assert.deepEqual(ticketChanges.priority, { from: "normal", to: "high" });
+
+  // Concurrent PATCH requests must audit the row state each D1 transaction actually replaces,
+  // rather than the potentially stale pre-read performed before either request writes.
+  const patchProject = (status) => server.fetch(origin + "/api/v1/admin/projects/" + project.id, {
+    method: "PATCH", headers: { origin, cookie: admin.cookie, "content-type": "application/json" },
+    body: JSON.stringify({ status })
+  });
+  const patchProjectFields = (fields) => server.fetch(origin + "/api/v1/admin/projects/" + project.id, {
+    method: "PATCH", headers: { origin, cookie: admin.cookie, "content-type": "application/json" },
+    body: JSON.stringify(fields)
+  });
+  const concurrentProject = await Promise.all([patchProject("review"), patchProject("completed")]);
+  assert.ok(concurrentProject.every(response => response.status === 200), "both concurrent project updates should succeed");
+  const projectAuditAfterRace = await server.fetch(origin + "/_test/resource-audit?resource_type=project&resource_id=" + encodeURIComponent(project.id), { headers: { origin } });
+  const projectRaceEvents = (await projectAuditAfterRace.json()).data.filter(item => item.action === "project.updated").slice(-2);
+  const projectTransitions = projectRaceEvents.map(item => JSON.parse(item.metadata_json).changes.status).filter(Boolean);
+  const projectTransitionKeys = projectTransitions.map(item => item.from + "->" + item.to).sort();
+  const projectRaceIsValid = JSON.stringify(projectTransitionKeys) === JSON.stringify(["in_progress->review", "review->completed"].sort()) ||
+    JSON.stringify(projectTransitionKeys) === JSON.stringify(["in_progress->completed", "completed->review"].sort());
+  assert.ok(projectRaceIsValid, "concurrent project audit transitions must form a truthful before/after chain");
+
+  const patchMilestone = (status) => server.fetch(origin + "/api/v1/admin/milestones/" + milestone.id, {
+    method: "PATCH", headers: { origin, cookie: admin.cookie, "content-type": "application/json" },
+    body: JSON.stringify({ status })
+  });
+  const patchMilestoneFields = (fields) => server.fetch(origin + "/api/v1/admin/milestones/" + milestone.id, {
+    method: "PATCH", headers: { origin, cookie: admin.cookie, "content-type": "application/json" },
+    body: JSON.stringify(fields)
+  });
+  const concurrentMilestones = await Promise.all([patchMilestone("review"), patchMilestone("approved")]);
+  assert.ok(concurrentMilestones.every(response => response.status === 200), "both concurrent milestone updates should succeed");
+  const milestoneAuditAfterRace = await server.fetch(origin + "/_test/resource-audit?resource_type=project&resource_id=" + encodeURIComponent(project.id), { headers: { origin } });
+  const milestoneRaceEvents = (await milestoneAuditAfterRace.json()).data.filter(item => item.action === "project.milestone.updated").slice(-2);
+  const milestoneTransitions = milestoneRaceEvents.map(item => JSON.parse(item.metadata_json).changes.status).filter(Boolean);
+  const milestoneTransitionKeys = milestoneTransitions.map(item => item.from + "->" + item.to).sort();
+  const milestoneRaceIsValid = JSON.stringify(milestoneTransitionKeys) === JSON.stringify(["in_progress->review", "review->approved"].sort()) ||
+    JSON.stringify(milestoneTransitionKeys) === JSON.stringify(["in_progress->approved", "approved->review"].sort());
+  assert.ok(milestoneRaceIsValid, "concurrent milestone audit transitions must form a truthful before/after chain");
+
+  const patchTicket = (status) => server.fetch(origin + "/api/v1/admin/tickets/" + ticketId, {
+    method: "PATCH", headers: { origin, cookie: admin.cookie, "content-type": "application/json" },
+    body: JSON.stringify({ status })
+  });
+  const concurrentTickets = await Promise.all([patchTicket("resolved"), patchTicket("closed")]);
+  assert.ok(concurrentTickets.every(response => response.status === 200), "both concurrent ticket updates should succeed");
+  const ticketAuditAfterRace = await server.fetch(origin + "/_test/resource-audit?resource_type=ticket&resource_id=" + encodeURIComponent(ticketId), { headers: { origin } });
+  const ticketRaceEvents = (await ticketAuditAfterRace.json()).data.filter(item => item.action === "ticket.updated").slice(-2);
+  const ticketTransitions = ticketRaceEvents.map(item => JSON.parse(item.metadata_json).changes.status).filter(Boolean);
+  const ticketTransitionKeys = ticketTransitions.map(item => item.from + "->" + item.to).sort();
+  const ticketRaceIsValid = JSON.stringify(ticketTransitionKeys) === JSON.stringify(["in_progress->resolved", "resolved->closed"].sort()) ||
+    JSON.stringify(ticketTransitionKeys) === JSON.stringify(["in_progress->closed", "closed->resolved"].sort());
+  assert.ok(ticketRaceIsValid, "concurrent ticket audit transitions must form a truthful before/after chain");
+
+  // Sequential updates verify that each audit reads the persisted value from the prior write.
+  const sequentialProjectOne = await patchProject("on_hold");
+  const sequentialProjectTwo = await patchProject("cancelled");
+  assert.equal(sequentialProjectOne.status, 200);
+  assert.equal(sequentialProjectTwo.status, 200);
+  const projectAuditSequential = await server.fetch(origin + "/_test/resource-audit?resource_type=project&resource_id=" + encodeURIComponent(project.id), { headers: { origin } });
+  const projectSequentialEvents = (await projectAuditSequential.json()).data.filter(item => item.action === "project.updated");
+  assert.deepEqual(JSON.parse(projectSequentialEvents.at(-1).metadata_json).changes.status, { from: "on_hold", to: "cancelled" });
+  const projectEventCountBeforeNoop = projectSequentialEvents.length;
+  const projectNoop = await patchProject("cancelled");
+  assert.equal(projectNoop.status, 200);
+  const projectAuditNoop = await server.fetch(origin + "/_test/resource-audit?resource_type=project&resource_id=" + encodeURIComponent(project.id), { headers: { origin } });
+  assert.equal((await projectAuditNoop.json()).data.filter(item => item.action === "project.updated").length, projectEventCountBeforeNoop, "no-op project PATCH must not create an audit change");
+
+  // Explicit JSON nulls must be preserved in both directions for nullable date fields.
+  const projectDatesSet = await patchProjectFields({ start_date: "2026-11-14", due_date: "2026-11-20" });
+  assert.equal(projectDatesSet.status, 200, await projectDatesSet.clone().text());
+  const projectAuditDatesSet = await server.fetch(origin + "/_test/resource-audit?resource_type=project&resource_id=" + encodeURIComponent(project.id), { headers: { origin } });
+  const projectDateSetEvents = (await projectAuditDatesSet.json()).data.filter(item => item.action === "project.updated");
+  const projectDateSetChanges = projectDateSetEvents.map(item => JSON.parse(item.metadata_json).changes).find(changes =>
+    changes.start_date?.to === "2026-11-14" && changes.due_date?.to === "2026-11-20");
+  assert.deepEqual(projectDateSetChanges?.start_date, { from: null, to: "2026-11-14" });
+  assert.deepEqual(projectDateSetChanges?.due_date, { from: null, to: "2026-11-20" });
+
+  const projectDatesCleared = await patchProjectFields({ start_date: null, due_date: null });
+  assert.equal(projectDatesCleared.status, 200, await projectDatesCleared.clone().text());
+  const projectAuditDatesCleared = await server.fetch(origin + "/_test/resource-audit?resource_type=project&resource_id=" + encodeURIComponent(project.id), { headers: { origin } });
+  const projectDateClearEvents = (await projectAuditDatesCleared.json()).data.filter(item => item.action === "project.updated");
+  const projectDateClearChanges = projectDateClearEvents.map(item => JSON.parse(item.metadata_json).changes).find(changes =>
+    changes.start_date?.from === "2026-11-14" && Object.hasOwn(changes.start_date, "to") && changes.start_date.to === null &&
+    changes.due_date?.from === "2026-11-20" && Object.hasOwn(changes.due_date, "to") && changes.due_date.to === null);
+  assert.deepEqual(projectDateClearChanges?.start_date, { from: "2026-11-14", to: null });
+  assert.deepEqual(projectDateClearChanges?.due_date, { from: "2026-11-20", to: null });
+
+  const sequentialMilestoneOne = await patchMilestone("blocked");
+  const sequentialMilestoneTwo = await patchMilestone("pending");
+  assert.equal(sequentialMilestoneOne.status, 200);
+  assert.equal(sequentialMilestoneTwo.status, 200);
+  const milestoneAuditSequential = await server.fetch(origin + "/_test/resource-audit?resource_type=project&resource_id=" + encodeURIComponent(project.id), { headers: { origin } });
+  const milestoneSequentialEvents = (await milestoneAuditSequential.json()).data.filter(item => item.action === "project.milestone.updated");
+  assert.deepEqual(JSON.parse(milestoneSequentialEvents.at(-1).metadata_json).changes.status, { from: "blocked", to: "pending" });
+  const milestoneEventCountBeforeNoop = milestoneSequentialEvents.length;
+  const milestoneNoop = await patchMilestone("pending");
+  assert.equal(milestoneNoop.status, 200);
+  const milestoneAuditNoop = await server.fetch(origin + "/_test/resource-audit?resource_type=project&resource_id=" + encodeURIComponent(project.id), { headers: { origin } });
+  assert.equal((await milestoneAuditNoop.json()).data.filter(item => item.action === "project.milestone.updated").length, milestoneEventCountBeforeNoop, "no-op milestone PATCH must not create an audit change");
+
+  const milestoneDateSet = await patchMilestoneFields({ due_date: "2026-11-21" });
+  assert.equal(milestoneDateSet.status, 200, await milestoneDateSet.clone().text());
+  const milestoneAuditDateSet = await server.fetch(origin + "/_test/resource-audit?resource_type=project&resource_id=" + encodeURIComponent(project.id), { headers: { origin } });
+  const milestoneDateSetEvents = (await milestoneAuditDateSet.json()).data.filter(item => item.action === "project.milestone.updated");
+  const milestoneDateSetChanges = milestoneDateSetEvents.map(item => JSON.parse(item.metadata_json).changes).find(changes =>
+    changes.due_date?.to === "2026-11-21");
+  assert.deepEqual(milestoneDateSetChanges?.due_date, { from: null, to: "2026-11-21" });
+
+  const milestoneDateCleared = await patchMilestoneFields({ due_date: null });
+  assert.equal(milestoneDateCleared.status, 200, await milestoneDateCleared.clone().text());
+  const milestoneAuditDateCleared = await server.fetch(origin + "/_test/resource-audit?resource_type=project&resource_id=" + encodeURIComponent(project.id), { headers: { origin } });
+  const milestoneDateClearEvents = (await milestoneAuditDateCleared.json()).data.filter(item => item.action === "project.milestone.updated");
+  const milestoneDateClearChanges = milestoneDateClearEvents.map(item => JSON.parse(item.metadata_json).changes).find(changes =>
+    changes.due_date?.from === "2026-11-21" && Object.hasOwn(changes.due_date, "to") && changes.due_date.to === null);
+  assert.deepEqual(milestoneDateClearChanges?.due_date, { from: "2026-11-21", to: null });
+
+  const sequentialTicketOne = await patchTicket("waiting_customer");
+  const sequentialTicketTwo = await patchTicket("resolved");
+  assert.equal(sequentialTicketOne.status, 200);
+  assert.equal(sequentialTicketTwo.status, 200);
+  const ticketAuditSequential = await server.fetch(origin + "/_test/resource-audit?resource_type=ticket&resource_id=" + encodeURIComponent(ticketId), { headers: { origin } });
+  const ticketSequentialEvents = (await ticketAuditSequential.json()).data.filter(item => item.action === "ticket.updated");
+  assert.deepEqual(JSON.parse(ticketSequentialEvents.at(-1).metadata_json).changes.status, { from: "waiting_customer", to: "resolved" });
+  const ticketEventCountBeforeNoop = ticketSequentialEvents.length;
+  const ticketNoop = await patchTicket("resolved");
+  assert.equal(ticketNoop.status, 200);
+  const ticketAuditNoop = await server.fetch(origin + "/_test/resource-audit?resource_type=ticket&resource_id=" + encodeURIComponent(ticketId), { headers: { origin } });
+  assert.equal((await ticketAuditNoop.json()).data.filter(item => item.action === "ticket.updated").length, ticketEventCountBeforeNoop, "no-op ticket PATCH must not create an audit change");
 });
 
 
@@ -1396,4 +1597,86 @@ test("email outbox retries transient provider failures with a stable idempotency
   assert.equal(failed.status, "failed");
   assert.equal(failed.attempts, 1);
   assert.equal(failed.last_error_code, "PROVIDER_HTTP_400");
+});
+
+
+test("authorization matrix separates admin, staff, customer membership roles, ordinary users and anonymous requests", async () => {
+  const owner = await createSignedInUser("Matrix Customer Owner");
+  const otherCustomer = await createSignedInUser("Matrix Other Customer");
+  const admin = await createSignedInUser("Matrix Admin");
+  const staff = await createSignedInUser("Matrix Staff");
+  const member = await createSignedInUser("Matrix Customer Member");
+  const billing = await createSignedInUser("Matrix Customer Billing");
+  const ordinary = await createSignedInUser("Matrix Ordinary User");
+
+  const seed = await authRequest("/_test/seed-identity", {
+    userA: owner.id, userB: otherCustomer.id, adminUser: admin.id,
+    staffUser: staff.id, memberUser: member.id, billingUser: billing.id
+  });
+  assert.equal(seed.status, 200, await seed.clone().text());
+
+  const getFor = (path, cookie) => server.fetch(origin + path, { headers: { origin, cookie } });
+  const postFor = (path, cookie, body) => server.fetch(origin + path, {
+    method: "POST",
+    headers: { origin, cookie, "content-type": "application/json" },
+    body: JSON.stringify(body)
+  });
+
+  assert.equal((await server.fetch(origin + "/api/v1/admin/customers", { headers: { origin } })).status, 401);
+  assert.equal((await getFor("/api/v1/admin/customers", ordinary.cookie)).status, 403);
+  assert.equal((await getFor("/api/v1/admin/leads", ordinary.cookie)).status, 403);
+  assert.equal((await getFor("/api/v1/admin/projects", ordinary.cookie)).status, 403);
+  assert.equal((await getFor("/api/v1/admin/templates", ordinary.cookie)).status, 403);
+
+  for (const path of ["/api/v1/admin/customers", "/api/v1/admin/leads", "/api/v1/admin/projects", "/api/v1/admin/staff"]) {
+    const response = await getFor(path, staff.cookie);
+    assert.equal(response.status, 200, "staff should have operational access to " + path + ": " + await response.clone().text());
+  }
+
+  const pageSlug = "authorization-matrix-" + crypto.randomUUID().slice(0, 8);
+  const pageCreate = await postFor("/api/v1/admin/pages", staff.cookie, {
+    slug: pageSlug, title: "Authorization Matrix Draft",
+    content: { blocks: [{ type: "paragraph", text: "Staff-managed draft content." }] }
+  });
+  assert.equal(pageCreate.status, 201, await pageCreate.clone().text());
+  const page = (await pageCreate.json()).data;
+  assert.equal(page.status, "draft");
+  const pageUpdate = await server.fetch(origin + "/api/v1/admin/pages/" + page.id, {
+    method: "PATCH",
+    headers: { origin, cookie: staff.cookie, "content-type": "application/json" },
+    body: JSON.stringify({ title: "Staff Updated Draft" })
+  });
+  assert.equal(pageUpdate.status, 200, await pageUpdate.clone().text());
+  assert.equal((await postFor("/api/v1/admin/pages/" + page.id + "/publish", staff.cookie, {})).status, 403);
+  assert.equal((await server.fetch(origin + "/api/v1/admin/pages/" + page.id, { method: "DELETE", headers: { origin, cookie: staff.cookie } })).status, 403);
+  const adminPublish = await postFor("/api/v1/admin/pages/" + page.id + "/publish", admin.cookie, {});
+  assert.equal(adminPublish.status, 200, await adminPublish.clone().text());
+
+  const templateCreate = await postFor("/api/v1/admin/templates", staff.cookie, {
+    slug: "matrix-template-" + crypto.randomUUID().slice(0, 8),
+    name: "Authorization Matrix Template", template_type: "html_css",
+    category: "Business", summary: "Draft created by staff.",
+    description: "Used to verify staff permissions.", version: "1.0.0",
+    preview_url: "https://demo.example.test/matrix-template",
+    price_minor: 0, currency: "VND", license_key: "review_required", compatibility: {}
+  });
+  assert.equal(templateCreate.status, 201, await templateCreate.clone().text());
+  const template = (await templateCreate.json()).data;
+  const templateUpdate = await server.fetch(origin + "/api/v1/admin/templates/" + template.id, {
+    method: "PATCH",
+    headers: { origin, cookie: staff.cookie, "content-type": "application/json" },
+    body: JSON.stringify({ description: "Updated by staff." })
+  });
+  assert.equal(templateUpdate.status, 200, await templateUpdate.clone().text());
+  assert.equal((await postFor("/api/v1/admin/templates/" + template.id + "/publish", staff.cookie, {})).status, 403);
+  assert.equal((await postFor("/api/v1/admin/templates/" + template.id + "/archive", staff.cookie, {})).status, 403);
+
+  assert.equal((await getFor("/api/v1/me/quotes/test-quote-a", owner.cookie)).status, 200);
+  assert.equal((await getFor("/api/v1/me/quotes/test-quote-a", member.cookie)).status, 200);
+  assert.equal((await getFor("/api/v1/me/quotes/test-quote-a", billing.cookie)).status, 200);
+  assert.equal((await getFor("/api/v1/me/quotes/test-quote-a", otherCustomer.cookie)).status, 404);
+  assert.equal((await postFor("/api/v1/me/quotes/test-quote-a/accept", member.cookie, {})).status, 403);
+  assert.equal((await postFor("/api/v1/me/quotes/test-quote-a/accept", billing.cookie, {})).status, 200);
+  assert.equal((await postFor("/api/v1/me/quotes/test-quote-a/accept", owner.cookie, {})).status, 409);
+  assert.equal((await getFor("/api/v1/me/orders", ordinary.cookie)).status, 200);
 });

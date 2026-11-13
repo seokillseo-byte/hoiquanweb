@@ -88,10 +88,12 @@ The form must not claim that a lead has been received unless the configured back
 
 **Owner-provided notification destination (2026-11-13):** `info@hoiquanweb.io.vn`.
 
+**Operational handling owner (2026-11-13):** The Project Owner will personally monitor and manage incoming consultation/quotation inquiries delivered to this inbox.
+
 **Approval boundary:** The owner has supplied this address as the business inbox for inquiry notifications. This does not verify mailbox existence/deliverability, configure an email provider/sender, establish who monitors or handles inquiries, or approve the privacy notice, consent wording or data-retention policy.
 
 **Still required before live lead collection:**
-- Confirmed operational owner/team responsible for monitoring and handling messages delivered to `info@hoiquanweb.io.vn`.
+- Verify mailbox access/deliverability and configure email provider/sender (do not put credentials or API keys in project documents).
 - Verified mailbox access/deliverability and configured email provider/sender (do not put credentials or API keys in project documents).
 - Owner-approved privacy notice URL/text and consent wording, including data collected, purpose and retention/handling explanation.
 - Configured and tested public inquiry API plus email delivery on the intended environment.

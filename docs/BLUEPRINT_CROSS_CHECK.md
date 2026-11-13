@@ -45,7 +45,7 @@ The Project Owner has approved the role-responsibility model on 2026-11-13. Thes
 
 | # | Blueprint module | Current source / status | Priority | Approved accountable role | Dependencies | Acceptance evidence / remaining gap |
 |---:|---|---|---|---|---|---|
-| 01 | Executive Summary | `MASTER_BLUEPRINT.md` — partial | Planning prerequisite | Project Owner + Planning | 02–06, 10–13, 16–18 | One-page summary must state confirmed business, audience, scope, routes, technology and SEO facts; unresolved fields remain visibly TBD. Current summary is a working baseline, not final approval. |
+| 01 | Executive Summary | `EXECUTIVE_SUMMARY_BLUEPRINT.md` — draft created | Planning prerequisite | Project Owner + Planning | 02–06, 10–13, 16–18 | Summary captures confirmed business, audience, scope, SEO/performance boundaries and blockers. Owner review and synchronization with final module evidence remain pending. |
 | 02 | Business Blueprint | `BUSINESS_BLUEPRINT.md` — draft created; Owner review required | P0 dependency | Project Owner + Business Analyst | Project Input sections 00, 01, 03, 04, 05, 18 | All 15 mandatory Business Blueprint deliverables are addressed. Approved facts and TBDs are separated; formal industry, legal entity, operating/revenue model, service scope, personas, pricing and measurable goals remain open. No public USP/comparative claim is authorized under DEC-013. |
 | 03 | Brand Blueprint | `BRAND_BLUEPRINT.md` — interim Core Preview specification; Owner review required | P0 dependency for final visual approval | Project Owner + Brand/UI | 01, 02, 08 | All 15 mandatory Brand Blueprint deliverables are addressed. DEC-014 tokens are limited to Preview; official logo, story, mission, vision, values, personality, voice, promise and typography remain TBD. |
 | 04 | Competitor Blueprint | `COMPETITOR_BLUEPRINT.md` — research framework draft; no findings | Planning prerequisite; not a structural P0 blocker | Project Owner + Research/SEO | 02, 03, 05, 15 | Classification, evidence protocol and UI/UX/SEO/feature/content/trust comparison framework documented. Competitor shortlist, service overlap and dated evidence remain open; no competitor claim is asserted. |
@@ -170,6 +170,7 @@ Phase 0 is **not complete** until all applicable conditions below are evidenced 
 - [ ] Required Project Input fields are answered or explicitly accepted by the Project Owner as non-blocking for Core Preview.
 - [ ] Core Preview P0 and long-term platform roadmap are unambiguous across Master Blueprint, Roadmap and README.
 - [ ] Feature, UI and UX Blueprints are reviewed and approved; draft completion is not treated as acceptance.
+- [x] Executive Summary draft is documented; Owner review remains pending.
 - [x] Business Blueprint draft addresses all 15 mandatory deliverables; Owner review and open commercial/audience inputs remain.
 - [x] Brand Blueprint draft addresses all 15 mandatory deliverables; official identity inputs and Owner acceptance remain.
 - [x] Competitor Blueprint research framework is documented; actual shortlist and evidence-based assessment remain open.

@@ -1384,6 +1384,46 @@ test("in-app notifications are generated for project and ticket events and isola
   const ticketRaceIsValid = JSON.stringify(ticketTransitionKeys) === JSON.stringify(["in_progress->resolved", "resolved->closed"].sort()) ||
     JSON.stringify(ticketTransitionKeys) === JSON.stringify(["in_progress->closed", "closed->resolved"].sort());
   assert.ok(ticketRaceIsValid, "concurrent ticket audit transitions must form a truthful before/after chain");
+
+  // Sequential updates verify that each audit reads the persisted value from the prior write.
+  const sequentialProjectOne = await patchProject("on_hold");
+  const sequentialProjectTwo = await patchProject("cancelled");
+  assert.equal(sequentialProjectOne.status, 200);
+  assert.equal(sequentialProjectTwo.status, 200);
+  const projectAuditSequential = await server.fetch(origin + "/_test/resource-audit?resource_type=project&resource_id=" + encodeURIComponent(project.id), { headers: { origin } });
+  const projectSequentialEvents = (await projectAuditSequential.json()).data.filter(item => item.action === "project.updated");
+  assert.deepEqual(JSON.parse(projectSequentialEvents.at(-1).metadata_json).changes.status, { from: "on_hold", to: "cancelled" });
+  const projectEventCountBeforeNoop = projectSequentialEvents.length;
+  const projectNoop = await patchProject("cancelled");
+  assert.equal(projectNoop.status, 200);
+  const projectAuditNoop = await server.fetch(origin + "/_test/resource-audit?resource_type=project&resource_id=" + encodeURIComponent(project.id), { headers: { origin } });
+  assert.equal((await projectAuditNoop.json()).data.filter(item => item.action === "project.updated").length, projectEventCountBeforeNoop, "no-op project PATCH must not create an audit change");
+
+  const sequentialMilestoneOne = await patchMilestone("blocked");
+  const sequentialMilestoneTwo = await patchMilestone("pending");
+  assert.equal(sequentialMilestoneOne.status, 200);
+  assert.equal(sequentialMilestoneTwo.status, 200);
+  const milestoneAuditSequential = await server.fetch(origin + "/_test/resource-audit?resource_type=project&resource_id=" + encodeURIComponent(project.id), { headers: { origin } });
+  const milestoneSequentialEvents = (await milestoneAuditSequential.json()).data.filter(item => item.action === "project.milestone.updated");
+  assert.deepEqual(JSON.parse(milestoneSequentialEvents.at(-1).metadata_json).changes.status, { from: "blocked", to: "pending" });
+  const milestoneEventCountBeforeNoop = milestoneSequentialEvents.length;
+  const milestoneNoop = await patchMilestone("pending");
+  assert.equal(milestoneNoop.status, 200);
+  const milestoneAuditNoop = await server.fetch(origin + "/_test/resource-audit?resource_type=project&resource_id=" + encodeURIComponent(project.id), { headers: { origin } });
+  assert.equal((await milestoneAuditNoop.json()).data.filter(item => item.action === "project.milestone.updated").length, milestoneEventCountBeforeNoop, "no-op milestone PATCH must not create an audit change");
+
+  const sequentialTicketOne = await patchTicket("waiting_customer");
+  const sequentialTicketTwo = await patchTicket("resolved");
+  assert.equal(sequentialTicketOne.status, 200);
+  assert.equal(sequentialTicketTwo.status, 200);
+  const ticketAuditSequential = await server.fetch(origin + "/_test/resource-audit?resource_type=ticket&resource_id=" + encodeURIComponent(ticketId), { headers: { origin } });
+  const ticketSequentialEvents = (await ticketAuditSequential.json()).data.filter(item => item.action === "ticket.updated");
+  assert.deepEqual(JSON.parse(ticketSequentialEvents.at(-1).metadata_json).changes.status, { from: "waiting_customer", to: "resolved" });
+  const ticketEventCountBeforeNoop = ticketSequentialEvents.length;
+  const ticketNoop = await patchTicket("resolved");
+  assert.equal(ticketNoop.status, 200);
+  const ticketAuditNoop = await server.fetch(origin + "/_test/resource-audit?resource_type=ticket&resource_id=" + encodeURIComponent(ticketId), { headers: { origin } });
+  assert.equal((await ticketAuditNoop.json()).data.filter(item => item.action === "ticket.updated").length, ticketEventCountBeforeNoop, "no-op ticket PATCH must not create an audit change");
 });
 
 

@@ -333,4 +333,4 @@ This is a documentation/evidence refresh only. It does not authorize combining b
 
 The artifact was downloaded and made available for inspection. A fresh full route-by-route extraction/audit of this exact artifact has not yet been recorded. Prior route-level static audit evidence remains tied to artifact 14028368167 and must not be represented as a new audit of 14053557316.
 
-**Disposition:** Both workflows pass on the exact latest PR #43 HEAD. This does not close R-016, R-017 or F-009, does not establish hosted runtime or full visual QA, and does not approve Gate 2, merge or deployment.
+**Disposition:** Both workflows pass on the recorded PR #43 HEAD `b7d750e773218f3914e5e5530ea990e42daff560`. This section was committed in the subsequent documentation HEAD `66027b5f281c1dc5f2ac2e6ac9807025869369a8`; CI status for that later HEAD must be checked independently. This does not close R-016, R-017 or F-009, does not establish hosted runtime or full visual QA, and does not approve Gate 2, merge or deployment.

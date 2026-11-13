@@ -1,6 +1,6 @@
 # HOIQUANWEB — Performance Blueprint
 
-**Status:** Phase 0 planning deliverable — draft; Project Owner approval required for numeric targets  
+**Status:** Phase 0 planning deliverable — draft; Core Web Vitals thresholds owner-approved under D-13; measurement evidence pending  
 **Blueprint module:** 12 — Performance  
 **Scope:** Core Preview P0 public bilingual website and its acceptance dependencies  
 **Branch:** `docs/phase-0-master-blueprint-risk-review`  

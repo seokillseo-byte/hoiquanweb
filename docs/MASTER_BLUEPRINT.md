@@ -121,7 +121,7 @@ Các module này có thể tồn tại trong roadmap dài hạn của repository
 | Contact / Request a quote | Form tư vấn/báo giá, consent và thông tin liên hệ xác minh | VI/EN |
 | Legal / Policy | Điều khoản, quyền riêng tư và các chính sách cần thiết | VI/EN |
 
-Build generator scripts/build_public_site.mjs khai báo 40 localized page routes theo cấu trúc dữ liệu hiện tại (7 service pairs, 3 project pairs và các page groups VI/EN). CI run 43364707457 đã chạy generator và validator thành công: log xác nhận Generated 40 localized pages và Public site validation passed: 40 pages, internal links/assets, localized metadata, canonical sitemap, brand tokens and inquiry fallback. File sitemap.xml ở repository root chỉ có homepage; Pages workflow tạo website từ public-site/dist và deploy sitemap được sinh trong build output. Preview artifact build cũng thành công ở run 43364707609. Live production deployment vẫn chưa được thực hiện hoặc nghiệm thu.
+Build generator scripts/build_public_site.mjs khai báo 40 localized page routes theo cấu trúc dữ liệu hiện tại (7 service pairs, 3 project pairs và các page groups VI/EN). URL inventory chi tiết 20 cặp VI/EN, mục đích trang, CTA, topic seed và indexation proposal được ghi tại [URL_MAP.md](URL_MAP.md); đây là inventory từ source code, không phải xác nhận rằng toàn bộ nội dung đã được duyệt để index. CI run 43364707457 đã chạy generator và validator thành công: log xác nhận Generated 40 localized pages và Public site validation passed: 40 pages, internal links/assets, localized metadata, canonical sitemap, brand tokens and inquiry fallback. File sitemap.xml ở repository root chỉ có homepage; Pages workflow tạo website từ public-site/dist và deploy sitemap được sinh trong build output. Preview artifact build cũng thành công ở run 43364707609. Live production deployment vẫn chưa được thực hiện hoặc nghiệm thu.
 
 ## 6. Blueprint deliverable register
 
@@ -188,7 +188,8 @@ Phase 0 chỉ được đóng khi:
 - [ ] Project Input critical fields đã được xác nhận hoặc được ghi nhận rõ là không chặn Core Preview.
 - [ ] 19 Blueprint modules có deliverable/status/owner/dependency/acceptance criteria.
 - [ ] Scope P0/P1/P2 không mâu thuẫn với roadmap repository.
-- [ ] URL inventory khớp với route implementation và sitemap.
+- [x] URL inventory 20 cặp / 40 route đã được đối chiếu với route generator; policy indexation và sitemap vẫn cần triển khai/kiểm thử.
+- [ ] Sitemap chỉ chứa canonical public URLs đủ điều kiện index; blog-detail shell bị loại khỏi sitemap và noindex.
 - [ ] VI/EN language architecture và hreflang rules được định nghĩa.
 - [ ] Brand/Content placeholders không bị trình bày như dữ liệu thật.
 - [ ] Technical decisions cần cho Preview được phân biệt với quyết định production.
@@ -196,3 +197,10 @@ Phase 0 chỉ được đóng khi:
 - [ ] User review và phê duyệt Blueprint trước khi chuyển sang UI/Development.
 
 **Current decision:** Phase 0 chưa được tuyên bố hoàn tất. Core Preview được phép chuẩn bị theo các quyết định đã xác nhận, nhưng không được tự điền các dữ liệu nghiệp vụ còn thiếu.
+
+
+## Appendix A — URL Map
+
+- Source of truth: `scripts/build_public_site.mjs`.
+- Detailed route inventory and indexation matrix: [docs/URL_MAP.md](URL_MAP.md).
+- The inventory is source-verified; keyword targets, content approval, indexation recommendations and runtime acceptance remain pending.

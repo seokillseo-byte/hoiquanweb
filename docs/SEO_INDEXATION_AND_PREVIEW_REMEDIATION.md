@@ -10,7 +10,7 @@
 
 ## 1. Purpose and confirmed findings
 
-This plan defines the minimum remediation and acceptance evidence for two observed issues. The Project Owner has authorized Development for XC-03 and XC-10 on the current PR branch. This authorization does not include merge, deployment or production changes.
+This plan defines the remediation and acceptance evidence for two observed issues. The Project Owner authorized Development for XC-03 and XC-10 on the current PR branch. Implementation and automated CI evidence are recorded in `DEVELOPMENT_REPORT_XC03_XC10.md`. This authorization does not include merge, deployment or production changes.
 
 ### XC-03 / R-016 — Generic blog-detail shell is incorrectly indexable
 
@@ -113,7 +113,7 @@ The final artifact must prove:
 | 5 | Add post-assembly Preview assertions | PR preview workflow/validator | Task 4 |
 | 6 | Build and inspect new artifact; verify all route and indexation invariants | CI/QA evidence | Tasks 1–5 |
 
-The Project Owner has authorized the six tasks above for Development on the current PR branch. No implementation is evidenced by this planning document. Production changes, merge and deployment remain outside this authorization.
+The six Development tasks above have been implemented on the current PR branch and passed the automated acceptance checks recorded in `DEVELOPMENT_REPORT_XC03_XC10.md`. Independent QA and Project Owner acceptance remain pending. Production changes, merge and deployment remain outside this authorization.
 
 ## 5. Acceptance test matrix
 
@@ -125,10 +125,10 @@ The Project Owner has authorized the six tasks above for Development on the curr
 | SEO-IX-04 | Parse sitemap entries | Every URL is unique, canonical, public and explicitly indexable |
 | SEO-IX-05 | Validate generated HTML set | Non-indexable shell routes may exist but are not required in sitemap |
 | SEO-IX-06 | Verify blog listing | Listing indexation follows content-readiness policy; no empty/thin indexable listing |
-| SEO-IX-07 | Verify a future published article | Clean URL; article-specific initial HTML metadata/body; correct language links; eligible sitemap entry |
+| SEO-IX-07 | Verify the current future-article guard | No query-slug or unqualified dynamic article route is indexable; future articles remain excluded until clean URLs and article-specific initial HTML meet the complete readiness gate |
 | PREV-01 | Inspect final assembled `_preview/index.html` | Public Vietnamese homepage remains at root |
 | PREV-02 | Inspect final root metadata | Expected title, description, canonical, robots and VI/EN/x-default links |
-| PREV-03 | Inspect `/en/` and representative deep routes | Correct public pages; direct load and refresh work |
+| PREV-03 | Request `/en/` and representative VI/EN deep routes twice over the final assembled artifact | Each direct request and repeat request returns the expected HTML document with HTTP 200 |
 | PREV-04 | Inspect app/admin/portal entrypoints | Each remains at its intended path; no root overwrite; assets resolve |
 | PREV-05 | Inspect `sitemap.xml` and `robots.txt` in final artifact | Generated public-site files remain intact |
 | PREV-06 | Inspect complete artifact | No private/admin content or unexpected SPA root collision |

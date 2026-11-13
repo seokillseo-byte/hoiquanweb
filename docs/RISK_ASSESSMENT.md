@@ -41,8 +41,8 @@
 | R-013 | Thiếu xác nhận hosting, secrets, domain routing và ownership | 3 | 5 | 15 | High | Không tạo tài nguyên hoặc thay đổi production; lập checklist owner action và environment separation | Open |
 | R-014 | Nội dung placeholder hoặc claim không có bằng chứng được phát hành | 3 | 5 | 15 | High | Content QA bắt buộc; mọi placeholder phải bị chặn trước publish; kiểm tra legal/contact claims | Open |
 | R-015 | Thiếu user acceptance trên thiết bị, trình duyệt và ngôn ngữ thực tế | 3 | 4 | 12 | High | Kiểm thử responsive, keyboard, accessibility, browser, form, links, 404 và VI/EN trước nghiệm thu | Open |
-| R-016 | Generic blog-detail shell is emitted as indexable and included in sitemap despite client-side article loading; individual article URLs lack clean routes and article-specific initial HTML | 4 | 4 | 16 | Critical | Separate HTML route generation from sitemap eligibility; emit noindex,follow for generic shells; exclude them from sitemap; publish clean-slug article URLs only after article-specific initial HTML, canonical, hreflang and structured data are generated. Validator must test indexable routes, not require every generated HTML file in sitemap. See `SEO_INDEXATION_AND_PREVIEW_REMEDIATION.md`. | Open — plan specified; implementation/evidence pending |
-| R-017 | PR preview artifact overlays the frontend SPA build on top of the generated public-site output and replaces the public Vietnamese homepage at `/`; the assembled artifact therefore does not faithfully preview the production Pages root route | 4 | 3 | 12 | High | Correct preview assembly so the public homepage remains at `/`; do not overlay the frontend SPA root onto public-site output; map application/admin surfaces to explicit non-conflicting paths; run post-assembly assertions for root title, canonical, hreflang and robots in the final artifact | Open — Preview fidelity blocker; production Pages impact not established |
+| R-016 | Client-rendered blog listing/detail shells previously had indexable initial HTML and sitemap entries; they are now noindex and excluded, while dynamic published articles still lack clean slug routes and article-specific initial HTML | 4 | 4 | 16 | Critical | Keep listing/detail shells noindex and out of sitemap; add clean-slug article URLs only after article-specific initial HTML, canonical, reciprocal hreflang and structured data are implemented. Validator enforces sitemap eligibility. See `SEO_INDEXATION_AND_PREVIEW_REMEDIATION.md` and `DEVELOPMENT_REPORT_XC03_XC10.md`. | Development guard implemented; CI evidence passed; independent QA pending; dynamic article rendering remains unresolved |
+| R-017 | PR Preview previously overlaid the frontend SPA build on the generated public-site output and replaced the public Vietnamese homepage at `/`; the Preview workflow now isolates the SPA under `/platform/` and validates the final assembled artifact | 4 | 3 | 12 | High | Preserve public homepage at `/`; build the app with the configured `/platform/` base path; retain generated portal output; validate root metadata, entrypoints and app assets after assembly. See `DEVELOPMENT_REPORT_XC03_XC10.md`. | Development implemented; final Preview CI and HTTP smoke tests passed; independent QA pending |
 
 ## 4. Priority risks requiring closure before SEO / Core Preview acceptance
 
@@ -68,11 +68,16 @@ Evidence from PR preview artifact run 43389153166 on commit `4cb78e548e4077722dd
 - The sitemap in that artifact still contains the public homepage URL `/`.
 - `.github/workflows/pages.yml` currently assembles deployment from `public-site/dist` only; the preview collision is not evidence that production Pages output is overwritten.
 
-Required closure:
-1. Confirm the intended root route in the isolated Preview is the public HOIQUANWEB homepage.
-2. Change preview assembly so the app build cannot overwrite that page; mount app/admin paths only at their intended URLs.
-3. Add an assertion against the final assembled artifact for the root page title, canonical, VI/EN hreflang and robots policy.
-4. Rebuild and inspect the artifact before marking Preview homepage acceptance complete.
+Implementation evidence (2026-11-13):
+- Commit `c630041db0981d2f125a6c25a00fc114aebc707d` and final validator commit `52169201a4e8837ee7bd226f0eb7b61a216f7be8` keep the public-site output at Preview root and place the frontend SPA at `/platform/` using the existing Vite `base` configuration.
+- The generated `portal.html` is retained; the redundant copy of the unconfigured root portal file was removed.
+- PR Preview workflow run **43395058389** (run #218) passed all build, assembly, final-artifact validation and upload steps.
+- Final validator passed PREV-01 through PREV-06, including HTTP direct-load/repeat-request smoke checks for public routes and HTTP checks for admin, portal, platform and platform assets.
+- Artifact: [hoiquanweb-pr-43-preview](https://github.com/seokillseo-byte/hoiquanweb/actions/runs/43395058389/artifacts/14021259542).
+
+Remaining:
+- Independent QA review and Project Owner acceptance are pending.
+- This is isolated Preview evidence only; production Pages workflow and live production URL were not changed or tested.
 
 ### R-016 — Dynamic blog/CMS SEO coverage
 
@@ -84,13 +89,19 @@ Evidence hiện có:
 
 Kết luận: 40 trang static đã được CI xác minh, nhưng điều đó không chứng minh từng bài blog/CMS dynamic đã có URL indexable riêng hoặc metadata trong HTML ban đầu.
 
-Required closure:
-1. Chọn clean slug URL cho từng bài viết, không phụ thuộc query slug cho canonical SEO URL.
-2. Chọn SSR, prerender hoặc static generation cho published blog posts.
-3. Thêm từng URL VI/EN đã publish vào sitemap; không thêm draft/private content.
-4. Kiểm tra title, description, canonical, hreflang, Article structured data trong HTML trả về ban đầu.
-5. Với arbitrary CMS pages chưa được render thành route, giữ noindex/không đưa vào sitemap cho đến khi hỗ trợ hoàn chỉnh.
-6. Bổ sung automated tests cho sitemap và metadata dynamic content.
+Implementation evidence (2026-11-13):
+- scripts/build_public_site.mjs now assigns explicit route-level indexability. The VI/EN blog listing shells and generic blog-detail shells emit noindex,follow; sitemap generation filters to explicitly indexable routes.
+- scripts/validate_public_site.mjs no longer equates generated HTML count with sitemap count. It validates canonical/indexability consistency, x-default-to-Vietnamese mapping, noindex exclusions and the query-slug/article guard.
+- Validation workflow run 43395058445 (run #391) passed. The generator produced 40 localized HTML routes; the validator identified 36 indexable routes and 4 noindex blog routes and passed SEO-IX-01 through SEO-IX-07.
+- This intentionally does not implement clean-slug article routing or SSR/prerender. Dynamic published articles remain outside the sitemap and must not be indexed until the full article readiness gate is implemented and QA-approved.
+
+Remaining:
+1. Implement clean slug URLs for published articles.
+2. Implement SSR, prerender or static generation with article-specific initial HTML.
+3. Add only approved published VI/EN article URLs to sitemap.
+4. Verify initial-HTML title, description, canonical, reciprocal hreflang, Article structured data and publication lifecycle.
+5. Keep unsupported arbitrary CMS routes noindex and outside sitemap.
+6. Independently QA the current guard and the future article-readiness implementation.
 
 ### R-010 — Backend runtime not accepted
 

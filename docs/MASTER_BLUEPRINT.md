@@ -226,7 +226,7 @@ Phase 0 chỉ được đóng khi:
 - [ ] User review và phê duyệt Blueprint trước khi chuyển sang UI/Development.
 - [ ] Inquiry endpoint, approved recipient/email, privacy/consent wording and end-to-end form + email delivery acceptance are confirmed.
 - [ ] Core Preview / first usable platform release được phân biệt rõ trong mọi tài liệu.
-- [ ] Performance acceptance thresholds và x-default language fallback được Project Owner quyết định hoặc ghi nhận rõ là TBD.
+- [ ] Performance acceptance thresholds được Project Owner quyết định hoặc ghi nhận rõ là TBD. x-default language fallback đã được Owner phê duyệt là tiếng Việt theo DEC-021; generated-artifact và Preview verification vẫn phải hoàn tất.
 
 **Current decision:** Phase 0 chưa được tuyên bố hoàn tất. Core Preview được phép chuẩn bị theo các quyết định đã xác nhận, nhưng không được tự điền các dữ liệu nghiệp vụ còn thiếu.
 

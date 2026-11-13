@@ -86,5 +86,5 @@ test("article structured data uses the clean canonical URL and approved metadata
   assert.equal(schema["@type"], "Article");
   assert.equal(schema.mainEntityOfPage, "https://hoiquanweb.io.vn/blog/seo-co-ban/");
   assert.equal(schema.inLanguage, "vi");
-  assert.equal(schema.headline, article.seo.title);
+  assert.equal(schema.headline, article.title);
 });

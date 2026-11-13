@@ -204,3 +204,13 @@ Do not add analytics or tracking until provider, consent/legal basis, retention 
 5. Revise the journey and content hierarchy from observed evidence.
 
 Until those inputs are available, this remains a B2C-first baseline UX specification and does not claim validated persona research.
+
+## R-017 implementation update — 2026-11-13
+
+- Public navigation does not expose admin or customer-portal entry points until the portal-public flag and HTTPS API base are configured.
+- Project discovery is conditional. Without verified and publishable case-study evidence, project modules/routes are omitted rather than populated with unapproved product claims.
+- The homepage uses factual service-group wording and omits the unapproved slogan, project showcase and unconfirmed delivery-process section.
+- FAQ content is limited to service-group information and inquiry preparation; unconfirmed pricing, process and market claims are not presented as operating policy.
+- Contact is explicit about the current state: local brief download by default, no false “request received” confirmation, and no server transmission until the privacy-policy approval and HTTPS API gates pass.
+- The standalone privacy notice is marked noindex, unlinked and clearly identified as temporary rather than an approved policy.
+- Mobile navigation supports Escape/outside-click dismissal, localized accessible labels, focus return and visible keyboard focus.

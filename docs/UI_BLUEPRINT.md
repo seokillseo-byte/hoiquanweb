@@ -204,3 +204,13 @@ Target: WCAG 2.1 AA, subject to manual and automated verification.
 - TBD-010: priority English-speaking markets and localization style.
 
 These decisions do not authorize the designer or developer to invent missing business facts.
+
+## R-017 implementation update — 2026-11-13
+
+- Public navigation contains only active public information/service routes. The customer portal entry appears only when an HTTPS API base and the explicit portal-public flag are configured.
+- The homepage presents the seven service groups with factual language. Unapproved slogan, project showcase and unconfirmed delivery-process claims are omitted.
+- Project listing/detail routes are reserved and not generated, linked or indexed until project status, evidence and publication rights are approved.
+- The standalone privacy information notice is noindex, is not linked from public navigation and is not represented as the approved legal policy.
+- The inquiry form defaults to a local brief download and clearly states that no visitor data is sent to a server. Online submission requires an HTTPS API base, explicit privacy-policy approval, a valid HTTPS policy URL and visitor consent.
+- Mobile navigation exposes localized open/close labels, closes on Escape/outside click, and returns focus to the menu button after Escape. Visible keyboard focus is provided for interactive controls.
+- Decorative hero artwork is hidden from assistive technology; service labels and page content remain semantic.

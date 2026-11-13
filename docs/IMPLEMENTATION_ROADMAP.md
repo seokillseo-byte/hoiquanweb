@@ -10,7 +10,7 @@
 
 ## Baseline đã kiểm tra
 
-- scripts/build_public_site.mjs khai báo 40 localized page objects và sinh HTML/sitemap từ cùng route array; scripts/validate_public_site.mjs kiểm tra sitemap count, uniqueness và canonical parity. Pages workflow chạy generator + validator rồi deploy public-site/dist. sitemap.xml ở repository root chỉ có homepage nhưng không được Pages workflow copy trực tiếp; file này đã stale. Cần kiểm tra CI/build artifact và preview thực tế trước khi đánh dấu SEO runtime acceptance. Repository có CMS pages/posts/services admin UI + API, draft-first workflow và revision history; blog có taxonomy; CMS media library upload R2, alt text, preview, publish/archive. Public renderer có thể đọc page đã xuất bản để ghi đè route tĩnh cùng slug khi HQ_API_BASE được cấu hình; biến này chưa được cấu hình và chưa xác minh runtime với Worker/D1.
+- scripts/build_public_site.mjs hiện sinh 30 localized static routes từ 15 cặp VI/EN; project và localized privacy routes được reserve, không generate khi chưa được duyệt. Standalone privacy notice noindex được copy riêng. Eligible published CMS articles được prerender thành clean dynamic routes. Pages workflow chạy generator + validator rồi deploy public-site/dist. sitemap.xml ở repository root chỉ có homepage nhưng không được Pages workflow copy trực tiếp; file này đã stale. Cần kiểm tra CI/build artifact và preview thực tế trước khi đánh dấu SEO runtime acceptance. Repository có CMS pages/posts/services admin UI + API, draft-first workflow và revision history; blog có taxonomy; CMS media library upload R2, alt text, preview, publish/archive. Public renderer có thể đọc page đã xuất bản để ghi đè route tĩnh cùng slug khi HQ_API_BASE được cấu hình; biến này chưa được cấu hình và chưa xác minh runtime với Worker/D1.
 - Có Worker scaffold và D1 migration cho lead, lead events và rate limiting.
 - `backend/wrangler.toml` vẫn chứa database ID placeholder; API base trên frontend hiện để trống.
 - Better Auth và role checks có integration tests; CMS API/UI cho pages/posts/services có kiểm thử. D1 migrations chưa deploy; public CMS rendering chưa xác minh runtime; template package/provisioning chưa hoàn thiện. CMS media code đã có nhưng cần R2 bucket và migration trên Cloudflare. Customer portal đã có báo giá, đơn hàng, dự án/milestone/bình luận và ticket hỗ trợ ở mức nền tảng; CRM order/project/ticket admin UI và membership onboarding đã có. Các tích hợp production, file riêng tư và thanh toán chưa hoàn thiện.
@@ -194,3 +194,12 @@ Không công bố hệ thống là production-ready cho đến khi có domain v�
 - [ ] Cloudflare staging R2/D1 runtime acceptance for CMS media and private project files.
 - [x] In-app notifications for project, milestone and support-ticket events; per-user inbox/read-state isolation covered by integration tests.
 - [ ] Resend email delivery, retry/idempotency and verified sender configuration; invoicing/payment and production deployment remain incomplete.
+
+## R-017 implementation update — 2026-11-13
+
+- Public header/footer remove unapproved brand slogan, unverified project showcase, unconfirmed process claims and links to reserved project/privacy routes.
+- Customer portal navigation is conditional on an HTTPS API base and explicit HQ_PORTAL_PUBLIC_ENABLED=true.
+- Contact form defaults to a local brief download and does not claim server receipt. Online intake requires HTTPS API base, HQ_PRIVACY_POLICY_APPROVED=true, a valid HTTPS HQ_PRIVACY_POLICY_URL and explicit visitor consent.
+- A standalone noindex privacy notice is copied into the static artifact; it is not linked or treated as the approved legal policy.
+- Mobile navigation has localized accessible labels, Escape/outside-click dismissal and focus return; keyboard focus styles are visible.
+- Project listing/detail pages are not generated until verified case-study facts and publication rights are approved.

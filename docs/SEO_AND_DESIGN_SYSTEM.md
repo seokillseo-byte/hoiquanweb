@@ -1,6 +1,6 @@
 # SEO Foundation & Design System — HOIQUANWEB
 
-**Status:** Current-state and target rules; route inventory reconciliation required  
+**Status:** 40 static localized routes verified by CI; dynamic blog/CMS SEO and live URL acceptance pending  
 **Project:** HOIQUANWEB / hoiquanweb.io.vn  
 **Languages:** Vietnamese and English
 

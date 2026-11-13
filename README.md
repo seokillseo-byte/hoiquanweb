@@ -83,3 +83,7 @@ The public generator defaults to safe, non-submitting behavior:
 If the API or privacy gates are absent, the contact form downloads a local brief and clearly states that no information is sent to a server. The customer portal page remains available as a noindex static artifact but is not linked in public navigation unless its explicit visibility gate passes. A standalone noindex privacy notice is copied for transparency; it is not the approved legal policy.
 
 Project case-study routes are not generated or linked until project status, descriptions, evidence and publication rights are approved. No production deployment, database migration, account provisioning or secret change is part of this PR.
+
+## Admin workspace
+
+The admin HTML is a noindex operational workspace. It presents existing CRM, CMS, quote, media, template and customer-delivery modules behind Better Auth sign-in or existing-cookie session restoration plus a server-side `/api/v1/me` admin/staff role check. A sign-out action clears the session and returns to the login panel. The UI does not create administrator identities or assign roles; provisioning remains a controlled server-side operation after the Worker/D1 environment is accepted.

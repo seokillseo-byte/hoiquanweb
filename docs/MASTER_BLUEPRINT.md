@@ -12,7 +12,7 @@
 
 ## 1. Mục đích và nguyên tắc kiểm soát
 
-**Final Validation (2026-11-13):** [PHASE_0_FINAL_VALIDATION.md](PHASE_0_FINAL_VALIDATION.md) — BLOCKED / NOT ACCEPTED. Phase 0 remains open; PR #43 CI is 2/2 success on current reviewed HEAD, but this is not Owner acceptance, runtime acceptance or release approval. **Technical/Security/QA gap audit:** [PHASE_0_TECHNICAL_SECURITY_QA_GAP_REGISTER.md](PHASE_0_TECHNICAL_SECURITY_QA_GAP_REGISTER.md) records the current P0 gaps and the minimum QA evidence matrix.
+**Final Validation (2026-11-13):** [PHASE_0_FINAL_VALIDATION.md](PHASE_0_FINAL_VALIDATION.md) — BLOCKED / NOT ACCEPTED. Phase 0 remains open; PR #43 CI was 2/2 success on the last CI-verified HEAD `eb0182a`; later documentation-only commits have no reported workflow runs yet. This is not Owner acceptance, runtime acceptance or release approval. **Technical/Security/QA gap audit:** [PHASE_0_TECHNICAL_SECURITY_QA_GAP_REGISTER.md](PHASE_0_TECHNICAL_SECURITY_QA_GAP_REGISTER.md) records the current P0 gaps and the minimum QA evidence matrix.
 
 Tài liệu này là điểm điều hướng trung tâm cho Blueprint HOIQUANWEB. Nó tổng hợp các quyết định đã được người dùng xác nhận, các thông tin còn thiếu và các tài liệu chuyên môn cần hoàn thiện.
 

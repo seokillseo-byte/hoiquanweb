@@ -3,7 +3,7 @@ on:
   push:
     branches: [main, feat/better-auth-worker-d1-integration, feat/hoiquanweb-public-site-v1, feat/customer-project-portal, feat/seo-clean-article-routes]
   pull_request:
-    branches: [main, feat/better-auth-worker-d1-integration, docs/phase-0-master-blueprint-risk-review]
+    branches: [main, feat/better-auth-worker-d1-integration, docs/phase-0-master-blueprint-risk-review, feat/seo-clean-article-routes]
   workflow_dispatch:
 
 permissions:

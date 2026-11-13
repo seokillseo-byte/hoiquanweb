@@ -4,7 +4,7 @@ on:
   push:
     branches: [feat/public-ui-factual-content-accessibility, feat/admin-dashboard-ux, feat/portal-session-ux, docs/staging-deploy-safety]
   pull_request:
-    branches: [main, feat/better-auth-worker-d1-integration, docs/phase-0-master-blueprint-risk-review, feat/seo-clean-article-routes, feat/public-ui-factual-content-accessibility, feat/admin-dashboard-ux, feat/portal-session-ux]
+    branches: [main, feat/better-auth-worker-d1-integration, docs/phase-0-master-blueprint-risk-review, feat/seo-clean-article-routes, feat/public-ui-factual-content-accessibility, feat/admin-dashboard-ux, feat/portal-session-ux, docs/staging-deploy-safety]
     types: [opened, synchronize, reopened, ready_for_review]
   workflow_dispatch:
 

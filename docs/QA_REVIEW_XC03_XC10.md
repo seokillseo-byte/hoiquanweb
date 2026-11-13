@@ -278,3 +278,20 @@ The artifact was downloaded and SHA-256 verified, then independently inspected a
 **Disposition:** CI and artifact checks are **2/2 PASS** on PR HEAD `29a189a`. XC-03 and XC-10 static artifact checks remain passed. R-016 remains Critical/Open; R-017 remains High/Open; F-009 remains blocked for live collection; content Owner acceptance remains pending. These checks do not establish full visual/browser/accessibility QA, hosted runtime, production readiness, Gate 2 approval, merge approval or deployment.
 
 This is an evidence refresh only; it does not expand the existing XC-03/XC-10 authorization.
+
+
+### 9.7 Evidence refresh on current PR #43 HEAD
+
+**Refresh date:** 2026-11-13  
+**PR HEAD:** `8bac71df67c2ef22e8a5ab704dbb87530af414e3`  
+**Validation workflow:** [Validate website and API — run 43449166280](https://github.com/seokillseo-byte/hoiquanweb/actions/runs/43449166280) — completed, **success**.  
+**Preview workflow:** [Build isolated PR Preview — run 43449166305](https://github.com/seokillseo-byte/hoiquanweb/actions/runs/43449166305) — completed, **success**.  
+**Artifact:** [hoiquanweb-pr-43-preview — artifact 14049751657](https://github.com/seokillseo-byte/hoiquanweb/actions/runs/43449166305/artifacts/14049751657)  
+**Artifact size:** 203,344 bytes  
+**GitHub artifact SHA-256 digest:** `1483f94030397d516bebe5ba6562fa37395fd7d36bf9c773ae206229b7824061`
+
+The refreshed artifact was downloaded and its top-level structure inspected. It contains the generated public root `index.html`, the isolated `platform/index.html`, `admin.html`, `portal.html`, localized route directories, `sitemap.xml` and the static assets directory. The root document is the Vietnamese public homepage with an indexable robots directive and canonical URL `https://hoiquanweb.io.vn/`.
+
+This refresh records the current PR HEAD and successful CI/artifact generation. It does **not** repeat the complete 40-route canonical/hreflang and 36-URL sitemap audit already recorded in §9.6, and does not replace full visual/browser/responsive/accessibility QA or Project Owner acceptance.
+
+**Disposition:** Current PR #43 HEAD has **2/2 CI workflows successful** and a new Preview artifact available. R-016 remains Critical/Open; R-017 remains High/Open; F-009 remains blocked for live collection. Gate 2, merge and deployment remain unapproved. This evidence refresh does not expand the existing XC-03/XC-10 authorization.

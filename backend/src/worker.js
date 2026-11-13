@@ -1008,9 +1008,13 @@ async function adminProjectRoutes(request, env, url) {
       // Capture before-values inside the same atomic D1 batch as the update.
       // D1 batch statements run sequentially in one transaction, so this SELECT
       // observes the row version that this mutation is about to replace.
-      const projectChangesSql = "json_patch(json_patch(json_patch(json_patch('{}', CASE WHEN name IS NOT ? THEN json_object('name', json_object('from', name, 'to', ?)) ELSE '{}' END), CASE WHEN status IS NOT ? THEN json_object('status', json_object('from', status, 'to', ?)) ELSE '{}' END), CASE WHEN start_date IS NOT ? THEN json_object('start_date', json_object('from', start_date, 'to', ?)) ELSE '{}' END), CASE WHEN due_date IS NOT ? THEN json_object('due_date', json_object('from', due_date, 'to', ?)) ELSE '{}' END)";
+      const projectChangesSql = "(SELECT json_group_object(field, json(value)) FROM (" +
+        "SELECT 'name' AS field, json_object('from', p.name, 'to', ?) AS value WHERE p.name IS NOT ? " +
+        "UNION ALL SELECT 'status', json_object('from', p.status, 'to', ?) WHERE p.status IS NOT ? " +
+        "UNION ALL SELECT 'start_date', json_object('from', p.start_date, 'to', ?) WHERE p.start_date IS NOT ? " +
+        "UNION ALL SELECT 'due_date', json_object('from', p.due_date, 'to', ?) WHERE p.due_date IS NOT ?))";
       await env.DB.batch([
-        env.DB.prepare("INSERT INTO crm_audit_events (id, actor_id, action, resource_type, resource_id, metadata_json, created_at) SELECT ?, ?, 'project.updated', 'project', id, json_object('changes', " + projectChangesSql + "), ? FROM crm_projects WHERE id = ? AND (name IS NOT ? OR status IS NOT ? OR start_date IS NOT ? OR due_date IS NOT ?)").bind(crypto.randomUUID(), principal.user.id, name, name, status, status, startDate, startDate, dueDate, dueDate, now, projectId, name, status, startDate, dueDate),
+        env.DB.prepare("INSERT INTO crm_audit_events (id, actor_id, action, resource_type, resource_id, metadata_json, created_at) SELECT ?, ?, 'project.updated', 'project', p.id, json_object('changes', json(" + projectChangesSql + ")), ? FROM crm_projects p WHERE p.id = ? AND (p.name IS NOT ? OR p.status IS NOT ? OR p.start_date IS NOT ? OR p.due_date IS NOT ?)").bind(crypto.randomUUID(), principal.user.id, name, name, status, status, startDate, startDate, dueDate, dueDate, now, projectId, name, status, startDate, dueDate),
         env.DB.prepare("UPDATE crm_projects SET name = ?, description = ?, status = ?, start_date = ?, due_date = ?, updated_at = ? WHERE id = ?").bind(name, description, status, startDate, dueDate, now, projectId)
       ]);
       const updated = await env.DB.prepare("SELECT id, customer_id, order_id, name, description, status, start_date, due_date, created_by, created_at, updated_at FROM crm_projects WHERE id = ? LIMIT 1").bind(projectId).first();
@@ -1031,9 +1035,12 @@ async function adminProjectRoutes(request, env, url) {
     if (title.length < 2 || !["pending","in_progress","review","approved","blocked"].includes(status) || !validDateOnly(dueDate)) return json({ error: { code: "VALIDATION_ERROR", message: "Thông tin milestone không hợp lệ." } }, 400);
     const now = new Date().toISOString();
     // Read the before-values in the transaction immediately preceding this update.
-    const milestoneChangesSql = "json_patch(json_patch(json_patch('{}', CASE WHEN title IS NOT ? THEN json_object('title', json_object('from', title, 'to', ?)) ELSE '{}' END), CASE WHEN status IS NOT ? THEN json_object('status', json_object('from', status, 'to', ?)) ELSE '{}' END), CASE WHEN due_date IS NOT ? THEN json_object('due_date', json_object('from', due_date, 'to', ?)) ELSE '{}' END)";
+    const milestoneChangesSql = "(SELECT json_group_object(field, json(value)) FROM (" +
+      "SELECT 'title' AS field, json_object('from', p.title, 'to', ?) AS value WHERE p.title IS NOT ? " +
+      "UNION ALL SELECT 'status', json_object('from', p.status, 'to', ?) WHERE p.status IS NOT ? " +
+      "UNION ALL SELECT 'due_date', json_object('from', p.due_date, 'to', ?) WHERE p.due_date IS NOT ?))";
     await env.DB.batch([
-      env.DB.prepare("INSERT INTO crm_audit_events (id, actor_id, action, resource_type, resource_id, metadata_json, created_at) SELECT ?, ?, 'project.milestone.updated', 'project', project_id, json_object('milestone_id', ?, 'changes', " + milestoneChangesSql + "), ? FROM crm_project_milestones WHERE id = ? AND (title IS NOT ? OR status IS NOT ? OR due_date IS NOT ?)").bind(crypto.randomUUID(), principal.user.id, milestoneId, title, title, status, status, dueDate, dueDate, now, milestoneId, title, status, dueDate),
+      env.DB.prepare("INSERT INTO crm_audit_events (id, actor_id, action, resource_type, resource_id, metadata_json, created_at) SELECT ?, ?, 'project.milestone.updated', 'project', p.project_id, json_object('milestone_id', ?, 'changes', json(" + milestoneChangesSql + ")), ? FROM crm_project_milestones p WHERE p.id = ? AND (p.title IS NOT ? OR p.status IS NOT ? OR p.due_date IS NOT ?)").bind(crypto.randomUUID(), principal.user.id, milestoneId, title, title, status, status, dueDate, dueDate, now, milestoneId, title, status, dueDate),
       env.DB.prepare("UPDATE crm_project_milestones SET title = ?, description = ?, status = ?, due_date = ?, updated_at = ? WHERE id = ?").bind(title, description, status, dueDate, now, milestoneId)
     ]);
     await notifySafely(env, env.DB.prepare("SELECT customer_id FROM crm_projects WHERE id = ? LIMIT 1").bind(current.project_id).first().then(row => row?.customer_id ? env.DB.prepare("SELECT user_id FROM crm_customer_members WHERE customer_id = ?").bind(row.customer_id).all().then(result => (result.results || []).map(member => member.user_id)) : []), {
@@ -1081,9 +1088,11 @@ async function adminProjectRoutes(request, env, url) {
       if (!["open","in_progress","waiting_customer","resolved","closed"].includes(status) || !["low","normal","high","urgent"].includes(priority)) return json({ error: { code: "VALIDATION_ERROR", message: "Trạng thái hoặc độ ưu tiên không hợp lệ." } }, 400);
       const now = new Date().toISOString();
       // Capture the actual row state before this write within the same D1 transaction.
-      const ticketChangesSql = "json_patch(json_patch('{}', CASE WHEN status IS NOT ? THEN json_object('status', json_object('from', status, 'to', ?)) ELSE '{}' END), CASE WHEN priority IS NOT ? THEN json_object('priority', json_object('from', priority, 'to', ?)) ELSE '{}' END)";
+      const ticketChangesSql = "(SELECT json_group_object(field, json(value)) FROM (" +
+        "SELECT 'status' AS field, json_object('from', p.status, 'to', ?) AS value WHERE p.status IS NOT ? " +
+        "UNION ALL SELECT 'priority', json_object('from', p.priority, 'to', ?) WHERE p.priority IS NOT ?))";
       await env.DB.batch([
-        env.DB.prepare("INSERT INTO crm_audit_events (id, actor_id, action, resource_type, resource_id, metadata_json, created_at) SELECT ?, ?, 'ticket.updated', 'ticket', id, json_object('changes', " + ticketChangesSql + "), ? FROM crm_tickets WHERE id = ? AND (status IS NOT ? OR priority IS NOT ?)").bind(crypto.randomUUID(), principal.user.id, status, status, priority, priority, now, ticketId, status, priority),
+        env.DB.prepare("INSERT INTO crm_audit_events (id, actor_id, action, resource_type, resource_id, metadata_json, created_at) SELECT ?, ?, 'ticket.updated', 'ticket', p.id, json_object('changes', json(" + ticketChangesSql + ")), ? FROM crm_tickets p WHERE p.id = ? AND (p.status IS NOT ? OR p.priority IS NOT ?)").bind(crypto.randomUUID(), principal.user.id, status, status, priority, priority, now, ticketId, status, priority),
         env.DB.prepare("UPDATE crm_tickets SET status = ?, priority = ?, updated_at = ? WHERE id = ?").bind(status, priority, now, ticketId)
       ]);
       await notifySafely(env, env.DB.prepare("SELECT customer_id FROM crm_tickets WHERE id = ? LIMIT 1").bind(ticketId).first().then(row => row?.customer_id ? env.DB.prepare("SELECT user_id FROM crm_customer_members WHERE customer_id = ?").bind(row.customer_id).all().then(result => (result.results || []).map(member => member.user_id)) : []), {

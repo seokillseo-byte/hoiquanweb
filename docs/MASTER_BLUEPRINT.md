@@ -153,10 +153,10 @@ Blueprint Standard yêu cầu đủ 19 phần. Trạng thái dưới đây phả
 
 | # | Blueprint module | Trạng thái | Ghi chú |
 |---:|---|---|---|
-| 01 | Executive Summary | In progress | Đã có project baseline; còn các TBD trọng yếu |
-| 02 | Business Blueprint | In progress | Primary conversion và service groups đã chốt |
-| 03 | Brand Blueprint | Blocked / partial | Thiếu brand identity và USP |
-| 04 | Competitor Blueprint | Not started | Chưa có đối thủ/benchmark được xác nhận |
+| 01 | Executive Summary | Working baseline — not final | Master Blueprint sections 1–4 summarize confirmed scope and open inputs; a concise Owner-approved executive summary remains pending |
+| 02 | Business Blueprint | Partial — source-of-truth baseline | Confirmed business facts and TBDs remain in Master Blueprint; dedicated Business Blueprint still needs full module treatment and Owner input |
+| 03 | Brand Blueprint | Partial — interim Preview system only | DEC-014 approves provisional blue/white Preview tokens; official identity, logo, brand story, voice and final typography remain TBD |
+| 04 | Competitor Blueprint | Research framework draft created | Xem [COMPETITOR_BLUEPRINT.md](COMPETITOR_BLUEPRINT.md); no competitor selected or assessed; market, service scope and shortlist inputs remain open |
 | 05 | SEO Blueprint | Draft created — review required | Xem [SEO_BLUEPRINT.md](SEO_BLUEPRINT.md); keyword research, market-specific mapping, competitor evidence, assembled Preview QA and R-016 remain open |
 | 06 | Content Blueprint | Draft created — review required | Xem [CONTENT_BLUEPRINT.md](CONTENT_BLUEPRINT.md); service-scope inputs, keyword validation, portfolio proof, pricing and approved page copy remain open |
 | 07 | UX Blueprint | Draft complete — review required | Xem [UX_BLUEPRINT.md](UX_BLUEPRINT.md); journey baseline đã định nghĩa, persona/customer research còn TBD |
@@ -167,7 +167,7 @@ Blueprint Standard yêu cầu đủ 19 phần. Trạng thái dưới đây phả
 | 12 | Performance Blueprint | Planning draft created; Core Web Vitals thresholds approved under DEC-022; actual measurement pending | Xem [PERFORMANCE_BLUEPRINT.md](PERFORMANCE_BLUEPRINT.md); Lighthouse, TTFB, asset budgets, API and load targets remain TBD |
 | 13 | Security Blueprint | Partial | Có security controls và test trong repo; runtime chưa nghiệm thu |
 | 14 | AI Blueprint | Deferred | Không thuộc Core Preview |
-| 15 | Marketing Blueprint | Not started | Cần audience, positioning và market inputs |
+| 15 | Marketing Blueprint | Strategy framework draft created | Xem [MARKETING_BLUEPRINT.md](MARKETING_BLUEPRINT.md); no campaigns, budgets, numeric targets or public USP approved; audience, channel and measurement inputs remain open |
 | 16 | Development Roadmap | In progress | Dùng roadmap hiện tại, cần tách Core Preview khỏi roadmap dài hạn |
 | 17 | Risk Assessment | Draft complete | Xem RISK_ASSESSMENT.md; rủi ro chưa được đóng |
 | 18 | Project Timeline | Not baselined | Chưa ước lượng trước khi scope/inputs được xác nhận |
@@ -222,6 +222,8 @@ Phase 0 chỉ được đóng khi:
 - [x] UX Blueprint baseline đã được lập: [UX_BLUEPRINT.md](UX_BLUEPRINT.md); persona validation vẫn chờ target segment.
 - [x] Content Blueprint đã được lập thành draft: [CONTENT_BLUEPRINT.md](CONTENT_BLUEPRINT.md); keyword research, service-scope inputs, editorial ownership and content approval remain open.
 - [x] SEO Blueprint đã được lập thành draft: [SEO_BLUEPRINT.md](SEO_BLUEPRINT.md); keyword evidence, competitor research, assembled Preview QA and R-016 remain open.
+- [x] Competitor Blueprint research framework đã được lập: [COMPETITOR_BLUEPRINT.md](COMPETITOR_BLUEPRINT.md); competitor shortlist and evidence collection remain open.
+- [x] Marketing Blueprint strategy framework đã được lập: [MARKETING_BLUEPRINT.md](MARKETING_BLUEPRINT.md); channel validation, budget, campaign approvals and KPI baselines remain open.
 - [ ] UX Blueprint / persona / journey được hoàn thiện sau khi target segment được xác nhận.
 - [ ] Scope P0/P1/P2 không mâu thuẫn với roadmap repository.
 - [x] URL inventory 20 cặp / 40 route đã được đối chiếu với route generator; policy indexation và sitemap vẫn cần triển khai/kiểm thử.
@@ -255,6 +257,8 @@ Phase 0 chỉ được đóng khi:
 - [UX Blueprint](UX_BLUEPRINT.md): visitor journey, service discovery, language switching, inquiry flow and evidence-based validation plan.
 - [Content Blueprint](CONTENT_BLUEPRINT.md): bilingual content architecture, seven service groups, page templates, topic-cluster framework, CTA, localization, E-E-A-T, media, internal linking and maintenance rules; draft for Owner review.
 - [SEO Blueprint](SEO_BLUEPRINT.md): keyword research method, intent/mapping, clusters, metadata, schema, entities, E-E-A-T, technical/indexation gates, link-building governance and KPIs; draft for Owner review.
+- [Competitor Blueprint](COMPETITOR_BLUEPRINT.md): competitor classification, evidence protocol and comparison framework; no market findings or competitor claims asserted.
+- [Marketing Blueprint](MARKETING_BLUEPRINT.md): audience sequencing, channel framework, funnel, inquiry governance, KPIs and budget approval controls; no campaigns or spend authorized.
 - [Blueprint Cross-check](BLUEPRINT_CROSS_CHECK.md): đối chiếu 19 modules, Project Input completeness, approved role-responsibility model, cross-document conflicts, blockers và Phase 0 exit criteria.
 - [Performance Blueprint](PERFORMANCE_BLUEPRINT.md): metric definitions, test protocol, optimization strategy, monitoring and owner-approved acceptance threshold requirements.
 - [Owner Decision Review](OWNER_DECISION_REVIEW.md): các quyết định còn thiếu cần Project Owner xác nhận trước Blueprint Final.

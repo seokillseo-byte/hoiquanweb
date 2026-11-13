@@ -2,7 +2,7 @@
 
 **Định hướng sản phẩm:** nền tảng vận hành kinh doanh dịch vụ website gồm website marketing, CMS riêng, kho mẫu WordPress + HTML/CSS, cổng khách hàng, CRM/bán hàng, chatbot hỗ trợ khách hàng, SEO/AI content, tự động hóa, đơn hàng/thanh toán và quản lý hosting/domain. Các module được chia giai đoạn; không có nghĩa là đã triển khai.
 
-**Nguồn Planning:** [Master Blueprint](MASTER_BLUEPRINT.md), [URL Map](URL_MAP.md), [Feature Blueprint](FEATURE_BLUEPRINT.md), [UI Blueprint](UI_BLUEPRINT.md), [UX Blueprint](UX_BLUEPRINT.md) và [BP-17 Risk Assessment](RISK_ASSESSMENT.md). Đây là các tài liệu điều hướng phạm vi, quyết định đã xác nhận, TBD và rủi ro; chúng không thay thế các acceptance gates bên dưới.
+**Nguồn Planning:** [Master Blueprint](MASTER_BLUEPRINT.md), [Blueprint Cross-check — 19 modules](BLUEPRINT_CROSS_CHECK.md), [URL Map](URL_MAP.md), [Feature Blueprint](FEATURE_BLUEPRINT.md), [UI Blueprint](UI_BLUEPRINT.md), [UX Blueprint](UX_BLUEPRINT.md) và [BP-17 Risk Assessment](RISK_ASSESSMENT.md). Đây là các tài liệu điều hướng phạm vi, quyết định đã xác nhận, TBD và rủi ro; chúng không thay thế các acceptance gates bên dưới.
 
 **Phân biệt phạm vi:** Core Preview P0 là website công khai đa trang song ngữ theo Master Blueprint. Các phase bên dưới mô tả roadmap sản phẩm/nền tảng dài hạn; các module CMS nâng cao, CRM, customer portal, commerce, chatbot và hosting không tự động trở thành P0 của Core Preview. Chỉ triển khai theo phase và approval gate riêng.
 
@@ -91,7 +91,9 @@ Mục tiêu: dựng nền tảng có thể mở rộng, không chỉ thêm HTML 
 - [ ] Malware/source scan, license evidence storage, compatibility test và rollback.
 - [ ] Provisioning riêng biệt cho WordPress và HTML/CSS; chưa hứa one-click installation.
 
-## Phase 4 — Cổng khách hàng (bắt buộc trong bản phát hành đầu tiên)
+## Phase 4 — Cổng khách hàng (bắt buộc trong bản phát hành nền tảng; KHÔNG thuộc Core Preview P0)
+
+**Scope clarification:** “Bản phát hành nền tảng” ở tiêu đề Phase 4 là giai đoạn sản phẩm dài hạn sau Core Preview. Không được hiểu là yêu cầu đưa customer portal vào Core Preview P0. Việc đưa portal vào P0 cần Project Owner phê duyệt thay đổi phạm vi riêng.
 
 - Đăng nhập/đăng xuất, phục hồi tài khoản, quản lý phiên và hồ sơ.
 - **Đã có UI cổng khách hàng song ngữ:** đăng nhập, xem danh sách/chi tiết báo giá và xác nhận báo giá. Khách xem đơn hàng, dự án, milestone, file được phép xem, bình luận và yêu cầu hỗ trợ vẫn chưa hoàn thiện.

@@ -148,7 +148,11 @@ async function loadBlog(){
    article.appendChild(tags);
   }
   const link=cmsElement("a",labels.read,"button button-outline");
-  link.href=root.dataset.detailPath+"?slug="+encodeURIComponent(item.slug);
+  const seo=item?.seo&&typeof item.seo==="object"?item.seo:{};
+  const cleanSlug=typeof item.slug==="string"&&/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(item.slug);
+  const basePath=root.dataset.basePath||"";
+  if(seo.indexable===true&&seo.locale===lang&&cleanSlug)link.href=basePath+(lang==="vi"?"/blog/":"/en/blog/")+item.slug+"/";
+  else link.href=basePath+root.dataset.detailPath+"?slug="+encodeURIComponent(item.slug);
   article.appendChild(link);
   return article;
  }
@@ -158,7 +162,7 @@ async function loadBlog(){
   if(!hasMore&&!reset)return;
   loading=true;more.disabled=true;statusText(labels.loading);
   try{
-   const params=new URLSearchParams({limit:"20",offset:String(offset)});
+   const params=new URLSearchParams({limit:"20",offset:String(offset),locale:lang});
    const query=form.elements.q.value.trim();
    if(query)params.set("q",query);
    if(category.value)params.set("category",category.value);
@@ -174,7 +178,7 @@ async function loadBlog(){
  }
  async function loadCategories(){
   try{
-   const response=await fetch(cmsApiBase+"/api/v1/public/post-categories",{headers:{accept:"application/json"},credentials:"omit"});
+   const response=await fetch(cmsApiBase+"/api/v1/public/post-categories?locale="+encodeURIComponent(lang),{headers:{accept:"application/json"},credentials:"omit"});
    if(!response.ok)return;
    const data=await response.json();
    for(const item of data.data||[]){

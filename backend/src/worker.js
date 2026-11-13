@@ -1094,6 +1094,22 @@ function validCmsSlug(value) {
   return /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(value) && value.length <= 180;
 }
 
+function validCmsPostSeo(seo, body) {
+  if (!seo || typeof seo !== "object" || Array.isArray(seo)) return false;
+  if (seo.locale !== undefined && !["vi", "en"].includes(seo.locale)) return false;
+  if (seo.translation_group_id !== undefined && seo.translation_group_id !== null &&
+      (typeof seo.translation_group_id !== "string" || !seo.translation_group_id.trim() || seo.translation_group_id.length > 100)) return false;
+  if (seo.indexable !== undefined && typeof seo.indexable !== "boolean") return false;
+  if (seo.indexable === true) {
+    const title = typeof seo.title === "string" ? seo.title.trim() : "";
+    const description = typeof seo.description === "string" ? seo.description.trim() : "";
+    if (!["vi", "en"].includes(seo.locale) || title.length < 10 || title.length > 240 ||
+        description.length < 50 || description.length > 320 ||
+        !Array.isArray(body?.blocks) || body.blocks.length === 0) return false;
+  }
+  return true;
+}
+
 function cmsTags(value, fallback = []) {
   if (value === undefined) return fallback;
   if (!Array.isArray(value) || value.length > 20) return null;
@@ -1191,6 +1207,7 @@ async function adminContent(request, env, url) {
       const category = clean(body.category || "", 80);
       const tags = cmsTags(body.tags, []);
       if (tags === null) return json({ error: { code: "VALIDATION_ERROR", message: "Tags phải là danh sách tối đa 20 nhãn." } }, 400);
+      if (!validCmsPostSeo(seo, bodyContent)) return json({ error: { code: "VALIDATION_ERROR", message: "SEO bài viết không hợp lệ. Bài indexable cần locale, title, description và nội dung blocks đạt chuẩn." } }, 400);
       row = { id, slug, title, excerpt, body: bodyContent, seo, author_name: author, category, tags, status: "draft", published_at: null, created_at: now, updated_at: now };
       statement = env.DB.prepare("INSERT INTO cms_posts (id, slug, title, excerpt, body_json, seo_json, author_name, category, tags_json, status, published_at, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'draft', NULL, ?, ?)")
         .bind(id, slug, title, excerpt, JSON.stringify(bodyContent), JSON.stringify(seo), author, category, JSON.stringify(tags), now, now);
@@ -1315,6 +1332,7 @@ async function adminContent(request, env, url) {
       const category = body.category === undefined ? (old.category || "") : clean(body.category, 80);
       const tags = cmsTags(body.tags, old.tags || []);
       if (bodyContent === null || tags === null) return json({ error: { code: "VALIDATION_ERROR", message: "Nội dung hoặc tags bài viết không hợp lệ." } }, 400);
+      if (!validCmsPostSeo(seo, bodyContent)) return json({ error: { code: "VALIDATION_ERROR", message: "SEO bài viết không hợp lệ. Bài indexable cần locale, title, description và nội dung blocks đạt chuẩn." } }, 400);
       snapshot = { ...old, slug, title, excerpt, body: bodyContent, seo, author_name: author, category, tags, status: "draft", published_at: null, updated_at: now };
       update = env.DB.prepare("UPDATE cms_posts SET slug = ?, title = ?, excerpt = ?, body_json = ?, seo_json = ?, author_name = ?, category = ?, tags_json = ?, status = 'draft', published_at = NULL, updated_at = ? WHERE id = ?")
         .bind(slug, title, excerpt, JSON.stringify(bodyContent), JSON.stringify(seo), author, category, JSON.stringify(tags), now, resourceId);
@@ -1679,7 +1697,10 @@ async function publicContent(request, env, url) {
     return json({ data: contentRecord(row, "page") });
   }
   if (path === "/api/v1/public/post-categories" && request.method === "GET") {
-    const result = await env.DB.prepare("SELECT category, COUNT(*) AS post_count FROM cms_posts WHERE status = 'published' AND published_at IS NOT NULL AND category <> '' GROUP BY category ORDER BY category COLLATE NOCASE ASC LIMIT 100").all();
+    const locale = clean(url.searchParams.get("locale"), 2);
+    if (locale && !["vi", "en"].includes(locale)) return json({ error: { code: "VALIDATION_ERROR", message: "Ngôn ngữ bài viết không hợp lệ." } }, 400);
+    const query = "SELECT category, COUNT(*) AS post_count FROM cms_posts WHERE status = 'published' AND published_at IS NOT NULL AND category <> ''" + (locale ? " AND COALESCE(NULLIF(json_extract(seo_json, '$.locale'), ''), 'vi') = ?" : "") + " GROUP BY category ORDER BY category COLLATE NOCASE ASC LIMIT 100";
+    const result = locale ? await env.DB.prepare(query).bind(locale).all() : await env.DB.prepare(query).all();
     return json({ data: result.results || [] });
   }
   if (path === "/api/v1/public/posts" && request.method === "GET") {
@@ -1688,12 +1709,15 @@ async function publicContent(request, env, url) {
     const category = clean(url.searchParams.get("category"), 80);
     const tag = clean(url.searchParams.get("tag"), 40).toLowerCase();
     const query = clean(url.searchParams.get("q"), 100);
+    const locale = clean(url.searchParams.get("locale"), 2);
+    if (locale && !["vi", "en"].includes(locale)) return json({ error: { code: "VALIDATION_ERROR", message: "Ngôn ngữ bài viết không hợp lệ." } }, 400);
     const where = ["status = 'published'", "published_at IS NOT NULL"], values = [];
+    if (locale) { where.push("COALESCE(NULLIF(json_extract(seo_json, '$.locale'), ''), 'vi') = ?"); values.push(locale); }
     if (category) { where.push("category = ?"); values.push(category); }
     if (tag) { where.push("EXISTS (SELECT 1 FROM json_each(cms_posts.tags_json) WHERE value = ?)"); values.push(tag); }
     if (query) { where.push("(title LIKE ? OR excerpt LIKE ?)"); values.push("%" + query + "%", "%" + query + "%"); }
     const result = await env.DB.prepare("SELECT slug, title, excerpt, author_name, category, tags_json, published_at, seo_json FROM cms_posts WHERE " + where.join(" AND ") + " ORDER BY published_at DESC, slug ASC LIMIT ? OFFSET ?").bind(...values, limit, offset).all();
-    return json({ data: (result.results || []).map(row => contentRecord(row, "post")), meta: { limit, offset, category: category || null, tag: tag || null, query: query || null } });
+    return json({ data: (result.results || []).map(row => contentRecord(row, "post")), meta: { limit, offset, locale: locale || null, category: category || null, tag: tag || null, query: query || null } });
   }
   if (path.startsWith("/api/v1/public/posts/") && request.method === "GET") {
     const slug = decodeSlug(path, "/api/v1/public/posts/");

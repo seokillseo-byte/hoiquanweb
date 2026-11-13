@@ -59,9 +59,6 @@ for (const file of files) {
     ["title", /<title>[^<]{3,}<\/title>/],
     ["description", /<meta name="description" content="[^"]{20,}">/],
     ["canonical", /<link rel="canonical" href="https:\/\/hoiquanweb\.io\.vn\/[^"]*">/],
-    ["Vietnamese hreflang", /hreflang="vi"/],
-    ["English hreflang", /hreflang="en"/],
-    ["x-default hreflang", /hreflang="x-default"/],
     ["main landmark", /<main id="main" data-cms-page="[^"]*">/],
     ["site stylesheet", /\/assets\/css\/site\.css/],
     ["site script", /\/assets\/js\/site\.js/],
@@ -78,10 +75,32 @@ for (const file of files) {
   else errors.push(name + ": robots meta must explicitly declare index or noindex");
 
   const alternates = [...html.matchAll(/<link rel="alternate" hreflang="(vi|en|x-default)" href="([^"]+)">/g)];
-  if (alternates.length !== 3) errors.push(name + ": expected exactly three language alternates");
+  const isArticlePath = /^\/(?:en\/)?blog\/[^/]+\/$/.test(pagePath) && !["/blog/post/", "/en/blog/post/"].includes(pagePath);
+  if (!isArticlePath && alternates.length !== 3) errors.push(name + ": expected exactly three language alternates");
+  if (isArticlePath && (alternates.length < 1 || alternates.length > 3)) errors.push(name + ": article must declare only genuine language alternates");
   const alternateMap = new Map(alternates.map(([, lang, href]) => [lang, href]));
+  if (!isArticlePath && !["vi", "en", "x-default"].every(lang => alternateMap.has(lang))) errors.push(name + ": static bilingual route must declare vi, en and x-default alternates");
   for (const [lang, href] of alternateMap) {
     if (!href.startsWith("https://hoiquanweb.io.vn/")) errors.push(name + ": invalid " + lang + " alternate URL");
+  }
+  if (isArticlePath) {
+    const lang = html.match(/<html lang="(vi|en)">/)?.[1];
+    const selfHref = alternateMap.get(lang);
+    if (!selfHref || new URL(selfHref).pathname !== pagePath) errors.push(name + ": article must declare its own language URL");
+    if (lang === "vi" && new URL(alternateMap.get("x-default") || "https://hoiquanweb.io.vn/").pathname !== pagePath) errors.push(name + ": Vietnamese article x-default must point to itself");
+    if (lang === "en" && alternateMap.has("x-default") && !alternateMap.has("vi")) errors.push(name + ": English article x-default requires a genuine Vietnamese translation");
+    if (lang === "en" && alternateMap.has("x-default") && new URL(alternateMap.get("x-default")).pathname !== new URL(alternateMap.get("vi")).pathname) errors.push(name + ": English article x-default must point to its Vietnamese translation");
+    if (!html.includes("<article class=\"blog-article\">")) errors.push(name + ": article body must exist in initial HTML");
+    if (html.includes("data-blog-post")) errors.push(name + ": indexable article must not depend on client-side article loading");
+    const schemaMatch = html.match(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/);
+    try {
+      const schema = schemaMatch ? JSON.parse(schemaMatch[1]) : null;
+      if (schema?.["@type"] !== "Article" || schema.mainEntityOfPage !== "https://hoiquanweb.io.vn" + pagePath || schema.inLanguage !== lang) {
+        errors.push(name + ": Article structured data must match the clean route and language");
+      }
+    } catch {
+      errors.push(name + ": Article structured data must be valid JSON");
+    }
   }
   if (alternateMap.has("vi") && alternateMap.has("x-default") &&
       new URL(alternateMap.get("x-default")).pathname !== new URL(alternateMap.get("vi")).pathname) {
@@ -139,7 +158,7 @@ for (const path of noindexPaths) assert.ok(!sitemapPathSet.has(path), "Noindex r
 for (const path of ["/blog/", "/en/blog/", "/blog/post/", "/en/blog/post/"]) {
   assert.ok(!sitemapPathSet.has(path), "Client-rendered blog route must be excluded from sitemap: " + path);
 }
-assert.ok(!sitemapUrls.some(url => /^\/(?:en\/)?blog\//.test(url.pathname)), "No client-rendered blog route may be in sitemap");
+assert.ok(!sitemapUrls.some(url => ["/blog/", "/en/blog/", "/blog/post/", "/en/blog/post/"].includes(url.pathname)), "Blog listings and generic article shells must be excluded from sitemap");
 assert.ok(!sitemapUrls.some(url => url.searchParams.has("slug")), "Query-slug article URLs must never be included in sitemap");
 
 const robotsTxt = await readFile(join(root, "robots.txt"), "utf8");
@@ -166,8 +185,19 @@ assert.ok(["/blog/","/en/blog/","/blog/post/","/en/blog/post/"].every(path => !s
 assert.ok([...sitemapPathSet].every(path => indexablePaths.has(path) && canonicalPaths.has(path)), "SEO-IX-04: sitemap URLs must be canonical and indexable");
 assert.ok(noindexPaths.size > 0 && [...noindexPaths].every(path => !sitemapPathSet.has(path)), "SEO-IX-05: non-indexable HTML may exist outside sitemap");
 assert.ok(noindexPaths.has("/blog/") && noindexPaths.has("/en/blog/"), "SEO-IX-06: thin client-rendered blog listings must not be indexable");
-assert.ok(!sitemapUrls.some(url => url.searchParams.has("slug") || /^\/(?:en\/)?blog\/(?!post\/?$)[^/]+\/?$/.test(url.pathname)), "SEO-IX-07: no query-slug or unqualified article route may be indexed");
-for (const id of ["SEO-IX-01","SEO-IX-02","SEO-IX-03","SEO-IX-04","SEO-IX-05","SEO-IX-06","SEO-IX-07"]) console.log("PASS " + id);
+assert.ok(!sitemapUrls.some(url => url.searchParams.has("slug") || ["/blog/post/", "/en/blog/post/"].includes(url.pathname)), "SEO-IX-07: query-slug and generic shell URLs must never be indexed");
+const articleRouteFiles = files.filter(file => {
+  const path = "/" + relative(root, file).split(sep).join("/").replace(/index\.html$/, "");
+  return /^\/(?:en\/)?blog\/[^/]+\/$/.test(path) && !["/blog/post/", "/en/blog/post/"].includes(path);
+});
+for (const file of articleRouteFiles) {
+  const html = await readFile(file, "utf8");
+  const path = "/" + relative(root, file).split(sep).join("/").replace(/index\.html$/, "");
+  assert.ok(html.includes("<article class=\"blog-article\">"), "SEO-IX-08: clean article must contain its full body in initial HTML");
+  assert.ok(html.includes('"@type":"Article"'), "SEO-IX-08: clean article must include Article structured data");
+  assert.ok(sitemapPathSet.has(path), "SEO-IX-08: eligible clean article must appear in sitemap");
+}
+for (const id of ["SEO-IX-01","SEO-IX-02","SEO-IX-03","SEO-IX-04","SEO-IX-05","SEO-IX-06","SEO-IX-07","SEO-IX-08"]) console.log("PASS " + id);
 
 if (previewMode) {
   const rootHtml = await readFile(join(root, "index.html"), "utf8");

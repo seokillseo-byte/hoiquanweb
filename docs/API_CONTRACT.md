@@ -19,8 +19,8 @@
 |---|---|---|---|
 | GET | `/health` | Runtime health/readiness without exposing secrets | Public, minimal response |
 | GET | `/api/v1/public/pages/:slug` | Read published page content only | Public |
-| GET | `/api/v1/public/posts` | List published posts with bounded pagination and category/tag/search filters | Public |
-| GET | `/api/v1/public/post-categories` | List categories that contain published posts | Public |
+| GET | `/api/v1/public/posts` | List published posts with bounded pagination and optional locale/category/tag/search filters | Public |
+| GET | `/api/v1/public/post-categories` | List categories that contain published posts, optionally filtered by locale | Public |
 | GET | `/api/v1/public/posts/:slug` | Read a published post including editorial taxonomy | Public |
 | GET | `/api/v1/public/services` | List active service offerings | Public |
 | GET | `/api/v1/public/templates` | List published templates with filters | Public |
@@ -30,7 +30,7 @@
 
 Public APIs must never return drafts, private media keys, customer details, internal notes, unpublished templates or staff-only fields.
 
-Template catalog listing supports bounded `type`, `category`, `q`, `limit` and `offset` filters. Public template detail is published-only. The admin publish action requires a non-empty demo URL plus explicit administrator attestations for preview and license review; those flags are never exposed publicly. Editing a published template returns it to draft. These attestations are workflow controls, not automated legal, malware or compatibility verification.
+Public post listing and category discovery accept optional `locale=vi|en`; invalid locale values return 400. Posts without a locale in legacy SEO JSON are treated as Vietnamese for listing only. Post listing also supports bounded `category`, `tag`, `q`, `limit` and `offset` filters. Template catalog listing supports bounded `type`, `category`, `q`, `limit` and `offset` filters. Public template detail is published-only. The admin publish action requires a non-empty demo URL plus explicit administrator attestations for preview and license review; those flags are never exposed publicly. Editing a published template returns it to draft. These attestations are workflow controls, not automated legal, malware or compatibility verification.
 
 ## Authentication and account endpoints
 
@@ -134,7 +134,13 @@ The content_json field is stored as a JSON object with a blocks array. The publi
 
 The public renderer builds DOM nodes and assigns text with textContent; it does not accept raw HTML or inject innerHTML. Unsupported blocks are ignored. CMS posts store a category string and up to 20 normalized, deduplicated tags. Public post listing accepts bounded `category`, `tag`, and `q` filters; category discovery counts only published posts. The bilingual blog listing and article shell use public APIs with credentials omitted, render approved blocks through the same safe renderer, and update document title/description/canonical/Article JSON-LD after a published article is loaded. The article route currently uses a stable static route plus a `?slug=` parameter; static hosting does not generate a distinct HTML document per database article, so crawler-specific prerendering remains a separate acceptance item. Public CMS overrides are loaded only when the build-time API base is configured and a published page slug matches the static route. Current slug mapping is home for /, en for /en/, and the final route segment for other pages.
 
-SEO JSON may include title, description and robots: "noindex". A missing API, unpublished page or failed request leaves the generated static page unchanged.
+SEO JSON for CMS posts may include:
+- `locale`: `vi` or `en`; legacy posts without a locale are treated as Vietnamese for listing only.
+- `translation_group_id`: optional shared identifier used only to pair one genuine Vietnamese and one English translation.
+- `indexable`: must be explicitly `true` before a post can receive a clean indexable article route.
+- `title` and `description`: required article metadata for prerender eligibility; title length 10–240 characters, description 50–320 characters.
+
+The Pages build reads the public posts API when `HQ_API_BASE` is configured, fetches the full detail for each candidate post, and prerenders only published posts that pass the explicit SEO readiness gate. Vietnamese articles without a translation use `vi` and `x-default` pointing to themselves; English-only articles use only `en`; genuine paired translations use reciprocal `vi`/`en` and Vietnamese `x-default`. The generic `/blog/post/` shells remain `noindex,follow` and are never added to the sitemap. If the API base is absent, dynamic article HTML is not generated. If it is configured but public API reads fail, the static build fails instead of publishing an incomplete sitemap.
 
 ## Security invariants
 

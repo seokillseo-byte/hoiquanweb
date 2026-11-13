@@ -78,6 +78,26 @@ test("public post listing filters by category, tag and search without exposing d
   assert.match(calls[0], /title LIKE/);
 });
 
+test("public blog listing filters by locale and keeps legacy posts in Vietnamese", async () => {
+  const { env, calls } = makeEnv({ posts: [{ slug: "seo-basics", title: "SEO Basics", seo_json: "{\"locale\":\"en\"}" }] });
+  const response = await request("/api/v1/public/posts?locale=en", env);
+  assert.equal(response.status, 200);
+  const body = await response.json();
+  assert.equal(body.meta.locale, "en");
+  assert.match(calls[0], /json_extract\(seo_json, '\$\.locale'\)/);
+  const invalid = await request("/api/v1/public/posts?locale=fr", env);
+  assert.equal(invalid.status, 400);
+});
+
+test("public category directory supports locale filtering", async () => {
+  const { env, calls } = makeEnv({ categories: [{ category: "SEO", post_count: 1 }] });
+  const response = await request("/api/v1/public/post-categories?locale=vi", env);
+  assert.equal(response.status, 200);
+  assert.match(calls[0], /json_extract\(seo_json, '\$\.locale'\)/);
+  const invalid = await request("/api/v1/public/post-categories?locale=fr", env);
+  assert.equal(invalid.status, 400);
+});
+
 test("public category directory includes only categories with published posts", async () => {
   const { env, calls } = makeEnv({ categories: [{ category: "SEO", post_count: 2 }] });
   const response = await request("/api/v1/public/post-categories", env);

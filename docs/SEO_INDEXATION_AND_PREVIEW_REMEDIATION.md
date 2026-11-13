@@ -156,3 +156,16 @@ Current status (2026-11-13):
 - The isolated Preview app path `/platform/` uses the existing Vite base-path configuration and is not a new public production route.
 - Do not change production Pages workflow, deploy, merge or alter production configuration without explicit Project Owner approval.
 - Any change to public routes, language strategy, CMS/article scope or indexation policy requires an updated URL Map and owner review.
+
+## R-016 implementation update — 2026-11-13
+
+The clean article-route implementation is now prepared in the feature branch `feat/seo-clean-article-routes`.
+
+- CMS post editor captures `seo.locale`, optional `seo.translation_group_id`, and explicit `seo.indexable`.
+- Worker validates those fields and filters the public blog listing/category API by locale. Legacy posts without a locale are treated as Vietnamese for listing, but do not become indexable automatically.
+- Static generation reads published posts from `HQ_API_BASE`, fetches each eligible post detail, and creates `/blog/{slug}/` or `/en/blog/{slug}/` HTML with the full article body, SEO metadata, self-canonical, language alternates and Article JSON-LD.
+- Translation alternates are emitted only when a group has exactly one eligible Vietnamese post and one eligible English post. Vietnamese is the approved x-default language.
+- Generic `/blog/post/` shells and blog listing shells remain noindex and stay out of the sitemap.
+- Unit tests cover article eligibility, clean slugs, language pairing, x-default and safe HTML/URL rendering. The generated-site validator checks article initial HTML and sitemap consistency when article routes exist.
+
+**Still blocked on runtime evidence:** `HQ_API_BASE` must be configured in the GitHub Pages environment and a dedicated Cloudflare Worker/D1 staging environment must be deployed. CI with no API base can validate the static fallback and unit tests, but it cannot prove that real CMS articles are prerendered from D1. No production deployment or PR merge is authorized by this implementation task.

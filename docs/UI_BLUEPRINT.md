@@ -4,7 +4,7 @@
 **Scope:** Public Core Preview only  
 **Languages:** Vietnamese and English  
 **Primary conversion:** Consultation and quotation requests  
-**Brand identity:** Official logo/palette/typography approval pending (TBD-007)
+**Brand identity:** Interim blue/white Core Preview system and five provisional tokens owner-approved under DEC-014; official logo, palette/typography guideline and identity approval remain pending (TBD-007)
 
 ---
 
@@ -37,9 +37,9 @@ The current public-site stylesheet defines:
 | `--gradient` | Blue-to-cyan gradient | Existing primary emphasis |
 | `--shadow` | Existing soft shadow | Elevation |
 
-Current typography stack begins with Inter and falls back to system sans-serif. Existing layout tokens include a 1280px content container and rounded cards/buttons.
+Current typography stack begins with Inter and falls back to system sans-serif. Existing layout tokens include a 1280px content container and rounded cards/buttons. Retain the current typography stack provisionally for Core Preview; this does not constitute official typography approval.
 
-**Governance:** these are code-observed working tokens, not an approved corporate identity. Do not describe them as the final brand palette. Final logo, typography, palette and imagery direction remain TBD-007.
+**Governance:** The five existing tokens below are owner-approved for interim Core Preview use only under DEC-014. They are not the official brand palette or final corporate identity. Official logo, final typography and brand guideline remain TBD-007.
 
 ### 2.2 Visual principles
 - Clean, modern, professional technology-services presentation.

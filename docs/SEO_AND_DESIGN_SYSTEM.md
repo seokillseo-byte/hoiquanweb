@@ -9,26 +9,25 @@
 ### 1.1 Verified from repository documents/files
 
 - README.md and IMPLEMENTATION_ROADMAP.md report a bilingual public website with 40 content pages.
-- ARCHITECTURE.md previously reported 34 content pages; that count conflicts with the other repository documents.
-- The currently checked sitemap.xml contains only the homepage URL.
-- This document previously described the site as a one-page landing page, which conflicts with the multi-page project direction and the current README/Roadmap claims.
-- GitHub Pages is described as a static preview host. It does not run the Cloudflare Worker, create D1 resources, or provide the authenticated backend.
-- The production domain and runtime configuration must not be treated as verified merely because a preview build or CI workflow succeeds.
+- scripts/build_public_site.mjs defines 40 localized page objects and generates HTML routes plus sitemap.xml from the same pages array.
+- scripts/validate_public_site.mjs verifies generated HTML page count, sitemap URL count, uniqueness and canonical path parity.
+- CI run 43364844705 passed and its log confirms: Generated 40 localized pages; Public site validation passed: 40 pages, internal links/assets, localized metadata, canonical sitemap, brand tokens and inquiry fallback.
+- .github/workflows/pages.yml deploys public-site/dist after running the generator and validator; it does not copy the repository-root sitemap.xml.
+- The repository-root sitemap.xml contains only the homepage and is stale for the generated site, but it is not the sitemap used by the current Pages workflow.
+- ARCHITECTURE.md previously reported 34 pages and this document previously described a one-page landing page; those descriptions are outdated and are being corrected in this PR.
+- GitHub Pages is a static preview host. It does not run the Cloudflare Worker, create D1 resources, or provide the authenticated backend.
 
-**Conclusion:** The current number of generated/indexable URLs is NOT VERIFIED. Do not claim that 40 URLs are live or SEO-ready until the actual route inventory, generated output, sitemap and HTTP responses have been reconciled.
+**Conclusion:** 40 static localized routes and their generated sitemap are verified by CI. Live Preview/production URL acceptance remains pending. Dynamic blog/CMS URLs are a separate unresolved SEO gap described below.
 
 ### 1.2 Required route and sitemap reconciliation
 
-1. Extract the canonical route inventory from the actual site generator/source.
-2. Identify every Vietnamese and English route and its language counterpart.
-3. Classify each route as indexable, noindex, redirect, draft or private.
-4. Verify every public route can be opened directly and refreshed without a 404.
-5. Generate sitemap.xml from the same route inventory; do not maintain an unrelated hand-written list.
-6. Verify sitemap URLs are unique, canonical, publicly accessible and indexable.
-7. Verify hreflang reciprocal mappings for each translated pair; do not create a mapping where a translation does not exist.
-8. Verify canonical URLs, robots directives, Open Graph URLs and structured data against the actual preview/production host.
-9. Add automated checks that fail when an indexable route is missing from the sitemap or a sitemap URL is not part of the route inventory.
-10. Update README, Architecture, Roadmap and this document using the verified result.
+1. Use scripts/build_public_site.mjs as the static route source of truth.
+2. Keep the generated sitemap from public-site/dist as the sitemap deployed by GitHub Pages.
+3. Preserve CI checks for generated page count, sitemap URL count, uniqueness and canonical path parity.
+4. Inspect live Preview URLs for direct navigation, refresh, 404, hreflang, canonical and HTTP response after an approved Pages deployment.
+5. Classify static, dynamic, noindex, draft and private routes separately.
+6. Add published dynamic blog URLs only after clean routes and SSR/prerender/static generation are implemented.
+7. Update README, Architecture, Roadmap and this document whenever route or deployment generation changes.
 
 ### 1.3 Dynamic blog and CMS route limitation
 

@@ -188,6 +188,19 @@ Do not send credentials, API keys or other secrets in this document or in chat.
 
 **Approval boundary:** This approves role responsibilities only. It does not assign named people, confirm that specialist roles are staffed, authorize implementation, or approve merge/deployment. Specialist roles remain placeholders until the Project Owner assigns people or confirms an alternative arrangement. One person may cover multiple roles only if the Project Owner decides so.
 
+### D-13 — Core Web Vitals acceptance thresholds
+
+**Related document:** `PERFORMANCE_BLUEPRINT.md`, section 10.
+
+**Owner decision — Approved (2026-11-13):** Use the following Core Web Vitals thresholds for Core Preview acceptance:
+- LCP: **≤ 2.5 seconds**
+- INP: **≤ 200 milliseconds**
+- CLS: **≤ 0.1**
+
+Evaluate field data at the 75th percentile (p75), separately for mobile and desktop where sufficient data is available. Report Lighthouse/lab results separately; lab results do not substitute for field p75.
+
+**Approval boundary:** This approves only the three Core Web Vitals thresholds and the p75/mobile-desktop evaluation rule. It does not approve Lighthouse Performance scores, TTFB, asset/bundle budgets, API latency, load/concurrency targets or any SLA. Those remain TBD. This decision does not claim that the current website meets the thresholds.
+
 ## 3. Decisions that can remain TBD for the initial neutral Preview
 
 These are required or recommended fields in the Project Input Template, but they do not all need to block a neutral public-site shell. They must remain visible as TBD and must not be silently guessed.
@@ -200,7 +213,7 @@ These are required or recommended fields in the Project Input Template, but they
 | Competitor set and differentiation | Not approved; research separately after audience and positioning are confirmed. |
 | Social profiles, phone, address, legal entity details | Publish only owner-provided, verified information. |
 | Production hosting, database and infrastructure | Existing repository code/Preview configuration is an observation, not production approval. |
-| Performance thresholds | Record actual measurements; agree project-specific targets before final QA sign-off. |
+| Core Web Vitals | D-13 approved LCP ≤ 2.5s, INP ≤ 200ms, CLS ≤ 0.1 at field p75 separately for mobile and desktop where available; other performance targets remain TBD. |
 | Timeline and budget | Do not baseline until scope, owners and dependencies are confirmed. |
 
 ## 4. Proposed disposition after owner response
@@ -223,5 +236,6 @@ Reply in normal text using the decision IDs; short answers are sufficient:
 - D-05: Website form + business email notification approved (2026-11-13); destination `info@hoiquanweb.io.vn` supplied and Project Owner confirmed as direct handler (2026-11-13). The 24-month inquiry-data retention period, complete deletion of personal information plus inquiry content at expiry, the two reset events (Project Owner sends a quotation; customer replies), and backup handling under D-10 are approved under D-07 through D-10. The exact backup lifecycle duration, any separate legal/operational exceptions, privacy/consent wording, mailbox verification, backend/email configuration and end-to-end acceptance remain outstanding.
 - D-11: Vietnamese (`vi`) approved as the default destination for `hreflang="x-default"` (2026-11-13). Keep reciprocal VI/EN alternates; verify generated HTML and Preview behavior.
 - D-12: Project role-responsibility model approved (2026-11-13); role boundaries only, no named staffing assignments.
+- D-13: Core Web Vitals thresholds approved (2026-11-13): LCP ≤ 2.5s, INP ≤ 200ms, CLS ≤ 0.1; field p75 by mobile/desktop where available. Other performance thresholds remain TBD.
 
 Partial answers are acceptable. Any unanswered item remains **TBD** and is not treated as approved.

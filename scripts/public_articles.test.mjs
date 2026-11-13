@@ -11,7 +11,7 @@ import {
 function post(id, slug, locale, extra = {}) {
   return {
     id, slug, title: "Fallback title", excerpt: "Fallback excerpt",
-    author_name: "Editorial Team", published_at: "2026-11-13T08:00:00.000Z",
+    author_name: "Editorial Team", published_at: "2026-11-13T08:00:00.000Z", updated_at: "2026-11-13T09:00:00.000Z",
     body: { blocks: [{ type: "paragraph", text: "Useful article content." }] },
     seo: {
       locale, indexable: true,
@@ -87,4 +87,5 @@ test("article structured data uses the clean canonical URL and approved metadata
   assert.equal(schema.mainEntityOfPage, "https://hoiquanweb.io.vn/blog/seo-co-ban/");
   assert.equal(schema.inLanguage, "vi");
   assert.equal(schema.headline, article.title);
+  assert.equal(schema.dateModified, "2026-11-13T09:00:00.000Z");
 });

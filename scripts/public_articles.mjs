@@ -149,6 +149,7 @@ export function articleStructuredData(post, path, locale) {
     mainEntityOfPage: PUBLIC_ORIGIN + path
   };
   if (typeof post.published_at === "string" && Number.isFinite(Date.parse(post.published_at))) data.datePublished = new Date(post.published_at).toISOString();
+  if (typeof post.updated_at === "string" && Number.isFinite(Date.parse(post.updated_at))) data.dateModified = new Date(post.updated_at).toISOString();
   return data;
 }
 

@@ -150,8 +150,9 @@ async function loadBlog(){
   const link=cmsElement("a",labels.read,"button button-outline");
   const seo=item?.seo&&typeof item.seo==="object"?item.seo:{};
   const cleanSlug=typeof item.slug==="string"&&/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(item.slug);
+  const seoReady=typeof seo.title==="string"&&seo.title.trim().length>=10&&seo.title.trim().length<=240&&typeof seo.description==="string"&&seo.description.trim().length>=50&&seo.description.trim().length<=320;
   const basePath=root.dataset.basePath||"";
-  if(seo.indexable===true&&seo.locale===lang&&cleanSlug)link.href=basePath+(lang==="vi"?"/blog/":"/en/blog/")+item.slug+"/";
+  if(seo.indexable===true&&seo.locale===lang&&cleanSlug&&seoReady)link.href=basePath+(lang==="vi"?"/blog/":"/en/blog/")+item.slug+"/";
   else link.href=basePath+root.dataset.detailPath+"?slug="+encodeURIComponent(item.slug);
   article.appendChild(link);
   return article;

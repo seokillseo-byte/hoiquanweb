@@ -89,6 +89,22 @@ test("public blog listing filters by locale and keeps legacy posts in Vietnamese
   assert.equal(invalid.status, 400);
 });
 
+test("public post listing only advertises indexable articles when supported body blocks exist", async () => {
+  const { env, calls } = makeEnv({
+    posts: [
+      { slug: "empty-body", title: "Empty body", seo_json: '{"locale":"vi","indexable":true}', body_ready: 0 },
+      { slug: "ready-body", title: "Ready body", seo_json: '{"locale":"en","indexable":true}', body_ready: 1 }
+    ]
+  });
+  const response = await request("/api/v1/public/posts", env);
+  assert.equal(response.status, 200);
+  const body = await response.json();
+  assert.equal(body.data[0].seo.indexable, false);
+  assert.equal(body.data[1].seo.indexable, true);
+  assert.equal("body_ready" in body.data[0], false);
+  assert.match(calls[0], /json_each\(body_json, '\$\.blocks'\)/);
+});
+
 test("public category directory supports locale filtering", async () => {
   const { env, calls } = makeEnv({ categories: [{ category: "SEO", post_count: 1 }] });
   const response = await request("/api/v1/public/post-categories?locale=vi", env);

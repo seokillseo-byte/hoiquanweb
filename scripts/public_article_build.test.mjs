@@ -31,7 +31,8 @@ const fullPosts = Object.fromEntries(posts.map(post => [post.slug, {
   author_name: "HoiQuanWeb Editorial",
   category: "SEO",
   tags: ["SEO", "Website"],
-  published_at: "2026-11-13T08:00:00.000Z",
+  published_at: "2026-11-10T08:00:00.000Z",
+  updated_at: "2026-11-12T08:00:00.000Z",
   body: { blocks: [
     { type: "heading", level: 2, text: post.seo.locale === "en" ? "Why SEO foundations matter" : "Vì sao nền tảng SEO quan trọng" },
     { type: "paragraph", text: post.seo.locale === "en" ? "This complete article body is rendered in the initial HTML document." : "Nội dung bài viết đầy đủ được kết xuất ngay trong tài liệu HTML ban đầu." }
@@ -96,6 +97,7 @@ test("static generator prerenders approved bilingual CMS articles and validates 
     assert.match(listingHtml, /data-base-path="\/hoiquanweb"/);
     assert.match(sitemap, /https:\/\/hoiquanweb\.io\.vn\/blog\/seo-co-ban\//);
     assert.match(sitemap, /https:\/\/hoiquanweb\.io\.vn\/en\/blog\/seo-basics\//);
+    assert.match(sitemap, /<lastmod>2026-11-12<\/lastmod>/);
     assert.doesNotMatch(sitemap, /\/blog\/post\//);
   } finally {
     await new Promise(resolve => server.close(resolve));

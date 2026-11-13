@@ -90,7 +90,7 @@ The form must not claim that a lead has been received unless the configured back
 
 **Operational handling owner (2026-11-13):** The Project Owner will personally monitor and manage incoming consultation/quotation inquiries delivered to this inbox.
 
-**Approval boundary:** The owner has supplied this address as the business inbox for inquiry notifications and confirmed direct personal handling. This does not verify mailbox existence/deliverability, configure an email provider/sender, or approve the privacy notice, consent wording or data-retention policy.
+**Approval boundary:** The owner has supplied this address as the business inbox for inquiry notifications and confirmed direct personal handling. This does not verify mailbox existence/deliverability, configure an email provider/sender, or approve the final privacy notice or consent wording. The retention duration and expiry action are recorded separately under D-07 and D-08.
 
 **Still required before live lead collection:**
 - Verify mailbox access/deliverability and configure email provider/sender (do not put credentials or API keys in project documents).

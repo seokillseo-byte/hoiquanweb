@@ -240,10 +240,11 @@
     for(const id of adminPanelIds){const panel=$("#"+id);if(panel)panel.hidden=!authenticated;}
   }
   async function logoutAdmin(){
-    try{if(apiBase)await fetch(apiBase+"/api/v1/auth/sign-out",{method:"POST",credentials:"include"});}catch{}
+    let serverSignedOut=false;
+    try{if(apiBase){const response=await fetch(apiBase+"/api/v1/auth/sign-out",{method:"POST",credentials:"include"});serverSignedOut=response.ok;}}catch{}
     signedIn=false;currentRoles=[];staffMembers=[];$("#adminAccountLabel").textContent="Chưa đăng nhập";setAuthenticatedUI(false);
     $("#adminEmail").value="";$("#adminPassword").value="";
-    message("Đã đăng xuất.");
+    message(serverSignedOut?"Đã đăng xuất.":"Đã ẩn giao diện quản trị nhưng chưa xác nhận được phiên đăng xuất từ máy chủ. Hãy kiểm tra kết nối và thử lại.",!serverSignedOut);
   }
   async function request(path, options={}) {
     const response = await fetch(apiBase + path, { ...options, credentials: "include", headers: { ...(options.headers || {}), ...(options.body ? {"content-type":"application/json"} : {}) } });

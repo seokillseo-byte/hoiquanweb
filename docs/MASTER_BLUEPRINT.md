@@ -163,7 +163,7 @@ Blueprint Standard yêu cầu đủ 19 phần. Trạng thái dưới đây phả
 | 09 | Feature Blueprint | Draft complete — review required | Xem [FEATURE_BLUEPRINT.md](FEATURE_BLUEPRINT.md); P0 được giới hạn trong Core Preview |
 | 10 | Technical Blueprint | Partial | Repo có implementation hiện hữu; production topology còn TBD |
 | 11 | Architecture Blueprint | Partial | Có architecture doc; một số quyết định production chưa chốt |
-| 12 | Performance Blueprint | Not validated | Cần đo trên Preview thực tế |
+| 12 | Performance Blueprint | Planning draft created — owner review required | Xem [PERFORMANCE_BLUEPRINT.md](PERFORMANCE_BLUEPRINT.md); numeric thresholds TBD, actual Preview measurement pending |
 | 13 | Security Blueprint | Partial | Có security controls và test trong repo; runtime chưa nghiệm thu |
 | 14 | AI Blueprint | Deferred | Không thuộc Core Preview |
 | 15 | Marketing Blueprint | Not started | Cần audience, positioning và market inputs |
@@ -246,5 +246,5 @@ Phase 0 chỉ được đóng khi:
 
 
 - [UX Blueprint](UX_BLUEPRINT.md): visitor journey, service discovery, language switching, inquiry flow and evidence-based validation plan.
-- [Blueprint Cross-check](BLUEPRINT_CROSS_CHECK.md): đối chiếu 19 modules, Project Input completeness, cross-document conflicts, blockers và Phase 0 exit criteria.
+- [Blueprint Cross-check](BLUEPRINT_CROSS_CHECK.md): đối chiếu 19 modules, Project Input completeness, approved role-responsibility model, cross-document conflicts, blockers và Phase 0 exit criteria.\n- [Performance Blueprint](PERFORMANCE_BLUEPRINT.md): metric definitions, test protocol, optimization strategy, monitoring and owner-approved acceptance threshold requirements.
 - [Owner Decision Review](OWNER_DECISION_REVIEW.md): các quyết định còn thiếu cần Project Owner xác nhận trước Blueprint Final.

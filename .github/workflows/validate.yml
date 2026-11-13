@@ -1,9 +1,9 @@
 name: Validate website and API
 on:
   push:
-    branches: [main, feat/better-auth-worker-d1-integration, feat/hoiquanweb-public-site-v1, feat/customer-project-portal, feat/seo-clean-article-routes, feat/public-ui-factual-content-accessibility, feat/admin-dashboard-ux, feat/portal-session-ux]
+    branches: [main, feat/better-auth-worker-d1-integration, feat/hoiquanweb-public-site-v1, feat/customer-project-portal, feat/seo-clean-article-routes, feat/public-ui-factual-content-accessibility, feat/admin-dashboard-ux, feat/portal-session-ux, docs/staging-deploy-safety]
   pull_request:
-    branches: [main, feat/better-auth-worker-d1-integration, docs/phase-0-master-blueprint-risk-review, feat/seo-clean-article-routes, feat/public-ui-factual-content-accessibility, feat/admin-dashboard-ux]
+    branches: [main, feat/better-auth-worker-d1-integration, docs/phase-0-master-blueprint-risk-review, feat/seo-clean-article-routes, feat/public-ui-factual-content-accessibility, feat/admin-dashboard-ux, feat/portal-session-ux, docs/staging-deploy-safety]
   workflow_dispatch:
 
 permissions:
@@ -25,6 +25,8 @@ jobs:
           node-version: "22"
       - name: Validate existing website and API scaffold
         run: python scripts/validate_project.py
+      - name: Validate staging deployment safety
+        run: python scripts/validate_staging_config.py
       - name: Install locked dependencies
         run: npm ci --no-audit --no-fund
       - name: Test public content API and authentication boundaries

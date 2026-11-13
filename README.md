@@ -91,3 +91,7 @@ The admin HTML is a noindex operational workspace. It presents existing CRM, CMS
 ## Customer portal session behavior
 
 When the portal is built with a configured API base, it attempts to restore an existing Better Auth cookie session on page load through the authenticated `/api/v1/me` request. Invalid/expired sessions remain at the login screen. Sign-out is reported as successful only when the Worker confirms the Better Auth sign-out request; a local UI reset is not presented as proof that the server session was invalidated.
+
+## Staging deployment safety
+
+The production D1 ID in `backend/wrangler.toml` remains a placeholder. First-time backend deployment must use the ignored local `backend/wrangler.staging.toml`, the separate `hoiquanweb-staging` D1 database and dedicated staging R2 buckets. Run `python scripts/validate_staging_config.py` before migrations/deploy. The validator rejects production IDs, wrong staging R2 buckets, plaintext Worker secrets and unrelated `workers.dev` / `github.io` / `pages.dev` auth origins. Production migration/deployment requires separate explicit approval after staging acceptance.

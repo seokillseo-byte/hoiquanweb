@@ -218,3 +218,11 @@ Không công bố hệ thống là production-ready cho đến khi có domain v�
 - Failed sign-in/data loading returns to the login panel and hides the portal workspace.
 - Sign-out only reports success after the Better Auth endpoint returns a successful response; otherwise it warns that server invalidation was not confirmed.
 - Static validation requires the session-restore and sign-out behavior. Real staging cookie/CORS acceptance remains pending.
+
+## R-020 Staging guardrails and review-preview completeness — 2026-11-13
+
+- Added a staging-only Cloudflare runbook that separates D1 and R2 staging resources from production and requires same-site HTTPS custom domains for Better Auth cookie/CORS acceptance.
+- Added a configuration validator that checks the staging D1/R2 bindings, production D1 placeholder, HTTPS origins and encrypted Worker-secret handling. The local staging config is intentionally absent until the owner provisions Cloudflare resources.
+- Added the staging safety validator to CI and included the staging branch as a pull-request target for both validation and preview workflows.
+- Expanded the isolated preview bundle to include `portal.html` as well as the public website and admin workspace, so the customer portal can be reviewed without claiming its backend is live.
+- CI and static preview remain necessary but insufficient: live D1/R2, Better Auth cookies, email delivery, browser E2E and production acceptance remain pending.

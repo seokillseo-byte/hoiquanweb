@@ -25,17 +25,26 @@ Trạng thái CRM: new, contacted, qualified, proposal_sent, won, lost, spam.
 ## Kiểm tra tự động
 Workflow validate.yml chạy validator, API boundary tests, Better Auth + D1 integration tests, typecheck/build và public-site validation. Workflow Pages copy public site cùng admin.html và portal.html; không đưa backend và tài liệu triển khai vào artifact.
 
-## Triển khai lần đầu
-1. Tạo tài khoản Cloudflare và D1 database tên hoiquanweb-production.
-2. Trong thư mục backend, chạy npx wrangler d1 create hoiquanweb-production.
-3. Thay database_id trong wrangler.toml bằng ID thực Cloudflare trả về.
-4. Tạo database staging riêng cho lần thử đầu; kiểm tra backup/ID rồi chạy migrations: npx wrangler d1 migrations apply hoiquanweb-production --remote.
-5. Chạy local: npx wrangler dev; kiểm tra /api/health trên URL local của Wrangler.
-6. Cấu hình AUTH_BASE_URL bằng origin API thực tế, ALLOWED_ORIGINS bằng origin frontend được phép; dùng wrangler secret put cho secrets. Nếu cần email, cấu hình RESEND_API_KEY và NOTIFICATION_EMAIL. ADMIN_TOKEN không cấp quyền cho endpoint identity-protected.
-7. Không coi GitHub Pages + workers.dev là cấu hình auth production. Chọn custom domain cùng site trước khi mở login thật; CORS allowlist phải khớp chính xác frontend origin.
-8. Deploy API bằng npx wrangler deploy và lưu URL Worker thực tế.
-9. Đặt GitHub repository variable HQ_API_BASE thành URL Worker (không có dấu / cuối); generator nhúng biến vào public pages. Không hardcode API URL hoặc secrets trong source.
-10. Kiểm tra health, gửi brief thử, dữ liệu D1, email, rate limit và CORS.
+## Triển khai staging lần đầu — không đụng production
+
+**Bắt buộc nghiệm thu staging trước.** Repository hiện chưa có Worker/D1 staging thật; `backend/wrangler.toml` vẫn chứa D1 ID placeholder cho production. Không tạo database production, không thay production ID và không chạy migration production trong giai đoạn này.
+
+1. Xác nhận tài khoản Cloudflare do chủ dự án kiểm soát và tạo API token có quyền tối thiểu cần thiết cho Workers, D1, R2.
+2. Từ thư mục gốc repository, cài dependencies bằng `npm ci`.
+3. Tạo D1 staging riêng: `npx wrangler d1 create hoiquanweb-staging`. Lưu ID do Cloudflare trả về trong password manager; không gửi token hoặc secret vào chat.
+4. Sao chép `backend/wrangler.staging.example.toml` thành `backend/wrangler.staging.toml`. File đích đã được .gitignore loại khỏi Git.
+5. Chỉ thay `database_id` bằng ID của database `hoiquanweb-staging`. Không lấy ID từ `hoiquanweb-production`.
+6. Tạo hai R2 bucket staging riêng: `npx wrangler r2 bucket create hoiquanweb-media-staging` và `npx wrangler r2 bucket create hoiquanweb-media-staging-preview`. Không bind bucket production vào staging.
+7. Cấu hình `AUTH_BASE_URL` là HTTPS origin API staging và `ALLOWED_ORIGINS` là HTTPS origin frontend staging. Hai origin phải được xác minh thuộc cùng site đáng tin cậy (ví dụ `api-staging.hoiquanweb.io.vn` và `staging.hoiquanweb.io.vn`) để cookie Better Auth hoạt động; không mặc định dùng cặp `github.io` + `workers.dev`.
+8. Chạy preflight từ thư mục gốc: `python scripts/validate_staging_config.py`. Không tiếp tục nếu script báo placeholder, sai database name hoặc origin không hợp lệ.
+9. Từ thư mục `backend`, áp dụng migrations vào đúng D1 staging: `npx wrangler d1 migrations apply hoiquanweb-staging --remote --config wrangler.staging.toml`. Kiểm tra database name/ID trước khi xác nhận.
+10. Từ thư mục `backend`, cấu hình secrets bằng `npx wrangler secret put RESEND_API_KEY --config wrangler.staging.toml` và (nếu cần) `npx wrangler secret put NOTIFICATION_EMAIL --config wrangler.staging.toml`. Không lưu secrets trong TOML hoặc source.
+11. Deploy Worker staging: `npx wrangler deploy --config wrangler.staging.toml`. Ghi lại URL Worker và kiểm tra `GET /api/health` trả 200.
+12. Kiểm thử Better Auth sign-up/sign-in/sign-out, role provisioning, CRM/lead, CMS, R2 media, file access, notifications, CORS, cookie flags, rate limit, email retry và cách ly customer. Chỉ dùng dữ liệu giả lập.
+13. Kiểm thử frontend staging trên custom domain cùng site với API. Không đặt GitHub repository variable production `HQ_API_BASE` trỏ tới staging.
+14. Chỉ sau khi tất cả staging gates đạt và chủ dự án phê duyệt riêng, mới lập kế hoạch production: tạo D1/R2 production riêng, backup, xác minh ID, review migration/rollback, domain/CORS/cookie, secrets và cửa sổ triển khai. Không tái sử dụng staging ID hoặc bucket.
+
+**Không có bước nào ở trên được tự động thực hiện trong PR.** Cần Cloudflare account, D1 ID, R2 bucket, custom domain và secrets do chủ dự án quản lý. Production deploy, migration production và thay đổi secrets cần phê duyệt riêng.
 
 ## Identity, CRM membership và customer portal
 

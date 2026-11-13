@@ -28,7 +28,7 @@
 |---|---|---:|---:|---:|---|---|---|
 | R-001 | Chưa xác định phân khúc khách hàng ưu tiên; messaging có thể quá rộng | 4 | 4 | 16 | Critical | Không tự chọn persona; hoàn thiện audience input trước khi khóa messaging và UX copy | Open |
 | R-002 | USP, business description và competitive advantage chưa được xác nhận | 4 | 4 | 16 | Critical | Dùng nội dung trung tính có căn cứ; không tạo claim cạnh tranh; yêu cầu chủ dự án cung cấp dữ liệu | Open |
-| R-003 | Sai lệch giữa tuyên bố số lượng trang và sitemap hiện tại | 5 | 4 | 20 | Critical | Lập route inventory từ mã nguồn; sinh sitemap từ cùng nguồn route; test count, canonical, hreflang và URL availability | Open |
+| R-003 | Sitemap tĩnh ở repository root không khớp route generator; cần bảo đảm artifact được deploy dùng sitemap sinh tự động | 3 | 4 | 12 | High | Duy trì generator làm nguồn route; kiểm tra build output/CI và artifact Pages dùng sitemap sinh từ generator | Open |
 | R-004 | Tài liệu SEO mô tả landing page một trang trong khi README/Roadmap mô tả site song ngữ nhiều trang | 5 | 3 | 15 | High | Đồng bộ tài liệu theo trạng thái đã xác minh; tách current implementation và target architecture | In progress |
 | R-005 | Thiếu portfolio/case study có bằng chứng hoặc quyền công bố | 3 | 4 | 12 | High | Không dùng logo, testimonial, metric hoặc kết quả chưa được chứng minh; cho phép ẩn section khi chưa có dữ liệu | Open |
 | R-006 | Chưa có pricing policy; trang giá có thể đưa thông tin gây hiểu nhầm | 4 | 3 | 12 | High | Chỉ dùng CTA tư vấn/báo giá; không hiển thị giá giả hoặc giá tham khảo như giá chính thức | Open |

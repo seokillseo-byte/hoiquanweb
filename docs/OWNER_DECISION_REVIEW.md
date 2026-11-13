@@ -110,12 +110,11 @@ Do not send credentials, API keys or other secrets in this document or in chat.
 
 **Owner decision — Approved (2026-11-13):** Retain customer inquiry data for **24 months from the last interaction**.
 
-**Approval boundary:** The 24-month duration from the last interaction and the expiry action are approved. At expiry, **delete completely the customer's personal information and the content of the inquiry/request**. This approval does not define which events reset the last-interaction date, backup expiry/treatment, legal exceptions or the final privacy notice and consent wording. Do not claim automated deletion is already implemented.
+**Approval boundary:** The 24-month duration from the last interaction, the reset events approved under D-09, and the expiry action approved under D-08 are recorded. At expiry, **delete completely the customer's personal information and the content of the inquiry/request**. Backup expiry/treatment, separate legal or operational exceptions and final privacy notice/consent wording remain unspecified. Do not claim automated deletion is already implemented.
 
 **Still required before live lead collection and retention acceptance:**
-- Define and document which customer/owner events count as the last interaction and reset the 24-month period.
-- Specify backup treatment/expiry and any separate legal or operational exceptions; these were not decided by D-08.
-- Include the approved 24-month period and complete-deletion rule, with accurate handling details, in the privacy notice and consent wording.
+- Specify backup treatment/expiry and any separate legal or operational exceptions.
+- Include the approved 24-month period, approved reset events and complete-deletion rule accurately in the privacy notice and consent wording.
 - Implement and test retention enforcement only after the remaining policy details are approved.
 
 ### D-08 — Action when the inquiry-data retention period expires
@@ -128,10 +127,22 @@ Do not send credentials, API keys or other secrets in this document or in chat.
 **Approval boundary:** This is a complete-deletion decision for the customer-identifying information and inquiry content. It does not approve retaining an anonymized copy or statistical record. Backup treatment/expiry and separate legal or operational exceptions remain unspecified; do not infer that backups are immediately purged or that all copies are already covered by an implemented deletion process.
 
 **Still required:**
-- Define which customer/owner events count as the last interaction and reset the 24-month period.
 - Specify backup treatment/expiry and any separately justified legal or operational exceptions.
-- Reflect the approved duration and complete-deletion action accurately in the privacy notice and consent wording.
+- Reflect the approved duration, D-09 reset events and complete-deletion action accurately in the privacy notice and consent wording.
 - Implement and test deletion enforcement, including the approved scope of stored copies, after the remaining policy details are approved.
+
+### D-09 — Events that reset the inquiry-data retention period
+
+**Feature:** F-009 Consultation/quotation form and related lead records.  
+**Related decisions:** D-07 — 24-month retention period; D-08 — complete deletion at expiry.
+
+**Owner decision — Approved (2026-11-13):** The following events count as an interaction and reset the 24-month period:
+1. The Project Owner sends a quotation to the customer.
+2. The customer replies.
+
+**Approval boundary:** This records only the two event types stated by the owner. Do not infer that other events (for example, a new inquiry, an internal note, an email open, or an unanswered outbound message other than sending a quotation) reset the period.
+
+**Still required:** Specify backup treatment/expiry and any separate legal or operational exceptions; reflect the approved events accurately in the privacy notice/consent wording and implement/test the retention calculation.
 
 ## 3. Decisions that can remain TBD for the initial neutral Preview
 
@@ -165,6 +176,6 @@ Reply in normal text using the decision IDs; short answers are sufficient:
 - D-02: **Approved — B2C first, then B2B** (2026-11-13); both remain in scope. Detailed personas and demographics remain TBD.
 - D-03: No public USP/comparative claim for Core Preview; use factual service descriptions only (owner-approved 2026-11-13).
 - D-04: Interim blue/white system and five provisional tokens approved for Core Preview only (2026-11-13); official identity remains TBD.
-- D-05: Website form + business email notification approved (2026-11-13); destination `info@hoiquanweb.io.vn` supplied and Project Owner confirmed as direct handler (2026-11-13). The 24-month inquiry-data retention period from last interaction and complete deletion of personal information plus inquiry content at expiry are approved under D-07/D-08. The exact last-interaction event rules, backup treatment/expiry, any separate legal/operational exceptions, privacy/consent wording, mailbox verification, backend/email configuration and end-to-end acceptance remain outstanding.
+- D-05: Website form + business email notification approved (2026-11-13); destination `info@hoiquanweb.io.vn` supplied and Project Owner confirmed as direct handler (2026-11-13). The 24-month inquiry-data retention period, complete deletion of personal information plus inquiry content at expiry, and the two reset events (Project Owner sends a quotation; customer replies) are approved under D-07/D-08/D-09. Backup treatment/expiry, any separate legal/operational exceptions, privacy/consent wording, mailbox verification, backend/email configuration and end-to-end acceptance remain outstanding.
 
 Partial answers are acceptable. Any unanswered item remains **TBD** and is not treated as approved.

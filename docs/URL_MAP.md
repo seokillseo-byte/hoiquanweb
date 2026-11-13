@@ -68,6 +68,9 @@ The generator currently emits canonical and VI/EN hreflang links on every route.
 - All generated HTML pages currently receive `index,follow`.
 - The generated `robots.txt` allows crawling generally and disallows the admin path.
 - The GitHub Pages workflow deploys `public-site/dist`, including its generated sitemap; the repository-root `sitemap.xml` is not the sitemap deployed by that workflow.
+- Validation run 43389153063 (commit `4cb78e548e4077722dd1a2a3a107c6ca3003d293`) passed the current validator and logged `Generated 40 localized pages` and `Public site validation passed: 40 pages...`.
+- Isolated preview artifact run 43389153166 was inspected directly: 39 generated localized route HTML files were available in the assembled artifact; all 39 contained `hreflang="vi"`, `hreflang="en"` and `hreflang="x-default"`, with `x-default` exactly matching the Vietnamese alternate and no pair-target mismatch. The Vietnamese root route was not inspectable in that artifact because preview assembly overlaid `dist/index.html` over the generated public homepage. The root file in the artifact is the app shell with `noindex,nofollow` and no canonical/hreflang. See XC-10; this is not proof of the production Pages output, which copies only `public-site/dist`.
+- The generated sitemap in the same artifact contains both `/blog/post/` and `/en/blog/post/`. The current validator checks that the sitemap contains every generated HTML route and does not enforce the target exclusion/noindex policy for the generic blog-detail shell; R-016 / XC-03 therefore remain open.
 
 ### Required target policy
 - Include only canonical, public, useful and intentionally indexable URLs.
@@ -83,7 +86,7 @@ The generator currently emits canonical and VI/EN hreflang links on every route.
 - [x] Current generator creates canonical and language alternate links.
 - [x] Current generator creates sitemap entries from the same route array.
 - [ ] Every route has final, owner-approved title, description, page copy and CTA.
-- [ ] Every VI/EN pair is a genuine equivalent translation with reciprocal `hreflang="vi"` and `hreflang="en"`; `hreflang="x-default"` points to the corresponding Vietnamese URL as approved by DEC-021.
+- [ ] Every VI/EN pair is a genuine equivalent translation with reciprocal `hreflang="vi"` and `hreflang="en"`; `hreflang="x-default"` points to the corresponding Vietnamese URL as approved by DEC-021. Artifact check passed for 39 available route files; verify the root homepage in the correctly assembled public-site output.
 - [ ] Indexation policy is implemented per route type; blog detail shell is noindex and absent from sitemap.
 - [ ] Published CMS/blog posts receive stable clean-slug URLs and server/prerendered initial HTML.
 - [ ] Sitemap contains every eligible published canonical URL exactly once and no ineligible route.
@@ -94,7 +97,7 @@ The generator currently emits canonical and VI/EN hreflang links on every route.
 
 ## 6. Open decisions
 
-- `x-default` default-language decision: resolved by DEC-021 — Vietnamese (`vi`) is approved. Generated-artifact and Preview verification remain pending.
+- `x-default` default-language decision: resolved by DEC-021 — Vietnamese (`vi`) is approved. Generated artifact check passed on 39 available localized route files; root homepage verification remains pending because the isolated preview bundle overwrote it during assembly. Verify the root route from the unmodified `public-site/dist` output.
 - Final keyword research and country-specific English localization: pending target-market decision.
 - Project descriptions and permission to publish: owner review required.
 - Template/blog catalog content readiness: pending.

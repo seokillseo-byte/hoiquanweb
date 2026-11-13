@@ -220,6 +220,7 @@ Phase 0 chỉ được đóng khi:
 - [x] Feature Blueprint P0 đã được lập thành draft: [FEATURE_BLUEPRINT.md](FEATURE_BLUEPRINT.md).
 - [x] UI Blueprint Core Preview đã được lập thành draft: [UI_BLUEPRINT.md](UI_BLUEPRINT.md).
 - [x] UX Blueprint baseline đã được lập: [UX_BLUEPRINT.md](UX_BLUEPRINT.md); persona validation vẫn chờ target segment.
+- [x] Content Blueprint đã được lập thành draft: [CONTENT_BLUEPRINT.md](CONTENT_BLUEPRINT.md); keyword research, service-scope inputs, editorial ownership and content approval remain open.
 - [ ] UX Blueprint / persona / journey được hoàn thiện sau khi target segment được xác nhận.
 - [ ] Scope P0/P1/P2 không mâu thuẫn với roadmap repository.
 - [x] URL inventory 20 cặp / 40 route đã được đối chiếu với route generator; policy indexation và sitemap vẫn cần triển khai/kiểm thử.
@@ -251,6 +252,7 @@ Phase 0 chỉ được đóng khi:
 
 
 - [UX Blueprint](UX_BLUEPRINT.md): visitor journey, service discovery, language switching, inquiry flow and evidence-based validation plan.
+- [Content Blueprint](CONTENT_BLUEPRINT.md): bilingual content architecture, seven service groups, page templates, topic-cluster framework, CTA, localization, E-E-A-T, media, internal linking and maintenance rules; draft for Owner review.
 - [Blueprint Cross-check](BLUEPRINT_CROSS_CHECK.md): đối chiếu 19 modules, Project Input completeness, approved role-responsibility model, cross-document conflicts, blockers và Phase 0 exit criteria.
 - [Performance Blueprint](PERFORMANCE_BLUEPRINT.md): metric definitions, test protocol, optimization strategy, monitoring and owner-approved acceptance threshold requirements.
 - [Owner Decision Review](OWNER_DECISION_REVIEW.md): các quyết định còn thiếu cần Project Owner xác nhận trước Blueprint Final.

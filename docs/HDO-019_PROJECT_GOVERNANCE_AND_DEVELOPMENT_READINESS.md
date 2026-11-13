@@ -254,6 +254,7 @@ The next authorized activity is to close or formally disposition these readiness
 - [UX Blueprint](UX_BLUEPRINT.md)
 - [Performance Blueprint](PERFORMANCE_BLUEPRINT.md)
 - [Technical Blueprint](TECHNICAL_BLUEPRINT.md)
+- [Architecture Blueprint](ARCHITECTURE_BLUEPRINT.md)
 - [Security Blueprint](SECURITY_BLUEPRINT.md)
 - [Development Report XC-03 / XC-10](DEVELOPMENT_REPORT_XC03_XC10.md)
 - [Development Handoff XC-03 / XC-10](DEVELOPMENT_HANDOFF_XC03_XC10.md)

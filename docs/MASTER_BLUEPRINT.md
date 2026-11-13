@@ -46,7 +46,8 @@ Thứ tự ưu tiên nguồn thông tin:
 | DEC-016 | Inquiry notification destination and handling owner | Use `info@hoiquanweb.io.vn` as the notification destination; the Project Owner personally monitors and manages incoming inquiries; mailbox delivery remains unverified | Approved (destination and handling ownership supplied) |
 | DEC-017 | Inquiry data retention period | Retain customer inquiry data for 24 months from the last interaction | Approved (duration and starting point) |
 | DEC-018 | Inquiry data action at retention expiry | Completely delete the customer's personal information and inquiry/request content when the 24-month period expires; backup handling is governed by DEC-020 | Approved (expiry action) |
-| DEC-019 | Events resetting inquiry-data retention period | Reset the 24-month period when the Project Owner sends a quotation to the customer or when the customer replies; no other reset events are implied | Approved (event types) |\n| DEC-020 | Backup handling for expired inquiry data | Retain backups until their normal lifecycle expires; when restoring, reapply retention rules and delete expired inquiry records before normal operation resumes; exact backup lifecycle duration remains TBD | Approved (handling policy only) |
+| DEC-019 | Events resetting inquiry-data retention period | Reset the 24-month period when the Project Owner sends a quotation to the customer or when the customer replies; no other reset events are implied | Approved (event types) |
+| DEC-020 | Backup handling for expired inquiry data | Retain backups until their normal lifecycle expires; when restoring, reapply retention rules and delete expired inquiry records before normal operation resumes; exact backup lifecycle duration remains TBD | Approved (handling policy only) |
 
 ### 2.1 Bảy nhóm dịch vụ đã chốt
 

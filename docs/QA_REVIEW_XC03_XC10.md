@@ -247,3 +247,34 @@ These checks are static artifact inspection. The asset files were verified to ex
 - Public content acceptance remains pending Owner disposition of positioning/tagline, portfolio status/rights and process/service claims.
 
 The latest CI and artifact checks do not establish full Core Preview acceptance, Gate 2 approval, merge approval, deployment or production readiness.
+
+
+### 9.6 Artifact refresh on PR HEAD 29a189a
+
+**Review refresh:** 2026-11-13  
+**PR HEAD:** `29a189a787281c925fb034be16f42e118ac8ca8a`  
+**Validation workflow:** [Validate website and API — run 43409687056](https://github.com/seokillseo-byte/hoiquanweb/actions/runs/43409687056) — completed, **success**.  
+**Preview workflow:** [Build isolated PR Preview — run 43409687119](https://github.com/seokillseo-byte/hoiquanweb/actions/runs/43409687119) — completed, **success**.  
+**Artifact:** [hoiquanweb-pr-43-preview — artifact 14028368167](https://github.com/seokillseo-byte/hoiquanweb/actions/runs/43409687119/artifacts/14028368167)  
+**Artifact ZIP size:** 203,344 bytes  
+**Artifact ZIP SHA-256:** `30735b0e303c8b2fa8125d69062d8060f1bc124104c1e20939e854215b4f2289`  
+**Extracted structure:** 51 files, 44 HTML documents, 40 localized public route documents.
+
+The artifact was downloaded and SHA-256 verified, then independently inspected again:
+
+| Check | Result | Evidence |
+|---|---|---|
+| Artifact integrity | PASS | Artifact ID 14028368167; SHA-256 above |
+| Localized route SEO invariants | PASS | 40/40 canonical + vi/en/x-default; 0 failures |
+| Sitemap URLs | PASS | 36 unique URLs |
+| Sitemap route files | PASS | 36/36 present |
+| Sitemap duplicates | PASS | 0 |
+| Sitemap canonical mismatches | PASS | 0 |
+| Noindex entries in sitemap | PASS | 0 |
+| Platform JS/CSS assets | PASS | Both referenced files exist |
+| Generic VI/EN blog shells | PASS | Noindex and excluded from sitemap |
+| Root homepage | PASS | Vietnamese public homepage remains at / |
+
+**Disposition:** CI and artifact checks are **2/2 PASS** on PR HEAD `29a189a`. XC-03 and XC-10 static artifact checks remain passed. R-016 remains Critical/Open; R-017 remains High/Open; F-009 remains blocked for live collection; content Owner acceptance remains pending. These checks do not establish full visual/browser/accessibility QA, hosted runtime, production readiness, Gate 2 approval, merge approval or deployment.
+
+This is an evidence refresh only; it does not expand the existing XC-03/XC-10 authorization.

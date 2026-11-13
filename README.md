@@ -53,7 +53,7 @@ Repository hiện có migration CRM `0003_crm_foundation.sql`, CMS revisions `00
 1. Website công khai nhiều trang với SEO, dịch vụ, dự án, blog, FAQ và trang pháp lý.
 2. CMS riêng để quản lý trang, bài viết, media, SEO, dịch vụ, giá và nội dung xuất bản.
 3. Kho mẫu WordPress và HTML/CSS, có tìm kiếm, lọc, preview, phiên bản, compatibility và license.
-4. Cổng khách hàng ngay từ bản phát hành đầu tiên: tài khoản an toàn, báo giá, đơn hàng, tiến độ, file, duyệt và hỗ trợ.
+4. Cổng khách hàng ở giai đoạn phát hành nền tảng dài hạn (Phase 4, ngoài Core Preview P0): tài khoản an toàn, báo giá, đơn hàng, tiến độ, file, duyệt và hỗ trợ.
 5. CRM và vận hành: leads, khách hàng, báo giá, dự án, công việc, thông báo và báo cáo.
 6. Giai đoạn sau: page builder, triển khai WordPress có kiểm soát, hosting/domain và AI automation.
 

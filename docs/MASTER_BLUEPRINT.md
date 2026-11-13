@@ -207,6 +207,10 @@ Requirement IDs là mã truy vết trong Blueprint; không thay thế mã requir
 - Mọi thay đổi ảnh hưởng URL phải cập nhật URL Map, internal links, canonical, hreflang, sitemap và redirect plan.
 - PR chỉ được merge sau review, CI và nghiệm thu phù hợp; production deployment cần phê duyệt riêng.
 
+## Governance & Development Readiness
+
+- [HDO-019 — Project Governance & Development Readiness](HDO-019_PROJECT_GOVERNANCE_AND_DEVELOPMENT_READINESS.md): hồ sơ quản trị và điều kiện sẵn sàng; hiện là Draft — For Owner Review. Gate 2 và Development Authorization chưa được phê duyệt.
+
 ## 10. Exit criteria cho Phase 0
 
 Phase 0 chỉ được đóng khi:

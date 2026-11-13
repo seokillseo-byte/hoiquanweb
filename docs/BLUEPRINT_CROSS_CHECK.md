@@ -40,7 +40,7 @@ Owner names have not been assigned. The role labels below are proposed responsib
 | # | Blueprint module | Current source / status | Priority | Proposed owner role | Dependencies | Acceptance evidence / remaining gap |
 |---:|---|---|---|---|---|---|
 | 01 | Executive Summary | `MASTER_BLUEPRINT.md` — partial | Planning prerequisite | Project Owner + Planning | 02–06, 10–13, 16–18 | One-page summary must state confirmed business, audience, scope, routes, technology and SEO facts; unresolved fields remain visibly TBD. Current summary is a working baseline, not final approval. |
-| 02 | Business Blueprint | `MASTER_BLUEPRINT.md` — in progress | P0 dependency | Project Owner + Business Analyst | Project Input sections 00, 01, 03, 04, 05, 18 | Confirm business description, formal industry classification, priority audience, USP, business goals and success metrics. Seven service groups and consultation/quotation conversion are confirmed; business model/customer scope is now owner-confirmed as both B2B and B2C. Priority segment and other required fields remain incomplete. |
+| 02 | Business Blueprint | `MASTER_BLUEPRINT.md` — in progress | P0 dependency | Project Owner + Business Analyst | Project Input sections 00, 01, 03, 04, 05, 18 | Confirm business description, formal industry classification, detailed B2C persona inputs, USP, business goals and success metrics. Seven service groups and consultation/quotation conversion are confirmed. Owner has approved both B2C and B2B, with B2C first and B2B expansion next; persona and market details remain incomplete. |
 | 03 | Brand Blueprint | UI tokens observed; formal Brand Blueprint absent / blocked | P0 dependency for final visual approval | Project Owner + Brand/UI | 01, 02, 08 | Approve official logo, brand description, color system, typography and visual tone. Existing CSS tokens are code observations only and must not be represented as approved brand identity. |
 | 04 | Competitor Blueprint | Not started | Planning prerequisite; not a structural P0 blocker | Project Owner + Research/SEO | 02, 03, 05, 15 | Competitor set, comparison criteria and evidence-based differentiation are missing. Do not invent competitor names, rankings or claims. |
 | 05 | SEO Blueprint | `URL_MAP.md`, `SEO_AND_DESIGN_SYSTEM.md`, Master Blueprint — partial | P0 | SEO Architect + Development + QA | 02, 05, 06, 08, 10, 11, 12 | Verify per-route initial HTML metadata, canonical, hreflang, robots, sitemap, structured data and direct navigation. Resolve blog-detail shell/query-slug indexing gap (R-016); decide whether Vietnamese is the x-default fallback. |
@@ -72,7 +72,7 @@ The Project Input Template labels multiple fields as Required. The current proje
 - Market direction: Vietnam and international; English-speaking markets prioritized, exact countries TBD.
 - Core service groups: the seven approved groups in Master Blueprint.
 - Primary conversion: consultation and quotation requests.
-- Customer scope/business model: both B2B and B2C (owner-confirmed 2026-11-13); priority segment remains TBD.
+- Customer scope and sequence: B2C first, then B2B; both remain in scope (owner-confirmed 2026-11-13). Detailed personas remain TBD.
 - Website direction: SEO-first; Preview-first / Core-first.
 
 ### Required inputs still open or only partially specified
@@ -81,13 +81,13 @@ The Project Input Template labels multiple fields as Required. The current proje
 |---|---|---|
 | 00.2 / 01.3 Industry | Technology/service context is apparent, but the owner has not supplied a formal industry classification | Business/SEO best practices |
 | 00.4 Project Description | Not yet approved as a concise owner statement | Executive summary and positioning |
-| 01.2 Business Model | Customer scope confirmed as both B2B and B2C; operating/revenue model and priority segment remain TBD | Funnel and business blueprint |
+| 01.2 Business Model | Customer scope and priority order confirmed: B2C first, then B2B; operating/revenue model remains TBD | Funnel and business blueprint |
 | 01.4 Business Description | TBD | About page, trust and Organization information |
 | 01.6 USP | TBD | Homepage, service messaging and differentiation |
 | 01.9 Primary Conversion Goal | Confirmed: consultation/quotation request | CTA and inquiry flow |
 | 01.12 Geographic Market | Vietnam + international; target English-speaking countries TBD | Localization, legal and SEO targeting |
 | 02.3 Brand Description, 02.8 Logo, 02.10 Brand Colors | Official identity not approved; current code tokens are observational only | Brand and final UI approval |
-| 03.1 Primary Audience, 03.5 Geographic Markets, 03.7 User Intent, 03.8 Search Behavior, 03.10 User Goals | B2B + B2C scope is confirmed; priority segment, personas, detailed intent and search behavior remain unvalidated | Persona, UX, content and keyword strategy |
+| 03.1 Primary Audience, 03.5 Geographic Markets, 03.7 User Intent, 03.8 Search Behavior, 03.10 User Goals | B2C-first then B2B priority is confirmed; detailed B2C personas, B2B buyer roles, market, intent and search behavior remain unvalidated | Persona, UX, content and keyword strategy |
 | 04.1 Primary Business Goal, 04.4 Target Keywords, 04.7 Success Metrics | Lead-generation direction is known; measurable business KPIs and target keywords are not approved | Marketing and SEO acceptance |
 | 05.2 Website Scale and 05.4/05.5 content modules/types | Route inventory exists; final content inventory and publishing policy remain conditional | Content/technical scope |
 | 06.1 Core Features, 06.2 Priority Features, 06.5 Business Workflows | P0 feature register exists; owner acceptance and end-to-end form workflow still pending | Feature sign-off |

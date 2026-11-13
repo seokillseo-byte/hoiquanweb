@@ -28,14 +28,18 @@ The questions below are intentionally limited. If a fact is not known or cannot 
 
 **Project Input fields:** 00.4 Project Description; 01.3 Industry; 01.4 Business Description; 02.3 Brand Description.
 
-**Proposed neutral wording for approval (not yet approved):**
+**Owner decision — Approved (2026-11-13): factual business description wording approved verbatim.**
+
+> HOIQUANWEB cung cấp dịch vụ thiết kế và phát triển website, phần mềm, ứng dụng di động, game, SEO, giải pháp AI và tự động hóa cùng các dịch vụ công nghệ liên quan. Website giới thiệu dịch vụ và tiếp nhận yêu cầu tư vấn, báo giá từ khách hàng tại Việt Nam và thị trường quốc tế.
+
+**Approval boundary:** This approves the factual business description only. It does not approve a formal legal/industry classification, revenue model, operating model, USP, competitive claim or detailed audience persona.
+
+**Industry classification proposal (still not approved):** Công nghệ thông tin / Dịch vụ công nghệ số (website, software and digital services).
 
 > HOIQUANWEB cung cấp dịch vụ thiết kế và phát triển website, phần mềm, ứng dụng di động, game, SEO, giải pháp AI và tự động hóa cùng các dịch vụ công nghệ liên quan. Website giới thiệu dịch vụ và tiếp nhận yêu cầu tư vấn, báo giá từ khách hàng tại Việt Nam và thị trường quốc tế.
 
 **Please confirm:**
-- [ ] Approve this wording as the factual business description.
-- [ ] Approve with edits (provide the corrected wording).
-- [ ] Not accurate; provide a replacement description.
+- [x] Approve this wording as the factual business description (owner-approved 2026-11-13).
 
 **Industry classification proposal:** Công nghệ thông tin / Dịch vụ công nghệ số (website, software and digital services). This is a proposed classification, not an approved industry fact.
 

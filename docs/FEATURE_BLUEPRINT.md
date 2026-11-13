@@ -98,7 +98,7 @@ Required behavior:
 5. On API/network failure, show an error and preserve form values.
 6. If no API is configured, any local download/fallback must explicitly state that no server submission occurred; it must never be described as a received lead.
 7. Consent wording, privacy destination and retention explanation require owner/legal approval before live collection.
-8. The owner has approved website form + business email notification as the inquiry channel (DEC-015). The destination email is `info@hoiquanweb.io.vn` (owner-supplied). Operational handler, privacy/consent wording, API/email configuration and delivery tests remain outstanding; do not enable live submission until these prerequisites are met.
+8. The owner has approved website form + business email notification as the inquiry channel (DEC-015). The destination email is `info@hoiquanweb.io.vn` (owner-supplied), and the Project Owner personally handles incoming inquiries. Privacy/consent wording, API/email configuration and delivery tests remain outstanding; do not enable live submission until these prerequisites are met.
 
 ### 3.5 SEO and indexation
 - Use `docs/URL_MAP.md` as the route inventory.

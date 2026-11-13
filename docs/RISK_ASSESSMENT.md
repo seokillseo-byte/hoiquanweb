@@ -41,8 +41,8 @@
 | R-013 | Thiếu xác nhận hosting, secrets, domain routing và ownership | 3 | 5 | 15 | High | Không tạo tài nguyên hoặc thay đổi production; lập checklist owner action và environment separation | Open |
 | R-014 | Nội dung placeholder hoặc claim không có bằng chứng được phát hành | 3 | 5 | 15 | High | Content QA bắt buộc; mọi placeholder phải bị chặn trước publish; kiểm tra legal/contact claims | Open |
 | R-015 | Thiếu user acceptance trên thiết bị, trình duyệt và ngôn ngữ thực tế | 3 | 4 | 12 | High | Kiểm thử responsive, keyboard, accessibility, browser, form, links, 404 và VI/EN trước nghiệm thu | Open |
-| R-016 | Client-rendered blog listing/detail shells previously had indexable initial HTML and sitemap entries; they are now noindex and excluded, while dynamic published articles still lack clean slug routes and article-specific initial HTML | 4 | 4 | 16 | Critical | Keep listing/detail shells noindex and out of sitemap; add clean-slug article URLs only after article-specific initial HTML, canonical, reciprocal hreflang and structured data are implemented. Validator enforces sitemap eligibility. See `SEO_INDEXATION_AND_PREVIEW_REMEDIATION.md` and `DEVELOPMENT_REPORT_XC03_XC10.md`. | Development guard implemented; CI evidence passed; independent QA pending; dynamic article rendering remains unresolved |
-| R-017 | PR Preview previously overlaid the frontend SPA build on the generated public-site output and replaced the public Vietnamese homepage at `/`; the Preview workflow now isolates the SPA under `/platform/` and validates the final assembled artifact | 4 | 3 | 12 | High | Preserve public homepage at `/`; build the app with the configured `/platform/` base path; retain generated portal output; validate root metadata, entrypoints and app assets after assembly. See `DEVELOPMENT_REPORT_XC03_XC10.md`. | Development implemented; final Preview CI and HTTP smoke tests passed; independent QA pending |
+| R-016 | Client-rendered blog listing/detail shells previously had indexable initial HTML and sitemap entries; they are now noindex and excluded, while dynamic published articles still lack clean slug routes and article-specific initial HTML | 4 | 4 | 16 | Critical | Keep listing/detail shells noindex and out of sitemap; add clean-slug article URLs only after article-specific initial HTML, canonical, reciprocal hreflang and structured data are implemented. Validator enforces sitemap eligibility. See `SEO_INDEXATION_AND_PREVIEW_REMEDIATION.md` and `DEVELOPMENT_REPORT_XC03_XC10.md`. | Development guard implemented; CI evidence passed; independent artifact QA confirmed VI/EN generic shells are noindex and excluded from sitemap; dynamic article rendering remains unresolved |
+| R-017 | PR Preview previously overlaid the frontend SPA build on the generated public-site output and replaced the public Vietnamese homepage at `/`; the Preview workflow now isolates the SPA under `/platform/` and validates the final assembled artifact | 4 | 3 | 12 | High | Preserve public homepage at `/`; build the app with the configured `/platform/` base path; retain generated portal output; validate root metadata, entrypoints and app assets after assembly. See `DEVELOPMENT_REPORT_XC03_XC10.md`. | Development implemented; final Preview CI and HTTP smoke tests passed; independent static artifact QA passed selected route/canonical/asset checks; full visual/browser QA and Project Owner acceptance pending |
 
 ## 4. Priority risks requiring closure before SEO / Core Preview acceptance
 
@@ -76,7 +76,7 @@ Implementation evidence (2026-11-13):
 - Artifact: [hoiquanweb-pr-43-preview](https://github.com/seokillseo-byte/hoiquanweb/actions/runs/43395058389/artifacts/14021259542).
 
 Remaining:
-- Independent QA review and Project Owner acceptance are pending.
+- Independent static artifact QA subset passed; full visual/browser/responsive QA and Project Owner acceptance remain pending. See `QA_REVIEW_XC03_XC10.md`.
 - This is isolated Preview evidence only; production Pages workflow and live production URL were not changed or tested.
 
 ### R-016 — Dynamic blog/CMS SEO coverage
@@ -101,7 +101,7 @@ Remaining:
 3. Add only approved published VI/EN article URLs to sitemap.
 4. Verify initial-HTML title, description, canonical, reciprocal hreflang, Article structured data and publication lifecycle.
 5. Keep unsupported arbitrary CMS routes noindex and outside sitemap.
-6. Independently QA the current guard and the future article-readiness implementation.
+6. Independent artifact QA verified the current generic-shell guard; independently QA the future article-readiness implementation before enabling article indexation.
 
 ### R-010 — Backend runtime not accepted
 

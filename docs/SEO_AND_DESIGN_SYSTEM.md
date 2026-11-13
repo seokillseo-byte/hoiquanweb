@@ -93,7 +93,7 @@ The current design document records these CSS tokens:
 - Accessibility patterns recorded: skip link, focus outline, form labels, live region, aria-expanded, accessible labels and prefers-reduced-motion support.
 - Accessibility target: WCAG 2.1 AA, subject to automated and manual testing.
 
-These tokens describe the repository's current design vocabulary; they are not proof that the final brand identity has been approved. Official logo, typography, palette and imagery direction remain subject to brand confirmation.
+The five existing color tokens are owner-approved for interim Core Preview use only under DEC-014. They are not the official brand identity or final corporate palette. Official logo, final typography and full brand guideline remain subject to separate confirmation.
 
 ## 6. QA checklist
 

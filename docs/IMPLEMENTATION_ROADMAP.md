@@ -2,7 +2,7 @@
 
 **Định hướng sản phẩm:** nền tảng vận hành kinh doanh dịch vụ website gồm website marketing, CMS riêng, kho mẫu WordPress + HTML/CSS, cổng khách hàng, CRM/bán hàng, chatbot hỗ trợ khách hàng, SEO/AI content, tự động hóa, đơn hàng/thanh toán và quản lý hosting/domain. Các module được chia giai đoạn; không có nghĩa là đã triển khai.
 
-**Nguồn Planning:** [Master Blueprint](MASTER_BLUEPRINT.md) và [BP-17 Risk Assessment](RISK_ASSESSMENT.md). Đây là các tài liệu điều hướng phạm vi, quyết định đã xác nhận, TBD và rủi ro; chúng không thay thế các acceptance gates bên dưới.
+**Nguồn Planning:** [Master Blueprint](MASTER_BLUEPRINT.md), [URL Map](URL_MAP.md) và [BP-17 Risk Assessment](RISK_ASSESSMENT.md). Đây là các tài liệu điều hướng phạm vi, quyết định đã xác nhận, TBD và rủi ro; chúng không thay thế các acceptance gates bên dưới.
 
 **Nguyên tắc trạng thái:** “Có mã nguồn” không đồng nghĩa “đã deploy” hay “đã nghiệm thu”. Chỉ đánh dấu hoàn thành khi có kiểm thử phù hợp và xác minh môi trường chạy. Baseline kiến trúc được mô tả tại [docs/ARCHITECTURE.md](ARCHITECTURE.md).
 

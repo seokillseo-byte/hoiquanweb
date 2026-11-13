@@ -8,6 +8,7 @@ Hội Quán Web được định hướng thành nền tảng vận hành công 
 
 - [Master Blueprint — nguồn điều hướng Planning](docs/MASTER_BLUEPRINT.md)
 - [Blueprint Cross-check — đối chiếu 19 modules và Phase 0 blockers](docs/BLUEPRINT_CROSS_CHECK.md)
+- [Owner Decision Review — các quyết định chờ Project Owner xác nhận](docs/OWNER_DECISION_REVIEW.md)
 - [BP-17 Risk Assessment](docs/RISK_ASSESSMENT.md)
 - [Kiến trúc đích](docs/ARCHITECTURE.md)
 - [Mô hình dữ liệu logic](docs/DATA_MODEL.md)

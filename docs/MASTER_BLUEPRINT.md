@@ -133,7 +133,7 @@ Blueprint Standard yêu cầu đủ 19 phần. Trạng thái dưới đây phả
 | 02 | Business Blueprint | In progress | Primary conversion và service groups đã chốt |
 | 03 | Brand Blueprint | Blocked / partial | Thiếu brand identity và USP |
 | 04 | Competitor Blueprint | Not started | Chưa có đối thủ/benchmark được xác nhận |
-| 05 | SEO Blueprint | In progress | Có SEO principles; cần keyword map và xác minh sitemap generated từ build output |
+| 05 | SEO Blueprint | In progress | Có SEO principles; cần keyword map, đồng thời xử lý SEO cho dynamic blog/CMS routes (clean slug, prerender/SSR, sitemap từng bài) |
 | 06 | Content Blueprint | In progress | Có content groups; thiếu proof, pricing và nội dung doanh nghiệp |
 | 07 | UX Blueprint | In progress | Conversion goal đã chốt; persona chưa chốt |
 | 08 | UI Blueprint | Partial | Repo có design tokens; chưa xác nhận brand identity chính thức |

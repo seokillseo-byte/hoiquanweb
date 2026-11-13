@@ -8,8 +8,8 @@
 **Branch:** `docs/phase-0-master-blueprint-risk-review`  
 **Reviewed PR:** [#43](https://github.com/seokillseo-byte/hoiquanweb/pull/43)  
 **Previously reviewed HEAD:** `e68049e96ae55e001a00cc5f81d3d5f7ab4be52e`  
-**Latest code-bearing PR HEAD with CI/Preview evidence:** `388aa6ef53d106f181b8983a7d9021e245d7086c` (2026-11-13). Subsequent commits on the PR branch are documentation-only evidence refreshes; no application code changed after this tested code-bearing HEAD.  
-**Current evidence:** Both CI workflows and the isolated Preview artifact have now been verified on the exact current PR HEAD. The independent static artifact refresh is recorded in QA_REVIEW_XC03_XC10.md section 9.6.
+**Latest CI-verified PR HEAD:** `29a189a787281c925fb034be16f42e118ac8ca8a` (2026-11-13). The current PR branch HEAD is `9e6e6d5ab3128a6a678239fcdf78881af35725fd`, containing documentation-only QA/governance updates after the CI-verified commit; no application code changed after the tested commit.  
+**Current evidence:** Both CI workflows and the isolated Preview artifact were verified on PR HEAD `29a189a`. The independent static artifact refresh is recorded in [QA_REVIEW_XC03_XC10.md](QA_REVIEW_XC03_XC10.md), section 9.6.
 
 > This report records the evidence and gaps visible at the assessment time. It is not an Owner acceptance, a Gate 2 approval, a Development Authorization, a release approval or a production-readiness certificate.
 

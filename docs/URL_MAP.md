@@ -52,7 +52,7 @@ Verified generator behavior:
 ### Required target behavior
 1. Vietnamese routes use the Vietnamese path as canonical; English routes use the corresponding English path.
 2. Every genuine translated pair links reciprocally using `hreflang="vi"` and `hreflang="en"`.
-3. `hreflang="x-default"` must point to the agreed default-language destination. Current generator points x-default to the Vietnamese path; retain this only if Vietnamese is approved as the default fallback.
+3. `hreflang="x-default"` must point to the Vietnamese (`vi`) URL for each genuine VI/EN pair, as approved by the Project Owner under DEC-021. The generator currently points x-default to Vietnamese; retain this behavior and verify it in generated initial HTML and Preview.
 4. Canonical must be absolute, self-referencing and use the production host only on production output.
 5. Query parameters used for filtering, search or tracking must not create duplicate indexable canonical URLs.
 6. If a translation is missing or materially incomplete, do not declare a false hreflang pair.
@@ -83,7 +83,7 @@ The generator currently emits canonical and VI/EN hreflang links on every route.
 - [x] Current generator creates canonical and language alternate links.
 - [x] Current generator creates sitemap entries from the same route array.
 - [ ] Every route has final, owner-approved title, description, page copy and CTA.
-- [ ] Every VI/EN pair is a genuine equivalent translation with reciprocal hreflang.
+- [ ] Every VI/EN pair is a genuine equivalent translation with reciprocal `hreflang="vi"` and `hreflang="en"`; `hreflang="x-default"` points to the corresponding Vietnamese URL as approved by DEC-021.
 - [ ] Indexation policy is implemented per route type; blog detail shell is noindex and absent from sitemap.
 - [ ] Published CMS/blog posts receive stable clean-slug URLs and server/prerendered initial HTML.
 - [ ] Sitemap contains every eligible published canonical URL exactly once and no ineligible route.
@@ -94,7 +94,7 @@ The generator currently emits canonical and VI/EN hreflang links on every route.
 
 ## 6. Open decisions
 
-- Default language behavior for `x-default`: currently Vietnamese in generated HTML; owner approval pending.
+- `x-default` default-language decision: resolved by DEC-021 — Vietnamese (`vi`) is approved. Generated-artifact and Preview verification remain pending.
 - Final keyword research and country-specific English localization: pending target-market decision.
 - Project descriptions and permission to publish: owner review required.
 - Template/blog catalog content readiness: pending.

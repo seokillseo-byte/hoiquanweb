@@ -371,3 +371,19 @@ The four utility HTML documents (404, Admin, Portal and Platform) are outside th
 **Evidence boundary:** This audit applies specifically to artifact 14053557316, produced from PR HEAD `b7d750e773218f3914e5e5530ea990e42daff560`. It must not be described as a fresh extraction of the later artifact 14053342476 or of the artifact generated on PR HEAD `45e6f276`. The subsequent changes recorded in §9.9 and the current PR HEAD are documentation-only relative to the application implementation baseline; current-head CI is tracked separately in the PR and does not transfer artifact-level inspection to a different ZIP.
 
 **Disposition:** Static artifact structure and SEO metadata checks for artifact 14053557316 are PASS. This does not close R-016, R-017 or F-009; does not verify hosted Worker/D1/R2/auth/email behavior; and is not full visual/browser/accessibility QA, Core Preview acceptance, Gate 2 approval, merge approval or deployment.
+
+### 9.11 Current PR #43 HEAD workflow evidence
+
+**Verification date:** 2026-11-13  
+**PR #43 source HEAD:** `46420374739aafabde281964db6dde85905cfe72`  
+**Validation workflow:** [Validate website and API — run 43456589451](https://github.com/seokillseo-byte/hoiquanweb/actions/runs/43456589451) — completed, **success**.  
+**Preview workflow:** [Build isolated PR preview — run 43456589361](https://github.com/seokillseo-byte/hoiquanweb/actions/runs/43456589361) — completed, **success**.  
+**Preview artifact:** [hoiquanweb-pr-43-preview — artifact 14052803874](https://github.com/seokillseo-byte/hoiquanweb/actions/runs/43456589361/artifacts/14052803874)  
+**Artifact size:** 203,344 bytes  
+**GitHub artifact digest:** `sha256:351a999b02bf06160a35fff96581946120e80f99a259f0105af90b0e29fd6841`
+
+Both required workflows completed successfully for the exact source HEAD recorded above. The Preview artifact was generated and is available. This evidence records workflow completion and artifact generation only; the artifact has not been independently extracted or re-audited in this section. The static route/metadata audit in §9.10 remains bound to artifact 14053557316 and must not be transferred to artifact 14052803874.
+
+**Disposition:** CI workflow status for PR #43 source HEAD `46420374739aafabde281964db6dde85905cfe72` is **2/2 PASS**. This does not close R-016, R-017 or F-009; does not establish hosted Worker/D1/R2/auth/email behavior; and does not constitute full visual/browser/responsive/accessibility QA, Core Preview acceptance, Gate 2 approval, merge approval or deployment. PR #43 remains open and unmerged.
+
+This section records evidence for the identified source HEAD. The documentation commit that adds this section is a later commit and must be evaluated by its own CI checks.

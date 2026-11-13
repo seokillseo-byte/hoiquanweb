@@ -36,7 +36,7 @@ The review also uses current repository planning documents, source-observed rout
 - **Planning prerequisite:** Needed to approve the complete Blueprint, but not necessarily to build a neutral preview shell.
 - **Deferred:** Not part of Core Preview.
 
-Owner names have not been assigned. The role labels below are proposed responsibility boundaries, not confirmed staffing assignments.
+The Project Owner has approved the role-responsibility model on 2026-11-13. These are approved responsibility boundaries, not named staffing assignments; specialist roles remain placeholders until people are assigned.
 
 ## 2. Cross-check matrix — all 19 modules
 
@@ -53,7 +53,7 @@ Owner names have not been assigned. The role labels below are proposed responsib
 | 09 | Feature Blueprint | `FEATURE_BLUEPRINT.md` — draft complete, review required | P0 | Product/Business Analyst + Development + QA | 02, 05–08, 10–13 | Thirteen features are registered with dependencies and acceptance criteria. Owner approved website form + business email notification under DEC-015 and supplied `info@hoiquanweb.io.vn` as the destination under DEC-016. F-009 cannot pass end-to-end acceptance until privacy/consent wording, configured API/email sender, mailbox delivery verification and end-to-end tests are available. The Project Owner has confirmed direct responsibility for handling inquiries. The 24-month retention period from last interaction is approved under DEC-017; complete deletion of personal information and inquiry/request content at expiry is approved under DEC-018. DEC-019 defines the reset events as the Project Owner sending a quotation or the customer replying. DEC-020 approves retaining backups until their normal lifecycle expires and requiring expired inquiry records to be deleted after restoration before normal operation resumes; the exact backup lifecycle duration and separate legal/operational exceptions remain open. |
 | 10 | Technical Blueprint | `ARCHITECTURE.md`, Roadmap — partial | P0 for Preview build/runtime; production choices deferred | Technical Architect + Operations | 05, 09, 11–13 | Documented static preview path and existing Worker/D1 scaffold. Production host, API endpoint, database/resource configuration, secrets, ownership and runtime are not accepted. |
 | 11 | Architecture Blueprint | `ARCHITECTURE.md` — partial | P0 for the selected Preview architecture | Solution Architect | 09, 10, 13 | Logical architecture and security boundaries exist. Final deployment topology and external service choices remain open; do not treat the long-term platform architecture as Core Preview scope. |
-| 12 | Performance Blueprint | Not separately completed; Feature NFR and QA gates exist | P0 acceptance gate | Performance Engineer + QA | 08, 10, 11 | Measure actual Preview with recorded URL, date, device and method. Project-specific performance targets and acceptance thresholds must be agreed; do not claim performance success from build/CI alone. |
+| 12 | Performance Blueprint | `PERFORMANCE_BLUEPRINT.md` — planning draft created; owner review required | P0 acceptance gate | Performance Engineer + QA | 08, 10, 11 | Required metrics, lab/field distinction, test protocol, optimization strategy and evidence are defined. Numeric targets remain TBD; measure corrected assembled Preview and obtain owner-approved thresholds before acceptance. |
 | 13 | Security Blueprint | Architecture security section, tests and Risk Assessment — partial | P0 acceptance gate | Security Engineer + Development + QA | 09–11, 16 | Verify public/private boundaries, form validation, rate limiting, secrets, headers, dependency and runtime controls. Worker/D1/R2 staging or production runtime is not accepted. |
 | 14 | AI Blueprint | Deferred; no Core Preview requirement | Deferred | Project Owner + AI/Technical Architect | 02, 10, 11, 13, 15 | No AI feature is authorized in Core Preview. Create a separate AI Blueprint only after a specific approved business requirement, data policy, risk controls and provider decision exist. |
 | 15 | Marketing Blueprint | Not started | Planning prerequisite for growth; not a Core Preview build blocker | Project Owner + Marketing/SEO | 02–06, 17 | Audience, positioning, channel strategy, budget, campaign goals and measurable KPIs are missing. Do not invent market size, acquisition targets or campaign commitments. |
@@ -110,12 +110,31 @@ This table is a gap check, not a replacement Project Input form. No missing fiel
 | XC-04 | F-009 is P0-Must; form + business email notification is the owner-approved channel (DEC-015), and `info@hoiquanweb.io.vn` is the owner-supplied destination (DEC-016). The Project Owner is the confirmed operational handler; privacy/consent wording, configured API/email sender and runtime acceptance remain outstanding. DEC-017 approves 24 months from last interaction and DEC-018 approves complete deletion of personal information and inquiry/request content at expiry. DEC-019 defines the reset events as the Project Owner sending a quotation or the customer replying. DEC-020 approves normal backup lifecycle retention and restore-time deletion of expired inquiry records before normal operation resumes; the exact backup lifecycle duration and separate legal/operational exceptions remain to be specified. | Critical for inquiry conversion acceptance | Do not show false success. Keep the form inactive in environments where privacy/consent wording or the API/email prerequisites are not approved/configured. Once the API durably saves an inquiry, confirm only that it was recorded; track queued, retrying or failed notification delivery separately and never reverse or misstate the saved lead as unaccepted. Verify email delivery to `info@hoiquanweb.io.vn` independently in end-to-end QA; the Project Owner is the confirmed handler. | Successful API acceptance and failure/retry cases are tested on Preview; privacy/consent copy is approved, including the 24-month retention period, reset events, complete-deletion rule and DEC-020 backup/restore policy; backup lifecycle duration and separate legal/operational exceptions are documented; restore-time deletion is implemented and tested. |
 | XC-05 | The x-default destination was conditional in URL Map and had no recorded owner decision. | Resolved at planning-decision level (2026-11-13); generated-artifact/Preview verification remains pending. | DEC-021 records Vietnamese (`vi`) as the approved default fallback. URL Map now requires each genuine VI/EN pair's x-default to point to its Vietnamese URL. | Decision is recorded consistently; generated initial HTML and Preview verify reciprocal VI/EN alternates and x-default pointing to the corresponding Vietnamese route. |
 | XC-06 | The previous six high-level traceability rows did not map all Required Project Input fields to deliverables and evidence. | Resolved at traceability-mapping level (2026-11-13); Project Input completeness remains open. | Added `PROJECT_INPUT_TRACEABILITY.md`, mapping all 55 fields explicitly labelled Required in owner-supplied Project Input Template v3.0 to a Blueprint destination, current status and acceptance evidence. Preserve TBD/partial/observed-only states; do not convert them into approved facts. | 55/55 Required fields have a destination and evidence condition. Remaining open inputs are explicitly listed and Phase 0 cannot close until critical inputs are approved or explicitly accepted as non-blocking by the Owner. |
-| XC-07 | The 19-module register has status and notes, but not a consistent named owner/role, dependency and module-specific acceptance evidence for every module. | High — governance gap | Use this cross-check matrix as the interim role/dependency/acceptance register; owner must confirm role assignments. | No module is marked complete without an accountable owner role and evidence. |
-| XC-08 | Performance Blueprint is not a standalone deliverable; Feature NFRs require measurement but project-specific thresholds are not approved. | Moderate | Produce a focused Performance Blueprint or an explicit approved acceptance profile before QA. Do not silently adopt example thresholds as project decisions. | Test method, environment, metrics, target thresholds and evidence are documented. |
+| XC-07 | The 19-module register had no owner-approved responsibility model. | Resolved at role-boundary level (2026-11-13); named staffing remains open. | Project Owner approved the responsibility model recorded in section 5. Role placeholders are not named people or evidence of staffing. | Every module has an accountable role boundary, dependencies and acceptance evidence; named assignments can be added when staffed. |
+| XC-08 | Performance Blueprint did not exist as a standalone deliverable; project-specific thresholds are not approved. | Moderate — planning draft now created; numeric targets and actual evidence remain open. | Added `PERFORMANCE_BLUEPRINT.md` with metrics, test method, route/device matrix, optimization, monitoring and evidence requirements. Keep numeric targets TBD until owner approval. | Owner-approved thresholds, reproducible Preview baseline, applicable cache/API tests and QA evidence are recorded. |
 | XC-09 | Production host, Worker/D1/R2 resources, API base, secrets and operations ownership are not accepted, while some repository documentation describes capabilities already present in code. | Critical for production; not a reason to widen P0 | Separate code/CI/preview/runtime/production status everywhere. No production claim or external configuration until owner approval. | Staging runtime, security, backup, monitoring and deployment ownership are verified before production approval. |
 | XC-10 | The isolated PR preview artifact assembly copies `public-site/dist` and then overlays the frontend `dist` directory. In run 43389153166, the overlay replaced the generated Vietnamese homepage at `/` with the application SPA shell (`noindex,nofollow`, no canonical/hreflang), while the sitemap still contains `/`. The production Pages workflow currently copies only `public-site/dist`, so this is confirmed as a PR-preview packaging collision, not evidence that the production Pages output is overwritten. | High for Preview fidelity and homepage QA; production impact not established | Correct preview assembly so the public-site homepage remains at `/` and application/admin surfaces are exposed only at their intended paths. Add a build-artifact assertion that root homepage has the expected public-site title, canonical, VI/EN alternates and indexation policy. | Rebuilt preview artifact serves the generated public homepage at `/`; root HTML has the expected canonical, reciprocal language alternates and robots policy; no application SPA shell overwrites it. Verify production Pages workflow separately before deployment. |
 
-## 5. Priority blockers and disposition
+## 5. Approved responsibility model (2026-11-13)
+
+**Project Owner decision: Approved.** The following responsibility boundaries apply across the project. They define role accountability only; they do not assign named people or establish that specialist positions are staffed.
+
+| Role | Responsibility boundary | Approval / execution boundary |
+|---|---|---|
+| Project Owner | Business decisions, scope and priority approval, owner-provided facts, content/claim approval, risk acceptance and final phase/production acceptance | Final accountable decision-maker; explicit approval required for scope changes, Blueprint acceptance, merge and deployment |
+| AI Planning Architect | Project Input analysis, Blueprint planning, traceability, risk documentation and review-ready planning artifacts | Planning and recommendations only; no code implementation, operations, merge or deployment |
+| Technical Lead | Technical architecture and technical decision coordination | Proposes and documents technical decisions; owner approval required where decisions affect scope, cost, risk or production |
+| Development | Implements approved requirements and architecture | Starts only after the applicable Blueprint/requirements are approved; supplies implementation evidence |
+| QA | Test planning, execution, defect verification, regression and acceptance evidence | Reports pass/fail and residual defects; does not replace Project Owner acceptance |
+| SEO / Content | SEO strategy, content structure, language/content quality and indexation review | Publishes only approved factual content; no unsupported claims or fabricated proof |
+| UX / UI | User journeys, information presentation, interaction and interface consistency | Works within approved scope and brand decisions; unresolved audience/brand facts remain TBD |
+| Security / Operations | Security controls, infrastructure, backups, monitoring and operational readiness | No production configuration or rollout without approved architecture, access and owner authorization |
+
+**Staffing status:** No individual names are assigned to these roles. Technical Lead, Development, QA, SEO/Content, UX/UI and Security/Operations remain role placeholders until the Project Owner assigns people or confirms an alternative arrangement. One person may cover multiple roles if the Owner decides so; no such assignment is assumed here.
+
+**Module ownership:** The “Proposed owner role” column in section 2 is now the approved role-responsibility mapping. It is not a staffing roster. Dependencies and acceptance evidence remain required for each module.
+
+## 6. Priority blockers and disposition
 
 ### Must be resolved before Core Preview can be accepted
 
@@ -131,7 +150,7 @@ This table is a gap check, not a replacement Project Input form. No missing fiel
 1. Owner response to required Project Input fields for business description, business model, industry, USP, target audience and measurable success criteria — or an explicit owner decision that named fields are non-blocking for this public-site scope.
 2. Official brand identity/logo/final typography remain TBD; interim blue/white Preview system is owner-approved under DEC-014 and must not be represented as final brand identity.
 3. ~~Confirm whether Vietnamese is the `x-default` language fallback.~~ Resolved by DEC-021 (Vietnamese approved); generated-artifact and Preview verification remain open.
-4. Confirm module owner roles and approve the scope boundary between Core Preview and the later platform release.
+4. ~~Confirm module owner roles.~~ Responsibility boundaries approved by the Project Owner (2026-11-13); named staffing remains open. Confirm the scope boundary between Core Preview and the later platform release.
 5. Complete Competitor, Marketing, Performance, Timeline and Final Validation planning at the level required by the applicable Blueprint Standard, or formally defer the non-P0 deliverable with reason and approval.
 
 ### Deferred from Core Preview
@@ -140,11 +159,11 @@ This table is a gap check, not a replacement Project Input form. No missing fiel
 - CMS advanced page builder, CRM expansion, customer portal, payments/commerce, booking, template provisioning, hosting/domain provisioning and chatbot.
 - Production infrastructure rollout until provider, ownership, access, security and operational decisions are approved.
 
-## 6. Phase 0 exit criteria — cross-checked
+## 7. Phase 0 exit criteria — cross-checked
 
 Phase 0 is **not complete** until all applicable conditions below are evidenced and the Project Owner approves the Blueprint.
 
-- [ ] All 19 modules have a status, priority, accountable owner role, dependencies, deliverables and acceptance criteria.
+- [x] All 19 modules have a status, priority, approved accountable role boundaries, dependencies, deliverables and acceptance criteria; named staffing remains open.
 - [ ] Required Project Input fields are answered or explicitly accepted by the Project Owner as non-blocking for Core Preview.
 - [ ] Core Preview P0 and long-term platform roadmap are unambiguous across Master Blueprint, Roadmap and README.
 - [ ] Feature, UI and UX Blueprints are reviewed and approved; draft completion is not treated as acceptance.
@@ -153,14 +172,14 @@ Phase 0 is **not complete** until all applicable conditions below are evidenced 
 - [ ] Blog-detail shell is excluded from indexable sitemap and noindex is emitted; dynamic articles are not indexed before R-016 acceptance.
 - [ ] Inquiry form endpoint, owner-approved email recipient `info@hoiquanweb.io.vn`, Project Owner as handler, privacy/consent copy, email delivery and success/failure behavior are approved and tested.
 - [ ] Technical and architecture choices needed for Preview are distinguished from production choices.
-- [ ] Performance and security acceptance profiles are documented and tested in the actual Preview/runtime.
+- [ ] Performance Blueprint and security acceptance profiles are documented; numeric performance targets are owner-approved and tested in the actual Preview/runtime.
 - [ ] Critical/high risks have mitigation evidence or explicit owner-approved residual-risk acceptance.
 - [ ] Timeline is baselined only after scope, dependencies and owner availability are known.
 - [ ] Final Validation evidence is recorded and the Project Owner explicitly approves transition to the next phase.
 
 **Current decision:** Phase 0 remains open. The cross-check identifies documentation and acceptance gaps; it does not authorize implementation expansion, merge, deployment, production configuration or external account changes.
 
-## 7. Change control
+## 8. Change control
 
 - This document is a review artifact and does not override the user-confirmed decisions in Master Blueprint.
 - Any change to P0, service groups, route inventory, language strategy, conversion behavior or production topology requires explicit owner approval.

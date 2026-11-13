@@ -17,6 +17,8 @@ Hội Quán Web được định hướng thành nền tảng vận hành công 
 - [Hướng dẫn cấu hình backend lead hiện có](docs/PHASE_2_BACKEND_SETUP.md)
 - [SEO foundation và design system hiện tại](docs/SEO_AND_DESIGN_SYSTEM.md)
 - [URL Map — 40 route song ngữ và indexation matrix](docs/URL_MAP.md)
+- [Feature Blueprint — Core Preview P0](docs/FEATURE_BLUEPRINT.md)
+- [UI Blueprint — public website](docs/UI_BLUEPRINT.md)
 
 ## Preview hiện tại
 

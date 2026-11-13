@@ -95,7 +95,7 @@ The supplied template contains **55 fields explicitly labelled Required** across
 
 | Input field (exact ID) | Current value / status | Blueprint destination | Evidence / acceptance condition |
 |---|---|---|---|
-| PERF-001 Core Web Vitals | **TBD:** project-specific targets are not approved; examples in the template are not owner decisions | Performance Blueprint; QA Acceptance Profile | Measure LCP, INP, CLS on defined environment/device and obtain owner-approved thresholds |
+| PERF-001 Core Web Vitals | **Approved:** LCP ≤ 2.5s, INP ≤ 200ms, CLS ≤ 0.1; evaluate field p75 separately for mobile and desktop where sufficient data is available; lab results reported separately | Performance Blueprint; QA Acceptance Profile | Owner decision D-13 (mapped as DEC-022 in Master Blueprint, 2026-11-13); this approves thresholds only, not current site performance. Attach reproducible field/lab evidence before acceptance |
 | PERF-002 Page Load Time | **TBD:** no project-approved page-load target | Performance Blueprint; QA Acceptance Profile | Define metric, test method, device/network profile and acceptance threshold before sign-off |
 | PERF-008 Mobile Performance | **TBD:** mobile is in responsive scope, but a measurable mobile-performance target is not approved | Performance Blueprint; Mobile QA | Record mobile lab/field measurements and owner-approved thresholds; do not claim success from CI build alone |
 
@@ -108,8 +108,8 @@ Their applicability and priority must be determined from the approved Core Previ
 ## 4. Completeness and acceptance status
 
 - **Traceability coverage:** 55/55 explicitly Required fields are mapped to a Blueprint destination and an evidence/acceptance condition.
-- **Input completeness:** Not complete. Formal industry classification, operating/revenue model, logo, detailed audience data, keyword/search-intent evidence, business KPIs, approved scale, final navigation/homepage decisions, production technology/infrastructure and performance targets remain open or partial.
-- **No silent inference:** Audience demographics, legal entity, USP, target keywords, numeric KPIs, production stack/hosting and performance thresholds remain TBD unless explicitly approved elsewhere.
+- **Input completeness:** Not complete. Formal industry classification, operating/revenue model, logo, detailed audience data, keyword/search-intent evidence, business KPIs, approved scale, final navigation/homepage decisions, production technology/infrastructure and non-CWV performance targets remain open or partial.
+- **No silent inference:** Audience demographics, legal entity, USP, target keywords, numeric KPIs, production stack/hosting and non-CWV performance thresholds remain TBD unless explicitly approved elsewhere; Core Web Vitals thresholds are approved under D-13 / DEC-022.
 - **Core Preview boundary:** An open input does not automatically authorize adding a new feature or expanding P0. Keep unresolved values visible and use only approved factual content.
 - **Approval gate:** This matrix is a traceability baseline, not final Project Input approval or Blueprint approval. Phase 0 remains open until critical inputs, deliverables and evidence are accepted by the Project Owner.
 

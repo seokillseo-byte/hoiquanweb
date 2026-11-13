@@ -187,7 +187,7 @@ The thresholds below apply to Core Web Vitals only. Lighthouse score, TTFB, asse
 |---|---|---|---|
 | LCP | Field p75 separately for mobile and desktop; lab result reported separately | ≤ 2.5 seconds | Owner-approved (D-13 / DEC-022) |
 | INP | Field p75 separately for mobile and desktop | ≤ 200 milliseconds | Owner-approved (D-13 / DEC-022) |
-| CLS | Field p75 separately for mobile and desktop; lab result reported separately | ≤ 0.1 | Owner-approved (D-13) |
+| CLS | Field p75 separately for mobile and desktop; lab result reported separately | ≤ 0.1 | Owner-approved (D-13 / DEC-022) |
 | Lighthouse Performance — mobile | Median of at least 3 equivalent runs per selected route | TBD | Owner decision required |
 | Lighthouse Performance — desktop | Median of at least 3 equivalent runs per selected route | TBD | Owner decision required |
 | TTFB | Agreed test region/profile; field and lab separated | TBD | Owner decision required |

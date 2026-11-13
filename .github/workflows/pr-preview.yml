@@ -42,7 +42,6 @@ jobs:
           mkdir -p _preview
           cp -R public-site/dist/. _preview/
           cp admin.html _preview/
-          cp portal.html _preview/
           mkdir -p _preview/platform
           if [ -d dist ]; then cp -R dist/. _preview/platform/; fi
           cat > _preview/PREVIEW-README.txt <<'EOF'

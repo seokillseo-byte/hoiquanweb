@@ -121,7 +121,7 @@ Các module này có thể tồn tại trong roadmap dài hạn của repository
 | Contact / Request a quote | Form tư vấn/báo giá, consent và thông tin liên hệ xác minh | VI/EN |
 | Legal / Policy | Điều khoản, quyền riêng tư và các chính sách cần thiết | VI/EN |
 
-Không chốt số lượng URL từ con số 40 trong README/Roadmap cho đến khi có route inventory và sitemap được kiểm chứng.
+Build generator scripts/build_public_site.mjs khai báo 40 localized page routes theo cấu trúc dữ liệu hiện tại (7 service pairs, 3 project pairs và các page groups VI/EN). Tuy nhiên, output build chưa được thực thi/xác minh trực tiếp trong lần rà soát này. File sitemap.xml ở repository root chỉ có homepage; Pages workflow tạo website từ public-site/dist và sitemap được sinh trong build output. Cần xác minh artifact generated và CI validation trước khi coi sitemap đã được nghiệm thu.
 
 ## 6. Blueprint deliverable register
 
@@ -133,7 +133,7 @@ Blueprint Standard yêu cầu đủ 19 phần. Trạng thái dưới đây phả
 | 02 | Business Blueprint | In progress | Primary conversion và service groups đã chốt |
 | 03 | Brand Blueprint | Blocked / partial | Thiếu brand identity và USP |
 | 04 | Competitor Blueprint | Not started | Chưa có đối thủ/benchmark được xác nhận |
-| 05 | SEO Blueprint | In progress | Có SEO principles; cần route/keyword map và xác minh sitemap |
+| 05 | SEO Blueprint | In progress | Có SEO principles; cần keyword map và xác minh sitemap generated từ build output |
 | 06 | Content Blueprint | In progress | Có content groups; thiếu proof, pricing và nội dung doanh nghiệp |
 | 07 | UX Blueprint | In progress | Conversion goal đã chốt; persona chưa chốt |
 | 08 | UI Blueprint | Partial | Repo có design tokens; chưa xác nhận brand identity chính thức |

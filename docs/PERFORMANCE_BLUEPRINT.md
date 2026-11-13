@@ -1,6 +1,6 @@
 # HOIQUANWEB — Performance Blueprint
 
-**Status:** Phase 0 planning deliverable — draft; Core Web Vitals thresholds owner-approved under D-13; measurement evidence pending  
+**Status:** Phase 0 planning deliverable — draft; Core Web Vitals thresholds owner-approved under D-13 (Master Blueprint DEC-022); measurement evidence pending  
 **Blueprint module:** 12 — Performance  
 **Scope:** Core Preview P0 public bilingual website and its acceptance dependencies  
 **Branch:** `docs/phase-0-master-blueprint-risk-review`  
@@ -179,13 +179,13 @@ Monitoring provider, data retention, alert thresholds and operational ownership 
 
 ## 10. Project-specific acceptance thresholds — owner-approved Core Web Vitals
 
-**Owner decision D-13 — Approved (2026-11-13):** Core Web Vitals thresholds are approved as LCP ≤ 2.5 seconds, INP ≤ 200 milliseconds and CLS ≤ 0.1. Evaluate field data at p75 separately for mobile and desktop where sufficient data is available. Lab results (including Lighthouse) must be reported separately and must not be represented as field p75. The thresholds are acceptance criteria, not a claim that the current site meets them.
+**Owner decision D-13 — Approved (2026-11-13; mapped as DEC-022 in Master Blueprint):** Core Web Vitals thresholds are approved as LCP ≤ 2.5 seconds, INP ≤ 200 milliseconds and CLS ≤ 0.1. Evaluate field data at p75 separately for mobile and desktop where sufficient data is available. Lab results (including Lighthouse) must be reported separately and must not be represented as field p75. The thresholds are acceptance criteria, not a claim that the current site meets them.
 
 The thresholds below apply to Core Web Vitals only. Lighthouse score, TTFB, asset budgets, API latency and load/concurrency targets remain TBD until separately approved.
 
 | Acceptance item | Proposed measurement basis | Project target | Status |
 |---|---|---|---|
-| LCP | Field p75 separately for mobile and desktop; lab result reported separately | ≤ 2.5 seconds | Owner-approved (D-13) |
+| LCP | Field p75 separately for mobile and desktop; lab result reported separately | ≤ 2.5 seconds | Owner-approved (D-13 / DEC-022) |
 | INP | Field p75 separately for mobile and desktop | ≤ 200 milliseconds | Owner-approved (D-13) |
 | CLS | Field p75 separately for mobile and desktop; lab result reported separately | ≤ 0.1 | Owner-approved (D-13) |
 | Lighthouse Performance — mobile | Median of at least 3 equivalent runs per selected route | TBD | Owner decision required |
@@ -203,7 +203,7 @@ For a route/device segment without sufficient field data, record the field resul
 |---|---|---|---|
 | PERF-DEP-01 | Correct assembled Preview homepage and route integrity | Blocked by XC-10/R-017 | Fix packaging and verify final artifact before baseline |
 | PERF-DEP-02 | Accessible Preview URL and stable environment | TBD | Record exact URL, commit and hosting profile |
-| PERF-DEP-03 | Core Web Vitals thresholds | Approved under D-13; other numeric targets remain TBD | Apply approved thresholds and obtain separate decisions for other metrics |
+| PERF-DEP-03 | Core Web Vitals thresholds | Approved under D-13 / DEC-022; other numeric targets remain TBD | Apply approved thresholds and obtain separate decisions for other metrics |
 | PERF-DEP-04 | Production host/CDN/cache configuration | TBD | Do not assume provider or settings |
 | PERF-DEP-05 | Inquiry API/runtime | Not accepted/configured | API testing remains conditional |
 | PERF-DEP-06 | Field data / RUM availability | Not established | Report unavailable rather than fabricate |
@@ -231,7 +231,7 @@ The Performance Blueprint is ready for owner review when:
 - [x] Metrics and lab-versus-field distinctions are defined.
 - [x] Test protocol, route/device matrix, optimization strategy and evidence requirements are documented.
 - [x] Unknown infrastructure/runtime choices remain explicitly TBD.
-- [x] Project Owner approves Core Web Vitals thresholds (LCP ≤ 2.5s, INP ≤ 200ms, CLS ≤ 0.1) and p75 mobile/desktop evaluation under D-13.
+- [x] Project Owner approves Core Web Vitals thresholds (LCP ≤ 2.5s, INP ≤ 200ms, CLS ≤ 0.1) and p75 mobile/desktop evaluation under D-13 / DEC-022.
 - [ ] Other numeric performance targets (Lighthouse, TTFB, asset budgets, API and load) are separately approved if needed.
 - [ ] A corrected, accessible assembled Preview is measured and a reproducible baseline is attached.
 - [ ] Applicable cache/CDN and API checks are completed against configured environments.

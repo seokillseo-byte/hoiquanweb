@@ -36,6 +36,12 @@ test("only published, explicitly approved, complete articles become indexable ro
   assert.equal(isIndexableArticle(post("ok", "valid-slug", "vi")), true);
 });
 
+test("reserved article slugs never receive clean routes", () => {
+  const reserved = post("reserved-post", "post", "vi");
+  assert.equal(isIndexableArticle(reserved), false);
+  assert.deepEqual(buildPublicArticleRoutes([reserved]), []);
+});
+
 test("genuine translation pairs receive reciprocal hreflang and Vietnamese x-default", () => {
   const routes = buildPublicArticleRoutes([
     post("vi-1", "seo-co-ban", "vi", { translation_group_id: "article-1" }),

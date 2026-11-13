@@ -45,13 +45,13 @@ The questions below are intentionally limited. If a fact is not known or cannot 
 
 The lead-generation conversion goal is confirmed, but it does not by itself determine whether the business model is B2B, B2C or hybrid.
 
-**Owner decision — Approved (2026-11-13):** Both B2B and B2C.
+**Owner decision — Approved (2026-11-13):** HOIQUANWEB serves both B2C and B2B, with the following rollout and communication priority:
+1. **B2C first:** prioritize individual customers in the initial positioning, homepage messaging, content hierarchy and UX journey.
+2. **B2B next:** expand the messaging and journeys for business/organizational buyers after the B2C-first work is established.
 
-This confirms that HOIQUANWEB serves both business/organizational buyers and individual customers. It does **not** establish which segment is the priority, nor does it define specific industries, company sizes, individual demographics or buyer personas.
+This is a sequencing decision, not an exclusion of B2B from the business scope or public website. Both segments remain valid customers.
 
-**Still TBD:** Identify the primary audience/priority segment in one sentence. Until then, messaging and UX must remain inclusive of both B2B and B2C without ranking either segment.
-
-**Age groups:** Not yet specified. Do not infer age demographics; organizational buyers should be described by role/organization rather than personal age.
+**Still TBD:** Specific B2C personas, needs, use cases, age groups, purchasing triggers and target industries; and the detailed B2B buyer roles/company sizes. Do not invent demographic or market facts. B2B-specific expansion must not be treated as authorization to widen Core Preview P0.
 
 ### D-03 — USP and claims that may appear publicly
 
@@ -133,7 +133,7 @@ These are required or recommended fields in the Project Input Template, but they
 Reply in normal text using the decision IDs; short answers are sufficient:
 
 - D-01: Approve / edit / replace.
-- D-02: **Approved — B2B + B2C** (2026-11-13); priority audience/segment remains TBD.
+- D-02: **Approved — B2C first, then B2B** (2026-11-13); both remain in scope. Detailed personas and demographics remain TBD.
 - D-03: No USP claim for Preview / provide claim + evidence.
 - D-04: Interim blue/white / provide brand guideline / separate brand project.
 - D-05: Form only / form + email / other / no lead submission; approved contact/privacy details to follow.

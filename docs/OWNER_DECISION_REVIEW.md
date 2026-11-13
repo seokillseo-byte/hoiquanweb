@@ -84,16 +84,18 @@ Current source code contains a blue/navy/cyan visual palette. These are code-obs
 
 The form must not claim that a lead has been received unless the configured backend confirms acceptance.
 
-**Please confirm the intended primary inquiry channel:**
-- [ ] Website form only (backend endpoint must be configured and tested).
-- [ ] Website form plus business email notification.
-- [ ] Website form plus another channel (specify: ______).
-- [ ] Do not activate lead submission in Preview; show approved contact information only.
+**Owner decision — Approved (2026-11-13):** Use the website consultation/quotation form with business email notification as the primary inquiry channel.
 
-**Required owner-provided information before real lead collection:**
-- Business contact email or other approved contact channel.
-- Approved privacy notice and consent wording describing what data is collected and why.
-- Confirmation of who receives and handles inquiries.
+**Approval boundary:** This approves the channel and intended notification flow only. It does not approve or supply the destination email address, email provider/sender configuration, privacy notice, consent wording, data-retention policy, or the person/team responsible for handling inquiries.
+
+**Still required before live lead collection:**
+- Owner-approved destination business email address (do not put credentials or API keys in project documents).
+- Confirmed inquiry recipient/handling owner.
+- Owner-approved privacy notice URL/text and consent wording, including data collected, purpose and retention/handling explanation.
+- Configured and tested public inquiry API plus email delivery on the intended environment.
+- End-to-end evidence for API acceptance, notification delivery, failure/retry behavior and duplicate-submit prevention.
+
+Until these are available, F-009 remains blocked for live end-to-end acceptance. The Preview may show the form as an inactive/clearly non-submitting shell only if its state is explicit; it must not claim an inquiry was received.
 
 Do not send credentials, API keys or other secrets in this document or in chat.
 
@@ -129,6 +131,6 @@ Reply in normal text using the decision IDs; short answers are sufficient:
 - D-02: **Approved — B2C first, then B2B** (2026-11-13); both remain in scope. Detailed personas and demographics remain TBD.
 - D-03: No public USP/comparative claim for Core Preview; use factual service descriptions only (owner-approved 2026-11-13).
 - D-04: Interim blue/white system and five provisional tokens approved for Core Preview only (2026-11-13); official identity remains TBD.
-- D-05: Form only / form + email / other / no lead submission; approved contact/privacy details to follow.
+- D-05: Website form + business email notification approved (2026-11-13); destination email, recipient ownership, privacy/consent wording, backend/email configuration and end-to-end acceptance remain outstanding.
 
 Partial answers are acceptable. Any unanswered item remains **TBD** and is not treated as approved.

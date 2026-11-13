@@ -26,6 +26,10 @@ assert.ok(await exists(join(root, "en", "index.html")), "English homepage must e
 assert.ok(await exists(join(root, "assets", "css", "site.css")), "Generated CSS must exist");
 assert.ok(await exists(join(root, "assets", "js", "site.js")), "Generated JavaScript must exist");
 assert.ok(await exists(join(root, "portal.html")), "Customer portal page must be generated");
+assert.ok(await exists(join(root, "privacy.html")), "Standalone privacy notice must be generated");
+const privacyNotice = await readFile(join(root, "privacy.html"), "utf8");
+assert.match(privacyNotice, /name="robots" content="noindex,follow"/);
+assert.ok(privacyNotice.includes("không thay thế chính sách quyền riêng tư chính thức") || privacyNotice.includes("chưa được phê duyệt"), "Privacy notice must be clearly temporary and not an approved legal policy");
 
 for (const path of ["blog/index.html", "en/blog/index.html", "blog/post/index.html", "en/blog/post/index.html"]) {
   assert.ok(await exists(join(root, path)), "Bilingual blog route must be generated: " + path);
@@ -36,6 +40,29 @@ const files = (await walk(root)).filter(file => {
   return (name === "index.html" || name.endsWith("/index.html")) && !name.startsWith("platform/");
 });
 assert.ok(files.length >= 30, "Expected a complete bilingual set of public pages");
+const homeHtml = await readFile(join(root, "index.html"), "utf8");
+assert.ok(!homeHtml.includes("Your All-in-One Technology Partner") && !homeHtml.includes("Your technology partner"), "Public home must not publish an unapproved slogan");
+assert.ok(!homeHtml.includes("DỰ ÁN ĐÃ THỰC HIỆN") && !homeHtml.includes("Selected work") && !homeHtml.includes("process-layout"), "Public home must not publish unapproved project proof or an unconfirmed process");
+for (const reservedLink of ["/du-an/", "/en/projects/", "/quyen-rieng-tu/", "/en/privacy/"]) assert.ok(!homeHtml.includes(reservedLink), "Public home must not link to reserved routes: " + reservedLink);
+assert.ok(homeHtml.includes('data-open-label=') && homeHtml.includes('data-close-label='), "Mobile navigation must expose localized open/close labels");
+const siteJs = await readFile(join(root, "assets", "js", "site.js"), "utf8");
+const siteCss = await readFile(join(root, "assets", "css", "site.css"), "utf8");
+assert.ok(siteJs.includes('event.key==="Escape"') && siteJs.includes("menuButton.focus()"), "Mobile navigation must close on Escape and return focus");
+assert.ok(siteCss.includes(":focus-visible") && siteCss.includes(".form-notice"), "Public UI must provide visible keyboard focus and a styled local-only form notice");
+const contactHtml = await readFile(join(root, "lien-he", "index.html"), "utf8");
+let approvedPolicyUrl = "";
+try { const policy = new URL(process.env.HQ_PRIVACY_POLICY_URL || ""); if (policy.protocol === "https:") approvedPolicyUrl = policy.href; } catch {}
+let apiBaseHttps = false;
+try { apiBaseHttps = new URL(process.env.HQ_API_BASE || "").protocol === "https:"; } catch {}
+const expectedLeadEnabled = Boolean(apiBaseHttps && process.env.HQ_PRIVACY_POLICY_APPROVED === "true" && approvedPolicyUrl);
+assert.ok(contactHtml.includes('data-lead-mode="' + (expectedLeadEnabled ? "online" : "download") + '"'), "Contact form mode must match the HTTPS API and privacy approval gates");
+if (expectedLeadEnabled) assert.ok(contactHtml.includes('name="consent"') && contactHtml.includes(approvedPolicyUrl), "Online intake must link to the approved policy and require visitor consent");
+else assert.ok(contactHtml.includes("form-notice") && !contactHtml.includes('name="consent"'), "Download-only mode must not request online data-processing consent");
+const portalPublicEnabled = Boolean(apiBaseHttps && process.env.HQ_PORTAL_PUBLIC_ENABLED === "true");
+const portalHref = basePath + "/portal.html";
+assert.equal(homeHtml.includes('href="' + portalHref + '"'), portalPublicEnabled, "Customer portal navigation must match its explicit visibility gate");
+const reservedRouteFiles = files.filter(file => /\/(?:du-an|projects|quyen-rieng-tu|privacy)\//.test(relative(root, file).split(sep).join("/")));
+assert.equal(reservedRouteFiles.length, 0, "Unapproved project and localized privacy routes must not be generated");
 
 const errors = [];
 const canonicalPaths = new Set();

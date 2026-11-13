@@ -39,10 +39,17 @@ jobs:
         env:
           HQ_API_BASE: ${{ vars.HQ_API_BASE }}
           HQ_BASE_PATH: ${{ vars.HQ_BASE_PATH || '/hoiquanweb' }}
+          HQ_PRIVACY_POLICY_APPROVED: ${{ vars.HQ_PRIVACY_POLICY_APPROVED }}
+          HQ_PRIVACY_POLICY_URL: ${{ vars.HQ_PRIVACY_POLICY_URL }}
+          HQ_PORTAL_PUBLIC_ENABLED: ${{ vars.HQ_PORTAL_PUBLIC_ENABLED }}
         run: node scripts/build_public_site.mjs
       - name: Validate generated public website
         env:
           HQ_BASE_PATH: ${{ vars.HQ_BASE_PATH || '/hoiquanweb' }}
+          HQ_API_BASE: ${{ vars.HQ_API_BASE }}
+          HQ_PRIVACY_POLICY_APPROVED: ${{ vars.HQ_PRIVACY_POLICY_APPROVED }}
+          HQ_PRIVACY_POLICY_URL: ${{ vars.HQ_PRIVACY_POLICY_URL }}
+          HQ_PORTAL_PUBLIC_ENABLED: ${{ vars.HQ_PORTAL_PUBLIC_ENABLED }}
         run: node scripts/validate_public_site.mjs
       - name: Assemble public website files
         run: |

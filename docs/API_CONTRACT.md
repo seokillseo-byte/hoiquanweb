@@ -211,3 +211,15 @@ Dashboard values are calculated from D1 on each request; they are not hard-coded
 
 
 Lead submission returns notification state queued when the durable email outbox is available, or not_configured when provider credentials/sender settings are absent. This field does not claim that an email has already been delivered; delivery status is tracked by the server-side outbox.
+
+## Public inquiry form activation gate
+
+The public inquiry form defaults to a local brief download. It must not send visitor data to the Worker unless all of the following are true at static-build time:
+
+- `HQ_API_BASE` is a valid HTTPS origin.
+- `HQ_PRIVACY_POLICY_APPROVED` is exactly `true`.
+- `HQ_PRIVACY_POLICY_URL` is a valid HTTPS URL to the Owner-approved privacy policy.
+
+When any condition is missing, the generated form omits the online consent checkbox, shows a local-only notice and does not call `POST /api/leads`. The standalone `privacy.html` is a noindex temporary information notice, not the approved policy and not a substitute for legal review. Do not enable online intake until the Owner has confirmed the legal identity, data controller, processing purposes, retention period, processors and privacy contact.
+
+The customer portal entry is exposed in public navigation only when `HQ_API_BASE` is HTTPS and `HQ_PORTAL_PUBLIC_ENABLED=true`. This visibility flag does not itself prove staging or production authentication acceptance.

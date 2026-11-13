@@ -169,3 +169,14 @@ The clean article-route implementation is now prepared in the feature branch `fe
 - Unit tests cover article eligibility, clean slugs, language pairing, x-default and safe HTML/URL rendering. The generated-site validator checks article initial HTML and sitemap consistency when article routes exist.
 
 **Still blocked on runtime evidence:** `HQ_API_BASE` must be configured in the GitHub Pages environment and a dedicated Cloudflare Worker/D1 staging environment must be deployed. CI with no API base can validate the static fallback and unit tests, but it cannot prove that real CMS articles are prerendered from D1. No production deployment or PR merge is authorized by this implementation task.
+
+## R-017 public UI, content-trust and consent gates — 2026-11-13
+
+- The public generator now emits 30 active localized static routes (15 VI/EN pairs); project listing/detail routes and localized privacy-policy routes are reserved and omitted until owner approval.
+- The standalone `privacy.html` notice is copied separately, remains noindex and is not linked or presented as an approved legal policy.
+- The homepage omits the unapproved slogan, project showcase and unconfirmed process section. Public service copy is factual and limited to the seven service groups.
+- The contact form is generated in download-only mode by default. Online intake is enabled only when the API base is HTTPS, `HQ_PRIVACY_POLICY_APPROVED=true`, and `HQ_PRIVACY_POLICY_URL` is a valid HTTPS URL. The visitor must also check the consent box.
+- The customer portal is linked only when the API base is HTTPS and `HQ_PORTAL_PUBLIC_ENABLED=true`.
+- The validator checks reserved routes are absent, the privacy notice is noindex, the homepage has no unapproved project/process sections, and the contact mode matches the build-time approval gates.
+
+**Owner-controlled blockers:** final privacy/legal identity, data controller, processing purposes, retention, processors and privacy contact; verified case-study facts and publication rights; staging Worker/D1 runtime acceptance; live email sender and delivery; visual/browser/mobile and accessibility acceptance.

@@ -4,18 +4,18 @@
 **Source of truth:** `scripts/build_public_site.mjs`  
 **Domain:** `https://hoiquanweb.io.vn`  
 **Languages:** Vietnamese (`vi`) and English (`en`)  
-**Inventory:** 20 language pairs / 40 generated static HTML routes
+**Inventory:** 15 language pairs / 30 generated static HTML routes. Project and localized privacy-policy routes are reserved and are not generated; a standalone noindex privacy notice is copied separately.
 
 ## 1. Scope and evidence
 
-This inventory is derived from the current route declarations in `scripts/build_public_site.mjs`. It describes what the generator currently emits; it does not imply that every page has approved final content or is ready for search indexing.
+This inventory is derived from the current route declarations in `scripts/build_public_site.mjs`. It describes active generated routes; reserved project and localized privacy routes are not generated until their owner-approval gates pass.
 
 Verified generator behavior:
-- Creates 40 localized HTML routes from 20 VI/EN page pairs.
+- Creates 30 active localized HTML routes from 15 VI/EN page pairs. Project and localized privacy-policy routes are reserved and omitted pending owner approval.
 - Writes one HTML file for every route and generates `public-site/dist/sitemap.xml` from the same `pages` array.
-- Writes `<meta name="robots" content="index,follow,max-image-preview:large">` on every generated route.
+- Applies indexability per route: blog listing and generic article shells are noindex; eligible CMS article pages are prerendered and indexable only after the explicit SEO readiness gate.
 - Writes canonical, VI/EN hreflang and x-default links for every generated route.
-- Adds all 40 generated routes to the sitemap, including the generic blog-detail shells at `/blog/post/` and `/en/blog/post/`.
+- Adds only explicitly indexable public routes and eligible prerendered CMS articles to the sitemap. Generic blog shells, project routes, privacy notice, admin and customer portal are excluded.
 - Blog detail currently loads the article by a query-string slug in browser JavaScript and changes metadata after the page loads. It does not generate one static route per published article.
 
 **Important distinction:** the current implementation's index/follow and sitemap behavior is observed code, not an approved SEO policy. The recommended policy below is a planning proposal and requires implementation plus QA.
@@ -26,8 +26,8 @@ Verified generator behavior:
 
 | # | Page group | Vietnamese URL | English URL | Purpose | Primary CTA / next action | Topic seed (not validated) | Proposed indexation |
 |---:|---|---|---|---|---|---|---|
-| 01 | Home | `/` | `/en/` | Explain the brand, seven service groups and project approach | Contact / discuss a project | technology partner; digital solutions | Index after business messaging and claims are approved |
-| 02 | About | `/gioi-thieu/` | `/en/about/` | Explain company approach, working principles and scope clarity | Contact / discuss a project | about HoiQuanWeb; technology company | Index after legal/business identity and factual copy are confirmed |
+| 01 | Home | `/` | `/en/` | Introduce the seven service groups using factual service wording | Contact / discuss a service | technology services; digital solutions | Index factual copy; no unapproved slogan, portfolio proof or delivery claims |
+| 02 | About | `/gioi-thieu/` | `/en/about/` | Explain the service approach without inventing company history, credentials or guarantees | Contact / discuss a service | about HoiQuanWeb; technology services | Index factual copy only; legal identity and company credentials remain owner-controlled |
 | 03 | Services overview | `/dich-vu/` | `/en/services/` | Present the seven approved service groups | Open a relevant service page; then inquire | technology services; digital services | Index after all seven service summaries are reviewed |
 | 04 | Website service | `/dich-vu/thiet-ke-website/` | `/en/services/website-design/` | Describe website design scope and deliverables | Discuss website requirements | website design; business website | Index after unique content and capability claims are approved |
 | 05 | Software service | `/dich-vu/phat-trien-phan-mem/` | `/en/services/software-development/` | Describe custom software and workflow solutions | Discuss software requirements | custom software development | Index after unique content and capability claims are approved |
@@ -36,17 +36,17 @@ Verified generator behavior:
 | 08 | SEO service | `/dich-vu/dich-vu-seo-website/` | `/en/services/website-seo/` | Describe SEO audit, technical SEO and content strategy | Discuss SEO requirements | website SEO; technical SEO | Index after service scope and evidence-backed claims are reviewed |
 | 09 | AI & Automation service | `/dich-vu/ai-va-tu-dong-hoa/` | `/en/services/ai-automation/` | Describe AI assistant and workflow automation services | Discuss automation requirements | AI automation; workflow automation | Index after scope, safeguards and capability claims are confirmed |
 | 10 | Other technology service | `/dich-vu/giai-phap-cong-nghe/` | `/en/services/technology-solutions/` | Provide an inquiry route for other custom technology needs | Describe a custom requirement | technology consulting; custom technology solutions | Index after the service scope is clarified and made distinct |
-| 11 | Projects listing | `/du-an/` | `/en/projects/` | List selected products/projects | Open project details | software projects; digital products | Index only with reviewed, publishable project entries |
+| 11 | Projects listing (reserved) | `/du-an/` | `/en/projects/` | Reserved for owner-approved case studies | Open approved project details | software projects; digital products | **Not generated, linked or indexed** until product status, evidence and publication rights are approved |
 | 12 | Template catalog | `/templates/` | `/en/templates/` | Search and filter published website templates | View catalog item / inquire | website templates; WordPress templates | Conditional: index only when the catalog has useful published inventory |
 | 13 | Blog listing | `/blog/` | `/en/blog/` | Search and filter published knowledge articles | Open an article | website, software, SEO and AI knowledge | Conditional: index when useful published articles are available |
 | 14 | Generic blog detail shell | `/blog/post/` | `/en/blog/post/` | Legacy client-side fallback for articles not yet eligible for prerendering | Return to blog / read loaded article | No independent topic; article-specific topic belongs to each post URL | **Noindex and exclude from sitemap** |
 | 14A | Published article detail (dynamic) | `/blog/{slug}/` | `/en/blog/{slug}/` | Serve one approved published CMS article with its body and SEO metadata in initial HTML | Read article / return to blog | Article-specific topic and search intent defined by the approved CMS post | Index only when `seo.indexable=true`, locale, unique SEO title/description and body readiness pass; genuine VI/EN pairs only receive reciprocal hreflang |
-| 15 | FunLink project | `/du-an/funlink/` | `/en/projects/funlink/` | Describe the FunLink URL-shortening SaaS project | Visit product / discuss a project | FunLink; URL shortener SaaS | Conditional on owner approval of description, product status and publication rights |
-| 16 | Entity Manager project | `/du-an/entity-manager/` | `/en/projects/entity-manager/` | Describe the Entity Manager desktop software | Discuss a similar software project | entity management software | Conditional on owner approval of description, product status and publication rights |
-| 17 | Social Media Automation project | `/du-an/social-media-automation/` | `/en/projects/social-media-automation/` | Describe social-platform workflow automation software | Discuss an automation project | social media automation software | Conditional on owner approval of description, capability and publication rights |
-| 18 | FAQ | `/faq/` | `/en/faq/` | Answer common service, process and inquiry questions | Contact / ask about a project | technology services FAQ; project inquiry | Index after answers are verified against actual operating policies |
-| 19 | Contact / inquiry | `/lien-he/` | `/en/contact/` | Collect consultation and quotation requests with consent | Submit inquiry | contact technology company; request a software quote | Index after API handling, privacy notice and contact ownership are verified |
-| 20 | Privacy | `/quyen-rieng-tu/` | `/en/privacy/` | Explain form-data handling and privacy information | Read policy; contact for questions | HoiQuanWeb privacy policy | Index after legal identity, retention and data-contact details are finalized |
+| 15 | FunLink project (reserved) | `/du-an/funlink/` | `/en/projects/funlink/` | Reserved for a verified product case study | Visit product / discuss a project | FunLink; URL shortener SaaS | **Not generated or linked** until product status, description and publication rights are approved |
+| 16 | Entity Manager project (reserved) | `/du-an/entity-manager/` | `/en/projects/entity-manager/` | Reserved for a verified product case study | Discuss a similar software project | entity management software | **Not generated or linked** until product status, description and publication rights are approved |
+| 17 | Social Media Automation project (reserved) | `/du-an/social-media-automation/` | `/en/projects/social-media-automation/` | Reserved for a verified product case study | Discuss an automation project | social media automation software | **Not generated or linked** until product capability and publication rights are approved |
+| 18 | FAQ | `/faq/` | `/en/faq/` | Answer verified service-group and inquiry-preparation questions | Contact / ask about a service | technology services FAQ; project inquiry | Index factual answers only; omit unconfirmed process, pricing and market claims |
+| 19 | Contact / inquiry | `/lien-he/` | `/en/contact/` | Provide an inquiry form; default mode downloads a local brief without server transmission | Download brief; submit only when approved online intake is enabled | contact technology company; request a software quote | Online submission requires HTTPS API base, explicit policy approval, approved HTTPS policy URL and consent |
+| 20 | Privacy information notice (standalone) | `/privacy.html` | Not localized | Explain that the notice is temporary and online intake is disabled by default | Read notice | HoiQuanWeb privacy information | **Noindex, not linked and not an approved legal policy**; legal identity, purposes, retention, processors and privacy contact still require owner approval |
 
 ## 3. Language, canonical and hreflang rules
 
@@ -69,13 +69,13 @@ The generator currently emits canonical and VI/EN hreflang links on every route.
 ## 4. Sitemap and robots policy
 
 ### Current behavior verified from source
-- All 40 generated routes are included in the generated sitemap.
-- All generated HTML pages currently receive `index,follow`.
+- Only explicitly indexable public routes and eligible CMS article routes are included in the sitemap.
+- Blog listing/generic article shells emit `noindex,follow`; the standalone privacy notice is `noindex,follow`; project/legal routes are not generated.
 - The generated `robots.txt` allows crawling generally and disallows the admin path.
 - The GitHub Pages workflow deploys `public-site/dist`, including its generated sitemap; the repository-root `sitemap.xml` is not the sitemap deployed by that workflow.
-- Validation run 43389153063 (commit `4cb78e548e4077722dd1a2a3a107c6ca3003d293`) passed the current validator and logged `Generated 40 localized pages` and `Public site validation passed: 40 pages...`.
+- Historical validation run 43389153063 recorded the former 40-route implementation. It is not evidence for the current 30-route build.
 - Isolated preview artifact run 43389153166 was inspected directly: 39 generated localized route HTML files were available in the assembled artifact; all 39 contained `hreflang="vi"`, `hreflang="en"` and `hreflang="x-default"`, with `x-default` exactly matching the Vietnamese alternate and no pair-target mismatch. The Vietnamese root route was not inspectable in that artifact because preview assembly overlaid `dist/index.html` over the generated public homepage. The root file in the artifact is the app shell with `noindex,nofollow` and no canonical/hreflang. See XC-10; this is not proof of the production Pages output, which copies only `public-site/dist`.
-- The generated sitemap in the same artifact contains both `/blog/post/` and `/en/blog/post/`. The current validator requires every generated HTML route to appear in the sitemap and does not enforce an exclusion/noindex policy for the generic blog-detail shell; R-016 / XC-03 therefore remain open.
+- Current validation requires generic blog shells to remain noindex and absent from the sitemap; prerendered article routes are validated separately.
 
 ### Required target policy
 - Include only canonical, public, useful and intentionally indexable URLs.
@@ -87,34 +87,33 @@ The generator currently emits canonical and VI/EN hreflang links on every route.
 
 ## 5. Acceptance criteria
 
-- [x] Source inventory currently contains 40 localized routes (20 VI/EN pairs).
+- [x] Active source inventory contains 30 localized routes (15 VI/EN pairs); project and localized privacy routes are reserved.
 - [x] Current generator creates canonical and language alternate links.
 - [x] Current generator creates sitemap entries from the same route array.
 - [ ] Every route has final, owner-approved title, description, page copy and CTA.
 - [ ] Every VI/EN pair is a genuine equivalent translation with reciprocal `hreflang="vi"` and `hreflang="en"`; `hreflang="x-default"` points to the corresponding Vietnamese URL as approved by DEC-021. Artifact check passed for 39 available route files; verify the root homepage in the correctly assembled public-site output.
-- [ ] Indexation policy is implemented per route type; the generic blog-detail shell emits `noindex,follow` in initial HTML and is absent from sitemap; validator checks both conditions.
+- [x] Indexation policy is implemented per route type; generic blog shells emit `noindex,follow` and are absent from the sitemap; eligible clean article routes are validated separately.
 - [x] Generator supports stable clean-slug routes and article-specific initial HTML for published CMS posts that pass the explicit SEO readiness gate.
 - [ ] Configure `HQ_API_BASE` in the production Pages environment and verify real published articles are generated, refreshed and removed from the sitemap on unpublish.
 - [ ] Sitemap contains every eligible published canonical URL exactly once and no ineligible route.
 - [ ] Direct navigation, refresh, canonical, hreflang, redirects, HTTP status and 404 are tested on an accessible Preview.
-- [ ] Template/project/blog listing pages are not indexed while empty, thin or populated only with unapproved content.
-- [ ] Contact form success/error state reflects actual API acceptance; privacy and consent wording are approved.
+- [x] Project routes are not generated or linked until case-study evidence and publication rights are approved; blog listing shells remain noindex.
+- [x] Contact form defaults to local brief download and explicitly states that data is not sent to a server; online intake remains gated on approved HTTPS policy and API configuration.
 - [ ] No fabricated price, testimonial, customer logo, case-study metric, legal claim or unsupported capability is published.
 
 ## 6. Article route implementation and acceptance
 
-The current generator adds the two generic `blog-post` shell routes to the same `pages` collection used for both HTML generation and sitemap generation. The validator then asserts sitemap URL count equals all generated HTML routes. This coupling must be removed in the implementation plan: HTML route generation and sitemap eligibility must be evaluated independently.
+The original indexation defect was addressed by XC-03 and the clean-article route implementation in R-016. The following behavior is now present in the implementation branch and is covered by unit/end-to-end build validation:
 
-Required target behavior:
-- Keep the generic `/blog/post/` and `/en/blog/post/` shells available only if the existing browser-side article flow still needs them; emit `noindex,follow` in their initial HTML and do not include them in the sitemap.
-- Keep the blog listing routes eligible only when their content is useful, approved and not empty/thin; do not infer eligibility solely from route existence.
-- The generator fetches published posts only, then fetches full detail for posts explicitly marked `seo.indexable=true` and emits stable `/blog/{slug}/` or `/en/blog/{slug}/` HTML documents.
-- Each generated article has article-specific initial HTML, title, description, self-canonical, language-appropriate hreflang, Article structured data and sitemap entry.
-- The generic client-side shells remain noindex and excluded. Articles that fail the readiness gate are not emitted as indexable routes and remain accessible only through the legacy fallback flow.
-- Change sitemap validation to assert that every sitemap URL is a unique canonical, public and indexable route, while explicitly permitting generated non-indexable shells to be absent.
-- Unit tests cover readiness, clean slug generation, translation pairing, Vietnamese x-default, and safe server rendering. The public-site validator checks initial article HTML and sitemap consistency whenever article routes are generated.
-- Keep robots.txt crawl rules separate from meta robots; do not block the shell in robots.txt as a substitute for noindex.
+- Generic `/blog/post/` and `/en/blog/post/` fallback shells remain available for legacy browser-side navigation, emit `noindex,follow` in initial HTML and are excluded from the sitemap.
+- Blog listing routes remain noindex until useful published inventory and server-rendered listing content are available.
+- The static generator fetches published posts, then fetches full detail for posts explicitly marked `seo.indexable=true` and emits clean `/blog/{slug}/` or `/en/blog/{slug}/` HTML documents.
+- Each eligible article has article-specific initial HTML, title, description, self-canonical, language alternates, Article structured data and sitemap entry.
+- Translation alternates are emitted only for a genuine one-to-one VI/EN translation group; Vietnamese is x-default.
+- The validator checks unique canonical sitemap URLs, initial article body and structured data, and permits generated non-indexable shells to remain outside the sitemap.
 
+**Remaining runtime acceptance:** configure `HQ_API_BASE` for the Pages build and verify published articles are generated, refreshed and removed from the sitemap on unpublish against the dedicated Worker/D1 staging environment. Static tests without that environment do not prove live CMS synchronization.
+ 
 ## 7. Open decisions
 
 - `x-default` default-language decision: resolved by DEC-021 — Vietnamese (`vi`) is approved. Generated artifact check passed on 39 available localized route files; root homepage verification remains pending because the isolated preview bundle overwrote it during assembly. Verify the root route from the unmodified `public-site/dist` output.

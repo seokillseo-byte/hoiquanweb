@@ -48,6 +48,7 @@ Thứ tự ưu tiên nguồn thông tin:
 | DEC-018 | Inquiry data action at retention expiry | Completely delete the customer's personal information and inquiry/request content when the 24-month period expires; backup handling is governed by DEC-020 | Approved (expiry action) |
 | DEC-019 | Events resetting inquiry-data retention period | Reset the 24-month period when the Project Owner sends a quotation to the customer or when the customer replies; no other reset events are implied | Approved (event types) |
 | DEC-020 | Backup handling for expired inquiry data | Retain backups until their normal lifecycle expires; when restoring, reapply retention rules and delete expired inquiry records before normal operation resumes; exact backup lifecycle duration remains TBD | Approved (handling policy only) |
+| DEC-021 | Default language for hreflang x-default | Vietnamese (vi) is the default fallback destination; each genuine VI/EN pair points x-default to its Vietnamese URL | Approved (2026-11-13) |
 
 ### 2.1 Bảy nhóm dịch vụ đã chốt
 

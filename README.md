@@ -19,6 +19,7 @@ Hội Quán Web được định hướng thành nền tảng vận hành công 
 - [URL Map — 40 route song ngữ và indexation matrix](docs/URL_MAP.md)
 - [Feature Blueprint — Core Preview P0](docs/FEATURE_BLUEPRINT.md)
 - [UI Blueprint — public website](docs/UI_BLUEPRINT.md)
+- [UX Blueprint — visitor journey and inquiry flow](docs/UX_BLUEPRINT.md)
 
 ## Preview hiện tại
 

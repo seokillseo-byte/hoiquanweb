@@ -41,6 +41,7 @@ Thứ tự ưu tiên nguồn thông tin:
 | DEC-011 | Customer scope and rollout priority | Phục vụ cả B2C và B2B; ưu tiên B2C trước, sau đó mở rộng B2B; persona chi tiết còn TBD | Approved |
 | DEC-012 | Factual business description | Owner-approved wording recorded in OWNER_DECISION_REVIEW.md; formal industry classification and operating/revenue model remain TBD | Approved (description only) |
 | DEC-013 | Public USP and comparative claims for Core Preview | No public USP/comparative claim; use factual service descriptions only until a claim and evidence are separately approved | Approved (Preview content restriction) |
+| DEC-014 | Interim visual system for Core Preview | Use interim blue/white visual system and retain five existing source-observed colors as provisional tokens; this is not the official brand identity | Approved (Preview only) |
 
 ### 2.1 Bảy nhóm dịch vụ đã chốt
 
@@ -68,7 +69,7 @@ Các mục dưới đây chưa được người dùng xác nhận. Chúng là g
 | TBD-004 | Quy mô khách hàng và pain points | Persona, solution mapping | Open |
 | TBD-005 | Portfolio/case study có quyền công bố | Trust, proof, E-E-A-T signals | Open |
 | TBD-006 | Giá, cách tính phí, chính sách báo giá | Pricing page, quote flow | Open |
-| TBD-007 | Logo, màu sắc và brand identity chính thức | UI/Design System | Open |
+| TBD-007 | Official logo, brand guidelines, final typography and official brand identity (interim Preview tokens approved under DEC-014) | UI/Design System | Partially resolved — Preview interim system approved; official identity remains TBD |
 | TBD-008 | Production hosting, deployment và ownership | Technical/Architecture Blueprint | Open |
 | TBD-009 | Chính sách vận hành, bảo hành, hỗ trợ và SLA | Service content, legal, conversion | Open |
 | TBD-010 | Thị trường/quốc gia tiếng Anh ưu tiên | Localization, keyword research, legal | Open |

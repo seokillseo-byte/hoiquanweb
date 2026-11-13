@@ -224,3 +224,9 @@ Until those inputs are available, this remains a B2C-first baseline UX specifica
 5. Existing module workflows and endpoint contracts remain unchanged; backend authorization continues to be authoritative.
 
 The admin interface remains noindex. No default admin identity, credential or role is seeded by this UI work.
+
+## R-019 Customer portal session continuity — 2026-11-13
+
+- A configured portal automatically attempts to restore the existing cookie session on page load; it still calls the authenticated API and never trusts local state as proof of identity.
+- Expired/invalid sessions show the login form. A failed data load after sign-in also returns to login instead of leaving an incomplete customer workspace visible.
+- Sign-out closes the workspace locally, but reports a clear error if the server does not confirm session invalidation.

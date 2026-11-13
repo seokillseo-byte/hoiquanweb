@@ -65,6 +65,8 @@ portal_parser = MarkupCheck()
 portal_parser.feed(portal_html)
 if 'name="robots" content="noindex,nofollow"' not in portal_html:
     fail("customer portal must be marked noindex")
+if "async function restorePortalSession" not in portal_html or "void restorePortalSession();" not in portal_html or "serverSignedOut" not in portal_html:
+    fail("customer portal must restore valid sessions and report sign-out confirmation accurately")
 for required_portal_id in ["loginForm", "apiBase", "email", "password", "portalPanel", "ordersList", "projectsList", "ticketsList", "ticketForm", "notificationsSection", "notificationsList", "notificationCount", "notificationRefresh", "notificationReadAll"]:
     if required_portal_id not in portal_parser.ids:
         fail("required customer portal UI ID missing: " + required_portal_id)

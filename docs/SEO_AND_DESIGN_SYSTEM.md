@@ -8,7 +8,7 @@
 
 ### 1.1 Verified from repository documents/files
 
-- README.md and IMPLEMENTATION_ROADMAP.md report a bilingual public website with 40 content pages.
+- README.md and IMPLEMENTATION_ROADMAP.md report 40 generated localized routes for the bilingual public website; generated routes are not equivalent to approved or indexable content.
 - scripts/build_public_site.mjs defines 40 localized page objects and generates HTML routes plus sitemap.xml from the same pages array.
 - scripts/validate_public_site.mjs verifies generated HTML page count, sitemap URL count, uniqueness and canonical path parity.
 - CI run 43364844705 passed and its log confirms: Generated 40 localized pages; Public site validation passed: 40 pages, internal links/assets, localized metadata, canonical sitemap, brand tokens and inquiry fallback.

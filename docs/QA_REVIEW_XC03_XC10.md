@@ -334,3 +334,40 @@ This is a documentation/evidence refresh only. It does not authorize combining b
 The artifact was downloaded and made available for inspection. A fresh full route-by-route extraction/audit of this exact artifact has not yet been recorded. Prior route-level static audit evidence remains tied to artifact 14028368167 and must not be represented as a new audit of 14053557316.
 
 **Disposition:** Both workflows pass on the recorded PR #43 HEAD `b7d750e773218f3914e5e5530ea990e42daff560`. This section was committed in the subsequent documentation HEAD `66027b5f281c1dc5f2ac2e6ac9807025869369a8`; CI status for that later HEAD must be checked independently. This does not close R-016, R-017 or F-009, does not establish hosted runtime or full visual QA, and does not approve Gate 2, merge or deployment.
+
+
+
+### 9.10 Independent static audit of artifact 14053557316
+
+**Audit date:** 2026-11-13  
+**Artifact source:** [Build isolated PR Preview — run 43454693181](https://github.com/seokillseo-byte/hoiquanweb/actions/runs/43454693181)  
+**Artifact:** [hoiquanweb-pr-43-preview — artifact 14053557316](https://github.com/seokillseo-byte/hoiquanweb/actions/runs/43454693181/artifacts/14053557316)  
+**Artifact ZIP size:** 203,344 bytes  
+**Locally verified SHA-256:** `f11364ed718b8b5e1dcf9694f55a2e3d6ba5f9a66fc1fd7eb0e69772e56ae784`
+
+The exact downloaded ZIP matching the recorded SHA-256 was extracted and inspected. This is a static structure/metadata audit, not a hosted browser test.
+
+| Check | Result | Evidence |
+|---|---|---|
+| ZIP integrity | PASS | SHA-256 matches the recorded artifact digest |
+| Extracted files | PASS | 51 files |
+| HTML documents | PASS | 44 documents |
+| Localized public route documents | PASS | 40 route documents |
+| Sitemap URLs | PASS | 36 unique URLs |
+| Sitemap URL files | PASS | 36/36 corresponding HTML files exist in the artifact |
+| Sitemap duplicates | PASS | 0 |
+| Sitemap entries marked noindex | PASS | 0 |
+| Sitemap canonical/file mapping | PASS | All 36 sitemap URLs map to an existing route document |
+| Canonical metadata on public localized routes | PASS | Exactly one canonical on each of 40 routes |
+| Robots metadata on public localized routes | PASS | Exactly one robots directive on each of 40 routes |
+| Language alternates | PASS | Each of 40 routes contains vi, en and x-default alternates |
+| x-default mapping | PASS | No missing x-default entries |
+| Generic blog listing/article shells | PASS | VI/EN listing and article shells are noindex and excluded from sitemap |
+| Root and isolated entrypoints | PASS | Root homepage, /platform/, admin.html and portal.html are present |
+| Canonical duplicates across localized route documents | PASS | 0 duplicate canonical values |
+
+The four utility HTML documents (404, Admin, Portal and Platform) are outside the 40 localized public route set and are not expected to have public canonical metadata. They remain noindex and outside the sitemap.
+
+**Evidence boundary:** This audit applies specifically to artifact 14053557316, produced from PR HEAD `b7d750e773218f3914e5e5530ea990e42daff560`. It must not be described as a fresh extraction of the later artifact 14053342476 or of the artifact generated on PR HEAD `45e6f276`. The subsequent changes recorded in §9.9 and the current PR HEAD are documentation-only relative to the application implementation baseline; current-head CI is tracked separately in the PR and does not transfer artifact-level inspection to a different ZIP.
+
+**Disposition:** Static artifact structure and SEO metadata checks for artifact 14053557316 are PASS. This does not close R-016, R-017 or F-009; does not verify hosted Worker/D1/R2/auth/email behavior; and is not full visual/browser/accessibility QA, Core Preview acceptance, Gate 2 approval, merge approval or deployment.

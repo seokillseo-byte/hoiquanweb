@@ -35,6 +35,19 @@ The B2C-first order controls content emphasis and UX prioritization; it does not
 
 Do not turn these unknowns into persona facts. Design the first content/UX pass for B2C as the approved priority, while retaining a clear path for B2B visitors. Validate detailed needs through owner input, real inquiry data and customer research.
 
+### 2.3 B2C-first homepage content hierarchy
+
+Apply the owner-approved B2C-first sequence to the initial homepage without inventing a detailed persona or narrowing the approved seven-service scope.
+
+1. **Factual introduction:** identify HOIQUANWEB and use the exact owner-approved business description; do not add an unapproved USP, comparative claim, history, credential or performance promise.
+2. **Primary consultation path:** make consultation/quotation the clearest primary action. Until the inquiry API, privacy/consent and email delivery are accepted, the form must remain explicitly inactive/non-submitting and must not imply a request was received.
+3. **Seven service groups:** present Website, Software, Mobile App, Game, SEO Website, AI & Automation, and Other Technology Services as distinct discoverable choices. Use plain-language descriptions; do not invent prices, package inclusions, delivery estimates or guaranteed outcomes.
+4. **Service exploration:** provide a clear route from each group to its service detail page and onward to consultation. Service detail content must describe only verified scope and deliverables.
+5. **Factual trust information:** use only approved business/contact facts and real evidence with confirmed accuracy and publication permission. If no evidence is approved, omit the proof module.
+6. **B2B continuity:** keep a clear general business/organization inquiry path and do not imply B2B is unsupported. B2B-specific positioning and journeys are a later content/UX expansion after the B2C-first baseline is established.
+
+This is a content-order and navigation rule, not a validated persona model. The exact B2C needs, demographics, buying triggers, priority service ranking and homepage section copy remain open until supported by owner input or research.
+
 ## 3. Core visitor journey
 
 | Stage | Visitor question / task | Required experience | Success signal | Failure / recovery |

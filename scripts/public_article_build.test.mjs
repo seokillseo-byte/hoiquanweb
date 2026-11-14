@@ -114,7 +114,7 @@ test("static generator prerenders approved bilingual CMS articles and validates 
     assert.doesNotMatch(contactHtml, /name="consent"/);
     assert.match(privacyHtml, /name="robots" content="noindex,follow"/);
     assert.doesNotMatch(privacyHtml, /name="robots" content="index/);
-    assert.doesNotMatch(homeHtml, /href="\\/hoiquanweb\\/portal\\.html"/);
+    assert.equal(homeHtml.includes('href="/hoiquanweb/portal.html"'), false);
     assert.match(listingHtml, /data-clean-article-slugs="\[&quot;seo-co-ban&quot;\]"/);
     assert.match(enListingHtml, /data-clean-article-slugs="\[&quot;seo-basics&quot;\]"/);
     assert.match(siteScript, /cleanArticleSlugs\.has\(item\.slug\)/);

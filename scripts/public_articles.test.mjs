@@ -5,7 +5,8 @@ import {
   buildPublicArticleRoutes,
   isIndexableArticle,
   renderArticleBody,
-  safeArticleUrl
+  safeArticleUrl,
+  safePrivacyPolicyUrl
 } from "./public_articles.mjs";
 
 function post(id, slug, locale, extra = {}) {
@@ -22,6 +23,14 @@ function post(id, slug, locale, extra = {}) {
     status: "published"
   };
 }
+
+test("temporary privacy notice cannot activate online inquiry collection", () => {
+  assert.equal(safePrivacyPolicyUrl("https://hoiquanweb.io.vn/privacy.html"), "");
+  assert.equal(safePrivacyPolicyUrl("https://hoiquanweb.io.vn/privacy.html?preview=1"), "");
+  assert.equal(safePrivacyPolicyUrl("http://hoiquanweb.io.vn/privacy-policy/"), "");
+  assert.equal(safePrivacyPolicyUrl("https://hoiquanweb.io.vn/privacy-policy/"), "https://hoiquanweb.io.vn/privacy-policy/");
+  assert.equal(safePrivacyPolicyUrl("not a URL"), "");
+});
 
 test("only published, explicitly approved, complete articles become indexable routes", () => {
   const routes = buildPublicArticleRoutes([

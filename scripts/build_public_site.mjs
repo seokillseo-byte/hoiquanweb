@@ -1,6 +1,6 @@
 import { copyFile, mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
-import { articleStructuredData, buildPublicArticleRoutes, renderArticleBody } from "./public_articles.mjs";
+import { articleStructuredData, buildPublicArticleRoutes, renderArticleBody, safePrivacyPolicyUrl } from "./public_articles.mjs";
 
 const OUT = join(process.cwd(), "public-site", "dist");
 const DOMAIN = "https://hoiquanweb.io.vn";
@@ -8,7 +8,7 @@ const BRAND = "HoiQuanWeb";
 const API_BASE = (process.env.HQ_API_BASE || "").replace(/\/+$/, "");
 let API_BASE_HTTPS = false;
 try { API_BASE_HTTPS = new URL(API_BASE).protocol === "https:"; } catch {}
-const SAFE_PRIVACY_POLICY_URL = (() => { try { const value = new URL(process.env.HQ_PRIVACY_POLICY_URL || ""); return value.protocol === "https:" ? value.href : ""; } catch { return ""; } })();
+const SAFE_PRIVACY_POLICY_URL = safePrivacyPolicyUrl(process.env.HQ_PRIVACY_POLICY_URL || "");
 const LEAD_SUBMISSION_ENABLED = Boolean(API_BASE_HTTPS && process.env.HQ_PRIVACY_POLICY_APPROVED === "true" && SAFE_PRIVACY_POLICY_URL);
 const PORTAL_PUBLIC_ENABLED = Boolean(API_BASE_HTTPS && process.env.HQ_PORTAL_PUBLIC_ENABLED === "true");
 const BASE_PATH = (process.env.HQ_BASE_PATH || "").replace(/\/+$/, "");

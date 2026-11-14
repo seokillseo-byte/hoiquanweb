@@ -2,6 +2,18 @@ const PUBLIC_ORIGIN = "https://hoiquanweb.io.vn";
 const SAFE_SLUG = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 const RESERVED_SLUGS = new Set(["post", "index", "category", "tag", "search", "page", "feed", "amp"]);
 
+export function safePrivacyPolicyUrl(value) {
+  if (typeof value !== "string" || !value.trim()) return "";
+  try {
+    const parsed = new URL(value.trim());
+    const pathname = parsed.pathname.toLowerCase().replace(/\/+$/, "");
+    if (parsed.protocol !== "https:" || pathname.endsWith("/privacy.html")) return "";
+    return parsed.href;
+  } catch {
+    return "";
+  }
+}
+
 export function escapeArticleHtml(value) {
   return String(value ?? "").replace(/[&<>"']/g, (character) => ({
     "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"

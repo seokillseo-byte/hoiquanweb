@@ -26,6 +26,8 @@ assert.ok(await exists(join(root, "en", "index.html")), "English homepage must e
 assert.ok(await exists(join(root, "assets", "css", "site.css")), "Generated CSS must exist");
 assert.ok(await exists(join(root, "assets", "js", "site.js")), "Generated JavaScript must exist");
 assert.ok(await exists(join(root, "portal.html")), "Customer portal page must be generated");
+const portalHtml = await readFile(join(root, "portal.html"), "utf8");
+assert.ok(!portalHtml.includes("__HQ_API_BASE__"), "Generated customer portal must not contain the API base placeholder");
 assert.ok(await exists(join(root, "privacy.html")), "Standalone privacy notice must be generated");
 const privacyNotice = await readFile(join(root, "privacy.html"), "utf8");
 assert.match(privacyNotice, /name="robots" content="noindex,follow"/);

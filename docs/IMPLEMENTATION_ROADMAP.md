@@ -37,7 +37,7 @@ Mục tiêu: dựng nền tảng có thể mở rộng, không chỉ thêm HTML 
 
 **Đã merge vào `main`:** frontend Vite + React + TypeScript shell, Better Auth email/password, role checks phía server, Worker/D1 schema nền, CRM identity/customer read APIs, CMS pages/posts/services API và admin UI. CI hiện kiểm tra public API, Better Auth integration, typecheck/build và public-site validation. Backend vẫn chưa được deploy lên Cloudflare staging/production.
 
-- Thiết lập cấu trúc frontend có routing, layout chung, design system và môi trường local/test/staging.
+- Thiết lập cấu trúc frontend có routing, layout chung, design system và môi trường local/CI; không dựng Staging riêng theo quyết định của Project Owner.
 - Chọn và cấu hình xác thực/session an toàn; phân quyền admin, staff và customer ở backend.
 - Tạo API conventions, validation, error format, logging, migrations và test harness.
 - Chuẩn bị database schema ban đầu cho users/roles, customers, content, templates, leads và audit events theo migration có kiểm soát.
@@ -159,7 +159,7 @@ Mục tiêu: dựng nền tảng có thể mở rộng, không chỉ thêm HTML 
 3. Chạy validator hiện có và bổ sung test phù hợp với feature.
 4. Review diff, security, accessibility, SEO và regression.
 5. CI xanh là điều kiện cần, không phải bằng chứng production đã hoạt động.
-6. Deploy staging, kiểm tra runtime/DB/integrations, ghi kết quả nghiệm thu và các giới hạn còn lại.
+6. Chạy CI và isolated PR preview để xác minh thay đổi; kiểm tra runtime/DB/integrations theo đúng môi trường được Project Owner phê duyệt. Không tự tạo Staging riêng khi Owner đã từ chối.
 7. Chỉ mở giai đoạn tiếp theo sau khi các acceptance gates của giai đoạn hiện tại đạt; các thiết lập cần đăng nhập/tài khoản/billing/secrets của chủ dự án phải được báo rõ và không giả lập.
 
 ## Cổng production
@@ -217,4 +217,15 @@ Không công bố hệ thống là production-ready cho đến khi có domain v�
 - Added cookie-session restoration on page load using the existing authenticated `/api/v1/me` call.
 - Failed sign-in/data loading returns to the login panel and hides the portal workspace.
 - Sign-out only reports success after the Better Auth endpoint returns a successful response; otherwise it warns that server invalidation was not confirmed.
-- Static validation requires the session-restore and sign-out behavior. Real staging cookie/CORS acceptance remains pending.
+- Static validation requires the session-restore and sign-out behavior. Production cookie/CORS acceptance remains a release gate after the approved Worker/D1 production configuration is supplied; this project does not introduce a Staging environment.
+
+
+## Main consolidation and AI Studio handoff — 2026-11-14
+
+- [x] Merged PR #42–#47 into `main`: security/audit, Phase 0 baseline, bilingual CMS clean article routes, public UI and consent gates, authenticated admin workspace, and customer portal session continuity.
+- [x] Closed PR #48 without merge because its staging-first D1/R2 deployment model conflicts with the Owner's no-Staging direction.
+- [x] Closed PR #49 without merge because it was built against the superseded admin HTML baseline and would duplicate the current admin navigation.
+- [x] CI validation and isolated preview passed on the final PR #45 and #46 heads; PR #47's feature head and documentation correction also passed the repository validation workflow.
+- [ ] Next: import the consolidated `main` source into AI Studio for Owner-led visual refinement and preview review.
+- [ ] Remaining before Production acceptance: live Worker/D1 and cookie/CORS verification, approved privacy/legal policy and email sender configuration, full browser/responsive/accessibility QA, performance measurements, backup/restore and rollback evidence.
+- No Ubuntu/NPM Production deployment was performed as part of this consolidation and AI Studio handoff.

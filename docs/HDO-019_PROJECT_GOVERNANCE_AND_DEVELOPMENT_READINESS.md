@@ -160,35 +160,31 @@ This section records repository observations only. It does not approve the under
 
 The repository review recorded PR #30–#36 as merged. PR #40 (durable lead email outbox/retries) is also merged.
 
-### 6.2 Open pull requests
+### 6.2 GitHub integration status — 2026-11-14
 
-- **PR #42 — authorization and membership revocation:** open; the latest source changes include the audit regression fix. Final CI and independent review remain pending.
-- **PR #44 — clean bilingual CMS article routes and prerendering:** open; implementation and SEO regression coverage are being integrated after the Phase 0 documentation baseline was merged.
-- **PR #45–#48:** downstream UI/admin/portal and deployment-documentation workstreams remain stacked behind PR #44 and require integration in dependency order. Staging-only deployment instructions in PR #48 are not part of the approved target; the Project Owner selected direct Production as the eventual deployment model, with no Staging environment.
-- **PR #49 — admin workspace visual refresh:** separate main-based visual workstream; integrate only after comparing its admin.html changes with PR #45/#46 to avoid overwriting functionality.
+- **Merged to main:** PR #43 (Phase 0 blueprint/risk baseline), PR #42 (authorization, membership revocation and audit matrix), PR #44 (clean bilingual CMS article routes and prerendering), PR #45 (public UI, factual-content and consent gates), PR #46 (authenticated admin control center), and PR #47 (customer portal session restoration and truthful sign-out status).
+- CI validation and isolated PR preview passed for the final integrated heads of PR #45 and PR #46. PR #47's feature head `dc16ef6271bafd9fc61cd4f97ab19546cc0e8f08` passed isolated Preview; the follow-up documentation-only correction was separately validated on feature head `219732fe0251efad51436278fccc3617f862b89b`.
+- **PR #48 — staging-first deployment runbook:** closed without merge because it requires a separate Staging D1/R2 environment, contrary to the Owner's explicit no-Staging direction.
+- **PR #49 — admin visual refresh:** closed without merge because it was based on an obsolete admin shell; its DOM-wrapping/navigation script would duplicate the current authenticated admin workspace from PR #46. Further visual refinement must start from current `main` in the Owner's AI Studio workflow.
+- No implementation PR remains approved for integration from this batch. `main` is the consolidated code baseline for the next AI Studio visual-refinement pass.
 
 ### 6.3 XC-03 / R-016 and XC-10 / R-017
 
-- XC-03: generic blog shells emit `noindex,follow` and are excluded from sitemap; generated route and sitemap eligibility are separated. PR #44 implements locale-aware CMS eligibility, clean bilingual article URLs, article-specific prerendered HTML and sitemap inclusion tests. Its CI must pass on the final integrated head; live CMS/D1 content fetch and browser/runtime verification remain outstanding. Keep R-016 open until those runtime checks are completed. See `QA_REVIEW_XC03_XC10.md`.
+- XC-03: generic blog shells emit `noindex,follow` and are excluded from sitemap; generated route and sitemap eligibility are separated. PR #44 is merged and its CI passed, implementing locale-aware CMS eligibility, clean bilingual article URLs, article-specific prerendered HTML and sitemap inclusion tests. Live CMS/D1 content fetch, actual public-host runtime and browser verification remain outstanding; keep R-016 open until those checks are completed. See `QA_REVIEW_XC03_XC10.md`.
 - XC-10: the public Vietnamese homepage remains at Preview root; SPA is isolated under `/platform/`; final assembled artifact checks PREV-01..06 passed. Independent static artifact QA additionally confirmed 36/36 sitemap URLs return HTTP 200, canonical/indexability consistency and JS/CSS asset resolution. Full visual/browser/responsive QA and Project Owner acceptance remain pending; this was an isolated CI artifact, not a public hosted Preview URL. R-017 remains open. See `QA_REVIEW_XC03_XC10.md`.
 
-### 6.4 Release restrictions
+### 6.4 Current delivery boundary
 
-- PR #42 and PR #44 remain open pending final integrated CI and review.
-- No production deployment is authorized by this document.
-- Do not change production Pages workflow, production secrets, Cloudflare resources, D1 schema/migrations, R2 buckets or infrastructure without separate approval.
+- The Project Owner explicitly authorized consolidating the approved implementation work into GitHub `main`; PRs #42–#47 are now merged.
+- The next user-directed step is to take the consolidated source to AI Studio for visual refinement and a clearer preview. This integration pass does not deploy the site to the Ubuntu/Nginx Proxy Manager Production host.
+- The project does not create or depend on a Staging environment. CI and isolated PR preview artifacts are validation evidence, not a Staging service or proof of live Worker/D1 behavior.
+- GitHub Pages workflow currently publishes a static preview on pushes to `main`; that is separate from the Owner's Ubuntu/NPM Production domain. It does not deploy the Worker/D1 backend and must not be described as Production acceptance.
+- Do not change production secrets, Cloudflare resources, D1 schema/migrations, R2 buckets, DNS, NPM proxy hosts or infrastructure as part of this code-consolidation task.
 - A downloadable/local static Preview artifact is not a live runtime acceptance environment.
 
-### 6.5 Admin UI refresh — PR #49 (separate, unmerged workstream)
+### 6.5 Admin UI visual refresh — PR #49 (superseded)
 
-- PR #49 introduces a bounded visual refresh to the existing `admin.html` workspace. It changes presentation and navigation only; API, authentication/session behavior, role checks, data model and business workflows are intended to remain unchanged.
-- Latest implementation commit: `bf8292f289e78842d7a890559d0159cdbf6afa3c`.
-- Validate website/API run 43451427869 and isolated Preview run 43451427714 completed successfully.
-- Codex code review completed without findings on the latest commit; the three earlier inline responsive/contrast/reduced-motion findings are resolved.
-- PR #49 remains Draft and unmerged. Its Preview artifact 14051055530 is based on the current `main` baseline and does not contain the separate PR #43 public-site/SEO changes. A combined full-site Preview has not been generated or CI-verified.
-- Browser-based visual inspection, responsive/accessibility acceptance, Worker/D1 staging integration and authenticated end-to-end workflow tests remain outstanding. Static HTML Preview and CI do not establish operational acceptance.
-
-**Disposition:** PR #49 is ready for bounded Admin UI visual review only; it is not accepted for production. Keep it Draft until the missing review/runtime evidence is completed and the Project Owner accepts the UI. No merge or deployment is authorized.
+PR #49 was closed without merge. Its source was based on an older admin document and injects a second navigation wrapper; the current `main` already contains the authenticated Control Center from PR #46. The Owner plans to refine the current code in AI Studio, so PR #49 must not be reapplied as-is.
 
 ## 7. Risk governance
 
@@ -242,15 +238,16 @@ The Project Owner and responsible reviewers should record each item as **Accepte
 **Authorized next-phase scope/commit:** Pending.  
 **Continued Development Authorization:** Granted 2026-11-13 for the existing roadmap scope (UI/UX, functions, backend and SEO), as recorded in OWNER_AUTHORIZATION_2026-11-13.md.  
 **Formal Gate 2:** Not yet approved.  
-**Merge/deployment/production authority:** Not granted; separate approval remains required.
+**Main-branch integration authorization:** Explicitly granted by the Project Owner on 2026-11-14 for consolidation of the approved implementation PRs; PRs #42–#47 were merged.  
+**Production deployment in the current AI Studio handoff step:** Not performed; the Owner's next step is visual refinement against the consolidated source.
 
 ## 10. Phase 0 / Gate 2 exit decision
 
 Current evidence does not support declaring Phase 0 complete or Gate 2 approved. However, the Project Owner has explicitly authorized continued implementation to completion across UI/UX, functions, backend and SEO, following the existing Master Blueprint and phase roadmap. This development authorization is separate from formal Gate 2, QA acceptance, merge and deployment decisions.
 
-The following remain open: owner review of draft Blueprints; critical Project Input disposition; inquiry privacy/runtime readiness; remaining full QA and Owner disposition for R-016/R-017; security acceptance for PR #42; staging architecture/runtime evidence; performance measurements; named staffing/capacity; and final validation.
+The following remain open: Owner review of draft Blueprints; critical Project Input disposition; inquiry privacy/legal/runtime readiness (F-009); live CMS/D1 verification for R-016; full visual/browser/responsive/accessibility QA and Owner disposition for R-017; final security/runtime acceptance for the authentication stack; performance measurements; named staffing/capacity; and final validation. No Staging environment is part of the approved delivery direction.
 
-The next authorized activity is to continue implementation in roadmap order on feature branches, close the applicable requirements and provide test evidence. Do not invent unresolved business facts or publish unapproved claims; record TBD items and return material decisions to the Owner. Do not merge either open PR, deploy staging/production or change production resources as a consequence of this development authorization.
+The next authorized activity is to use the consolidated `main` source as the input for the Owner's AI Studio visual-refinement pass, then close the remaining factual-content, privacy, browser QA and runtime acceptance gaps. Do not invent unresolved business facts or publish unapproved claims; record TBD items and return material decisions to the Owner. Production deployment to Ubuntu/NPM is not part of this current consolidation/AI Studio handoff step.
 
 ---
 

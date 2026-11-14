@@ -1010,11 +1010,12 @@ async function adminProjectRoutes(request, env, url) {
       // observes the row version that this mutation is about to replace.
       const projectChangesSql = "(SELECT json_group_object(field, json(value)) FROM (" +
         "SELECT 'name' AS field, json_object('from', p.name, 'to', ?) AS value WHERE p.name IS NOT ? " +
+        "UNION ALL SELECT 'description' AS field, json_object('changed', true) AS value WHERE p.description IS NOT ? " +
         "UNION ALL SELECT 'status', json_object('from', p.status, 'to', ?) WHERE p.status IS NOT ? " +
         "UNION ALL SELECT 'start_date', json_object('from', p.start_date, 'to', ?) WHERE p.start_date IS NOT ? " +
         "UNION ALL SELECT 'due_date', json_object('from', p.due_date, 'to', ?) WHERE p.due_date IS NOT ?))";
       await env.DB.batch([
-        env.DB.prepare("INSERT INTO crm_audit_events (id, actor_id, action, resource_type, resource_id, metadata_json, created_at) SELECT ?, ?, 'project.updated', 'project', p.id, json_object('changes', json(" + projectChangesSql + ")), ? FROM crm_projects p WHERE p.id = ? AND (p.name IS NOT ? OR p.status IS NOT ? OR p.start_date IS NOT ? OR p.due_date IS NOT ?)").bind(crypto.randomUUID(), principal.user.id, name, name, status, status, startDate, startDate, dueDate, dueDate, now, projectId, name, status, startDate, dueDate),
+        env.DB.prepare("INSERT INTO crm_audit_events (id, actor_id, action, resource_type, resource_id, metadata_json, created_at) SELECT ?, ?, 'project.updated', 'project', p.id, json_object('changes', json(" + projectChangesSql + ")), ? FROM crm_projects p WHERE p.id = ? AND (p.name IS NOT ? OR p.description IS NOT ? OR p.status IS NOT ? OR p.start_date IS NOT ? OR p.due_date IS NOT ?)").bind(crypto.randomUUID(), principal.user.id, name, name, description, status, status, startDate, startDate, dueDate, dueDate, now, projectId, name, description, status, startDate, dueDate),
         env.DB.prepare("UPDATE crm_projects SET name = ?, description = ?, status = ?, start_date = ?, due_date = ?, updated_at = ? WHERE id = ?").bind(name, description, status, startDate, dueDate, now, projectId)
       ]);
       const updated = await env.DB.prepare("SELECT id, customer_id, order_id, name, description, status, start_date, due_date, created_by, created_at, updated_at FROM crm_projects WHERE id = ? LIMIT 1").bind(projectId).first();
@@ -1037,10 +1038,11 @@ async function adminProjectRoutes(request, env, url) {
     // Read the before-values in the transaction immediately preceding this update.
     const milestoneChangesSql = "(SELECT json_group_object(field, json(value)) FROM (" +
       "SELECT 'title' AS field, json_object('from', p.title, 'to', ?) AS value WHERE p.title IS NOT ? " +
+      "UNION ALL SELECT 'description' AS field, json_object('changed', true) AS value WHERE p.description IS NOT ? " +
       "UNION ALL SELECT 'status', json_object('from', p.status, 'to', ?) WHERE p.status IS NOT ? " +
       "UNION ALL SELECT 'due_date', json_object('from', p.due_date, 'to', ?) WHERE p.due_date IS NOT ?))";
     await env.DB.batch([
-      env.DB.prepare("INSERT INTO crm_audit_events (id, actor_id, action, resource_type, resource_id, metadata_json, created_at) SELECT ?, ?, 'project.milestone.updated', 'project', p.project_id, json_object('milestone_id', ?, 'changes', json(" + milestoneChangesSql + ")), ? FROM crm_project_milestones p WHERE p.id = ? AND (p.title IS NOT ? OR p.status IS NOT ? OR p.due_date IS NOT ?)").bind(crypto.randomUUID(), principal.user.id, milestoneId, title, title, status, status, dueDate, dueDate, now, milestoneId, title, status, dueDate),
+      env.DB.prepare("INSERT INTO crm_audit_events (id, actor_id, action, resource_type, resource_id, metadata_json, created_at) SELECT ?, ?, 'project.milestone.updated', 'project', p.project_id, json_object('milestone_id', ?, 'changes', json(" + milestoneChangesSql + ")), ? FROM crm_project_milestones p WHERE p.id = ? AND (p.title IS NOT ? OR p.description IS NOT ? OR p.status IS NOT ? OR p.due_date IS NOT ?)").bind(crypto.randomUUID(), principal.user.id, milestoneId, title, title, description, status, status, dueDate, dueDate, now, milestoneId, title, description, status, dueDate),
       env.DB.prepare("UPDATE crm_project_milestones SET title = ?, description = ?, status = ?, due_date = ?, updated_at = ? WHERE id = ?").bind(title, description, status, dueDate, now, milestoneId)
     ]);
     await notifySafely(env, env.DB.prepare("SELECT customer_id FROM crm_projects WHERE id = ? LIMIT 1").bind(current.project_id).first().then(row => row?.customer_id ? env.DB.prepare("SELECT user_id FROM crm_customer_members WHERE customer_id = ?").bind(row.customer_id).all().then(result => (result.results || []).map(member => member.user_id)) : []), {

@@ -1325,8 +1325,34 @@ test("in-app notifications are generated for project and ticket events and isola
   const projectUpdateEvent = projectEvents.find(item => item.action === "project.updated");
   assert.deepEqual(JSON.parse(projectUpdateEvent.metadata_json).changes.status, { from: "planning", to: "in_progress" });
 
+  const projectDescriptionText = "Description-only project edit must be audited without copying its text.";
+  const projectDescriptionUpdate = await server.fetch(origin + "/api/v1/admin/projects/" + project.id, {
+    method: "PATCH",
+    headers: { origin, cookie: admin.cookie, "content-type": "application/json" },
+    body: JSON.stringify({ description: projectDescriptionText })
+  });
+  assert.equal(projectDescriptionUpdate.status, 200, await projectDescriptionUpdate.clone().text());
+  const projectDescriptionAudit = await server.fetch(origin + "/_test/resource-audit?resource_type=project&resource_id=" + encodeURIComponent(project.id), { headers: { origin } });
+  const projectDescriptionEvents = (await projectDescriptionAudit.json()).data.filter(item => item.action === "project.updated");
+  const projectDescriptionMetadata = JSON.parse(projectDescriptionEvents.at(-1).metadata_json);
+  assert.deepEqual(projectDescriptionMetadata.changes.description, { changed: true });
+  assert.doesNotMatch(JSON.stringify(projectDescriptionMetadata), /Description-only project edit/);
+
   const milestoneAuditEvent = projectEvents.find(item => item.action === "project.milestone.updated");
   assert.deepEqual(JSON.parse(milestoneAuditEvent.metadata_json).changes.status, { from: "pending", to: "in_progress" });
+
+  const milestoneDescriptionText = "Description-only milestone edit must be audited without copying its text.";
+  const milestoneDescriptionUpdate = await server.fetch(origin + "/api/v1/admin/milestones/" + milestone.id, {
+    method: "PATCH",
+    headers: { origin, cookie: admin.cookie, "content-type": "application/json" },
+    body: JSON.stringify({ description: milestoneDescriptionText })
+  });
+  assert.equal(milestoneDescriptionUpdate.status, 200, await milestoneDescriptionUpdate.clone().text());
+  const milestoneDescriptionAudit = await server.fetch(origin + "/_test/resource-audit?resource_type=project&resource_id=" + encodeURIComponent(project.id), { headers: { origin } });
+  const milestoneDescriptionEvents = (await milestoneDescriptionAudit.json()).data.filter(item => item.action === "project.milestone.updated");
+  const milestoneDescriptionMetadata = JSON.parse(milestoneDescriptionEvents.at(-1).metadata_json);
+  assert.deepEqual(milestoneDescriptionMetadata.changes.description, { changed: true });
+  assert.doesNotMatch(JSON.stringify(milestoneDescriptionMetadata), /Description-only milestone edit/);
 
   const ticketUpdate = await server.fetch(origin + "/api/v1/admin/tickets/" + ticketId, {
     method: "PATCH",

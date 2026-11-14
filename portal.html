@@ -188,17 +188,23 @@
       const response=await fetch(apiBase+"/api/v1/auth/sign-in/email",{method:"POST",credentials:"include",headers:{"content-type":"application/json"},body:JSON.stringify({email:$("#email").value.trim(),password:$("#password").value})});
       const body=await response.json().catch(()=>({}));if(!response.ok)throw new Error(body.message||body.error?.message||("HTTP "+response.status));
       $("#password").value="";signedIn=true;await loadPortal();status("#portalStatus",t("signedIn"));
-    }catch(error){signedIn=false;status("#loginStatus",t("loginError")+error.message,true);}
+    }catch(error){signedIn=false;$("#portalPanel").hidden=true;$("#loginPanel").hidden=false;status("#loginStatus",t("loginError")+error.message,true);}
     finally{$("#loginButton").disabled=false;}
   });
   $("#refreshButton").addEventListener("click",loadQuotes);
   $("#notificationRefresh").addEventListener("click",loadNotifications);
   $("#notificationReadAll").addEventListener("click",async()=>{try{await request("/api/v1/me/notifications/read-all",{method:"POST"});await loadNotifications();}catch(error){status("#portalStatus",error.message,true);}});
-  $("#logoutButton").addEventListener("click",async()=>{try{await request("/api/v1/auth/sign-out",{method:"POST",body:"{}"});}catch{}signedIn=false;$("#portalPanel").hidden=true;$("#loginPanel").hidden=false;$("#password").value="";status("#loginStatus",t("signedOut"));});
+  $("#logoutButton").addEventListener("click",async()=>{let serverSignedOut=false;try{await request("/api/v1/auth/sign-out",{method:"POST",body:"{}"});serverSignedOut=true;}catch{}signedIn=false;$("#portalPanel").hidden=true;$("#loginPanel").hidden=false;$("#password").value="";status("#loginStatus",serverSignedOut?t("signedOut"):(language==="vi"?"Đã đóng cổng nhưng chưa xác nhận được đăng xuất từ máy chủ. Hãy kiểm tra kết nối và thử lại.":"The portal is closed locally, but server sign-out was not confirmed. Check the connection and try again."),!serverSignedOut);});
   $("#languageButton").addEventListener("click",()=>{language=language==="vi"?"en":"vi";applyLanguage();if(signedIn)loadQuotes();});
   const configuredApiBase=document.querySelector('meta[name="hq-api-base"]')?.content?.trim();
   if(configuredApiBase){apiBase=configuredApiBase.replace(/\/+$/,"");$("#apiBase").value=apiBase;$("#apiBase").readOnly=true;$("#apiBase").setAttribute("aria-readonly","true");}
   applyLanguage();
+  async function restorePortalSession(){
+    if(!apiBase)return;
+    try{signedIn=true;await loadPortal();status("#portalStatus",t("signedIn"));}
+    catch{signedIn=false;$("#portalPanel").hidden=true;$("#loginPanel").hidden=false;}
+  }
+  void restorePortalSession();
 })();
 </script>
 </body>

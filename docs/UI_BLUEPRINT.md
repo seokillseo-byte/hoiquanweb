@@ -223,3 +223,10 @@ These decisions do not authorize the designer or developer to invent missing bus
 - A sign-out action calls the Better Auth sign-out endpoint, clears client-side role state and returns the interface to the login panel.
 - The workspace uses responsive horizontal navigation on narrow screens, visible focus states, improved table/card hierarchy and accessible labels.
 - No account is created or role assigned by this UI change. Production authentication remains dependent on the configured Worker/D1 environment and server-side provisioning.
+
+## R-019 Customer portal session continuity — 2026-11-13
+
+- When the portal API base is configured, the page checks the existing HttpOnly session through the authenticated `/api/v1/me` flow and restores the customer workspace when access is valid.
+- Invalid/expired sessions leave the login panel visible and do not expose customer data.
+- A failed post-login data load returns the user to the login panel rather than leaving a partially rendered portal.
+- Sign-out distinguishes a confirmed server response from a local-only UI reset; it does not claim the server session was invalidated when the API call fails.

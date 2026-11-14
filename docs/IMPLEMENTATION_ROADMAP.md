@@ -211,3 +211,10 @@ Không công bố hệ thống là production-ready cho đến khi có domain v�
 - Added explicit sign-out through Better Auth; sign-out and failed role verification return to the login state and hide protected panels. Existing sessions are restored on page load when the API base is configured.
 - Added UI validation for required admin navigation, auth panel, sign-out control and existing module IDs.
 - No account creation, role seeding, database migration, backend endpoint change or deployment is included.
+
+## R-019 Customer portal session continuity — 2026-11-13
+
+- Added cookie-session restoration on page load using the existing authenticated `/api/v1/me` call.
+- Failed sign-in/data loading returns to the login panel and hides the portal workspace.
+- Sign-out only reports success after the Better Auth endpoint returns a successful response; otherwise it warns that server invalidation was not confirmed.
+- Static validation requires the session-restore and sign-out behavior. Real staging cookie/CORS acceptance remains pending.

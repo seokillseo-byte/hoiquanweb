@@ -180,8 +180,9 @@ The static `portal.html` customer workspace is marked `noindex,nofollow`; it inc
 | Method | Endpoint | Purpose | Access |
 |---|---|---|---|
 | GET/POST | `/api/v1/admin/customers/:id/members` | List linked identities; link a registered account by email with owner/member/billing role | Admin or staff |
+| DELETE | `/api/v1/admin/customers/:id/members/:userId` | Revoke one customer membership; the final owner cannot be removed | Admin or staff |
 
-The endpoint resolves an existing Better Auth user by normalized email and upserts the membership. It never creates an identity or grants membership during public sign-up. Unknown emails return 404; invalid membership roles return 400. The operation is recorded in the CRM audit log. Customer portal access continues to depend on membership, not on the supplied customer ID.
+The endpoint resolves an existing Better Auth user by normalized email and creates or updates the membership. It never creates an identity or grants membership during public sign-up. Unknown emails return 404; invalid membership roles return 400. The final customer owner cannot be deleted or demoted to member/billing; the guard is enforced inside the D1 write batch so concurrent role changes cannot remove the last owner. Membership changes are recorded in the CRM audit log. Customer portal access continues to depend on membership, not on the supplied customer ID.
 
 
 ### CMS media library
@@ -205,3 +206,8 @@ Dashboard values are calculated from D1 on each request; they are not hard-coded
 
 
 Lead submission returns notification state queued when the durable email outbox is available, or not_configured when provider credentials/sender settings are absent. This field does not claim that an email has already been delivered; delivery status is tracked by the server-side outbox.
+
+
+Membership revocation is audited as customer.member.unlinked. Project, milestone and ticket updates record safe before/after values for status, priority, title and dates; free-text descriptions and message bodies are not copied into audit metadata.
+
+Role-level access boundaries are summarized in [AUTHORIZATION_MATRIX.md](AUTHORIZATION_MATRIX.md); the matrix is a source/test contract, not production runtime acceptance.

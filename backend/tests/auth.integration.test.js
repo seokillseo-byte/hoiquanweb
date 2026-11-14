@@ -1335,7 +1335,7 @@ test("in-app notifications are generated for project and ticket events and isola
   const projectDescriptionAudit = await server.fetch(origin + "/_test/resource-audit?resource_type=project&resource_id=" + encodeURIComponent(project.id), { headers: { origin } });
   const projectDescriptionEvents = (await projectDescriptionAudit.json()).data.filter(item => item.action === "project.updated");
   const projectDescriptionMetadata = JSON.parse(projectDescriptionEvents.at(-1).metadata_json);
-  assert.deepEqual(projectDescriptionMetadata.changes.description, { changed: true });
+  assert.deepEqual(projectDescriptionMetadata.changes.description, { changed: 1 });
   assert.doesNotMatch(JSON.stringify(projectDescriptionMetadata), /Description-only project edit/);
 
   const milestoneAuditEvent = projectEvents.find(item => item.action === "project.milestone.updated");
@@ -1351,7 +1351,7 @@ test("in-app notifications are generated for project and ticket events and isola
   const milestoneDescriptionAudit = await server.fetch(origin + "/_test/resource-audit?resource_type=project&resource_id=" + encodeURIComponent(project.id), { headers: { origin } });
   const milestoneDescriptionEvents = (await milestoneDescriptionAudit.json()).data.filter(item => item.action === "project.milestone.updated");
   const milestoneDescriptionMetadata = JSON.parse(milestoneDescriptionEvents.at(-1).metadata_json);
-  assert.deepEqual(milestoneDescriptionMetadata.changes.description, { changed: true });
+  assert.deepEqual(milestoneDescriptionMetadata.changes.description, { changed: 1 });
   assert.doesNotMatch(JSON.stringify(milestoneDescriptionMetadata), /Description-only milestone edit/);
 
   const ticketUpdate = await server.fetch(origin + "/api/v1/admin/tickets/" + ticketId, {

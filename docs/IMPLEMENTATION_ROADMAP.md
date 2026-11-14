@@ -217,4 +217,4 @@ Không công bố hệ thống là production-ready cho đến khi có domain v�
 - Added cookie-session restoration on page load using the existing authenticated `/api/v1/me` call.
 - Failed sign-in/data loading returns to the login panel and hides the portal workspace.
 - Sign-out only reports success after the Better Auth endpoint returns a successful response; otherwise it warns that server invalidation was not confirmed.
-- Static validation requires the session-restore and sign-out behavior. Real staging cookie/CORS acceptance remains pending.
+- Static validation requires the session-restore and sign-out behavior. Production cookie/CORS acceptance remains a release gate after the approved Worker/D1 production configuration is supplied; this project does not introduce a Staging environment.

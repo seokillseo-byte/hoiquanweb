@@ -87,7 +87,10 @@ test("static generator prerenders approved bilingual CMS articles and validates 
     await run(process.execPath, ["scripts/build_public_site.mjs"], { env, maxBuffer: 4 * 1024 * 1024 });
     await run(process.execPath, ["scripts/validate_public_site.mjs"], { env, maxBuffer: 4 * 1024 * 1024 });
 
+    const homeHtml = await readFile("public-site/dist/index.html", "utf8");
     const viHtml = await readFile("public-site/dist/blog/seo-co-ban/index.html", "utf8");
+    const contactHtml = await readFile("public-site/dist/lien-he/index.html", "utf8");
+    const privacyHtml = await readFile("public-site/dist/privacy.html", "utf8");
     const enHtml = await readFile("public-site/dist/en/blog/seo-basics/index.html", "utf8");
     const listingHtml = await readFile("public-site/dist/blog/index.html", "utf8");
     const enListingHtml = await readFile("public-site/dist/en/blog/index.html", "utf8");
@@ -106,6 +109,12 @@ test("static generator prerenders approved bilingual CMS articles and validates 
     assert.match(enHtml, /hreflang="en"/);
     assert.match(enHtml, /hreflang="x-default"/);
     assert.match(listingHtml, /data-base-path="\/hoiquanweb"/);
+    assert.match(contactHtml, /data-lead-mode="download"/);
+    assert.match(contactHtml, /form-notice/);
+    assert.doesNotMatch(contactHtml, /name="consent"/);
+    assert.match(privacyHtml, /name="robots" content="noindex,follow"/);
+    assert.doesNotMatch(privacyHtml, /name="robots" content="index/);
+    assert.doesNotMatch(homeHtml, /href="\\/hoiquanweb\\/portal\\.html"/);
     assert.match(listingHtml, /data-clean-article-slugs="\[&quot;seo-co-ban&quot;\]"/);
     assert.match(enListingHtml, /data-clean-article-slugs="\[&quot;seo-basics&quot;\]"/);
     assert.match(siteScript, /cleanArticleSlugs\.has\(item\.slug\)/);

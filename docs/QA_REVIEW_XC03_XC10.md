@@ -401,3 +401,14 @@ This section records evidence for the identified source HEAD. The documentation 
 Both required workflows passed on the exact source HEAD above. The Preview artifact was generated but has not been independently extracted or re-audited. The latest independent static artifact audit remains §9.10, tied specifically to artifact 14053557316 from source HEAD `b7d750e773218f3914e5e5530ea990e42daff560`. Do not transfer §9.10's artifact-level results to artifact 14057900572.
 
 **Disposition:** Workflow CI for source HEAD `54866b9c50d2eb975b91976d27ae7f80bccb92bc` is **2/2 PASS**. This does not close R-016, R-017 or F-009; does not verify hosted Worker/D1/R2/auth/email behavior; and does not constitute full visual/browser/responsive/accessibility QA, Core Preview acceptance, Gate 2 approval, merge approval or deployment. PR #43 remains open and unmerged.
+
+
+### 9.13 Workflow evidence for current documentation HEAD 8b705336
+
+**Verification date:** 2026-11-14  
+**PR #43 source HEAD:** `8b70533670aeb8d0c77566f037add4687358b3c6`.  
+**Validation workflow:** [Validate website and API — run 43466624080](https://github.com/seokillseo-byte/hoiquanweb/actions/runs/43466624080) — completed, **success**.  
+**Preview workflow:** [Build isolated PR preview — run 43466624148](https://github.com/seokillseo-byte/hoiquanweb/actions/runs/43466624148) — completed, **success**.  
+**Artifact disposition:** The workflow generated a preview artifact, but it has not been independently extracted or audited. Do not transfer the artifact-level findings from §9.10 to this artifact.  
+
+**Disposition:** The two required workflows passed on the exact source HEAD above. This does not close R-016, R-017 or F-009; does not verify hosted Worker/D1/R2/auth/email behavior; and does not constitute full visual/browser/responsive/accessibility QA, Core Preview acceptance, Gate 2 approval, merge approval or deployment.

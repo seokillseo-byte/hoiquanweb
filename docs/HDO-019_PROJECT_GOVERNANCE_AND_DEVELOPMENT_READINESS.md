@@ -166,6 +166,7 @@ The repository review recorded PR #30–#36 as merged. PR #40 (durable lead emai
 - CI validation and isolated PR preview passed for the final integrated heads of PR #45 and PR #46. PR #47's feature head `dc16ef6271bafd9fc61cd4f97ab19546cc0e8f08` passed isolated Preview; the follow-up documentation-only correction was separately validated on feature head `219732fe0251efad51436278fccc3617f862b89b`.
 - **PR #48 — staging-first deployment runbook:** closed without merge because it requires a separate Staging D1/R2 environment, contrary to the Owner's explicit no-Staging direction.
 - **PR #49 — admin visual refresh:** closed without merge because it was based on an obsolete admin shell; its DOM-wrapping/navigation script would duplicate the current authenticated admin workspace from PR #46. Further visual refinement must start from current `main` in the Owner's AI Studio workflow.
+- Legacy PRs #1–#8 were also closed without merge after verifying their planning, React foundation, CMS schema/API, public API edge-case fixes, module map, CRM foundation and Better Auth evidence are already present in newer form on `main`.
 - No implementation PR remains approved for integration from this batch. `main` is the consolidated code baseline for the next AI Studio visual-refinement pass.
 
 ### 6.3 XC-03 / R-016 and XC-10 / R-017

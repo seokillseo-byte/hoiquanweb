@@ -125,6 +125,11 @@ async function loadBlog(){
  const root=document.querySelector("[data-blog-list]");
  if(!root)return;
  const lang=root.dataset.language==="en"?"en":"vi";
+ let cleanArticleSlugs=new Set();
+ try{
+  const parsedSlugs=JSON.parse(root.dataset.cleanArticleSlugs||"[]");
+  if(Array.isArray(parsedSlugs))cleanArticleSlugs=new Set(parsedSlugs.filter(value=>typeof value==="string"));
+ }catch{/* No generated route manifest means use the legacy detail fallback. */}
  const labels=lang==="vi"?{loading:"Đang tải bài viết…",empty:"Chưa có bài viết được xuất bản.",error:"Không tải được bài viết. Vui lòng thử lại.",category:"Tất cả danh mục",more:"Tải thêm",search:"Tìm kiếm",read:"Đọc bài viết",author:"Tác giả"}:{loading:"Loading articles…",empty:"No published articles yet.",error:"Could not load articles. Please try again.",category:"All categories",more:"Load more",search:"Search",read:"Read article",author:"By"};
  const form=root.querySelector("[data-blog-filter]");
  const results=root.querySelector("[data-blog-results]");
@@ -148,7 +153,12 @@ async function loadBlog(){
    article.appendChild(tags);
   }
   const link=cmsElement("a",labels.read,"button button-outline");
-  link.href=root.dataset.detailPath+"?slug="+encodeURIComponent(item.slug);
+  const seo=item?.seo&&typeof item.seo==="object"?item.seo:{};
+  const cleanSlug=typeof item.slug==="string"&&/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(item.slug);
+  const seoReady=typeof seo.title==="string"&&seo.title.trim().length>=10&&seo.title.trim().length<=240&&typeof seo.description==="string"&&seo.description.trim().length>=50&&seo.description.trim().length<=320;
+  const basePath=root.dataset.basePath||"";
+  if(seo.indexable===true&&seo.locale===lang&&cleanSlug&&seoReady&&cleanArticleSlugs.has(item.slug))link.href=basePath+(lang==="vi"?"/blog/":"/en/blog/")+item.slug+"/";
+  else link.href=basePath+root.dataset.detailPath+"?slug="+encodeURIComponent(item.slug);
   article.appendChild(link);
   return article;
  }
@@ -158,7 +168,7 @@ async function loadBlog(){
   if(!hasMore&&!reset)return;
   loading=true;more.disabled=true;statusText(labels.loading);
   try{
-   const params=new URLSearchParams({limit:"20",offset:String(offset)});
+   const params=new URLSearchParams({limit:"20",offset:String(offset),locale:lang});
    const query=form.elements.q.value.trim();
    if(query)params.set("q",query);
    if(category.value)params.set("category",category.value);
@@ -174,7 +184,7 @@ async function loadBlog(){
  }
  async function loadCategories(){
   try{
-   const response=await fetch(cmsApiBase+"/api/v1/public/post-categories",{headers:{accept:"application/json"},credentials:"omit"});
+   const response=await fetch(cmsApiBase+"/api/v1/public/post-categories?locale="+encodeURIComponent(lang),{headers:{accept:"application/json"},credentials:"omit"});
    if(!response.ok)return;
    const data=await response.json();
    for(const item of data.data||[]){

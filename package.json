@@ -8,7 +8,8 @@
     "build": "npm run typecheck && vite build --config frontend/vite.config.ts",
     "typecheck": "tsc --noEmit -p frontend/tsconfig.json",
     "test:api": "node --test backend/tests/auth-boundary.test.js backend/tests/public-content.test.js",
-    "test:auth": "node --test backend/tests/auth.integration.test.js"
+    "test:auth": "node --test backend/tests/auth.integration.test.js",
+    "test:seo": "node --test scripts/public_articles.test.mjs scripts/public_article_build.test.mjs"
   },
   "dependencies": {
     "@vitejs/plugin-react": "^4.7.0",

@@ -8,7 +8,7 @@
 **Last evidence check:** 2026-11-13  
 **Development implementation head reviewed:** `d3eed44ed0bd20ffc759e5ca7bf0316b344d9cb1` (subsequent commits on this branch update governance documentation only)
 
-> This document consolidates the current governance and readiness evidence. It is not an approval record. Gate 2 remains unapproved and no blanket authorization for the next development phase exists. A separate, limited Project Owner authorization for work packages XC-03/R-016 and XC-10/R-017 on PR #43 is already recorded in `DEVELOPMENT_HANDOFF_XC03_XC10.md`; that authorization does not extend to unrelated development, merge, deployment or production changes.
+> This document consolidates the current governance and readiness evidence. Formal Gate 2 remains unapproved as a readiness/release gate. On 2026-11-13 the Project Owner explicitly authorized continued implementation to completion across UI/UX, functions, backend and SEO, following the existing Master Blueprint and phase roadmap. This authorizes development work in controlled feature branches; it does not authorize merge, deployment, production configuration, live customer data, or bypassing QA and Owner acceptance.
 
 ---
 
@@ -85,8 +85,9 @@ No named specialist staffing roster is recorded. Do not represent role placehold
 ### Gate 2 — Project Governance & Development Readiness
 
 **Status:** Not approved.  
-**Next-phase / blanket Development Authorization:** Not granted.  
-**Existing bounded authorization:** The Project Owner separately authorized only XC-03/R-016 and XC-10/R-017 on the current PR #43 branch, as recorded in `DEVELOPMENT_HANDOFF_XC03_XC10.md`. This is a narrowly scoped remediation exception, not Gate 2 approval and not authorization for additional features or general development.
+**Continued Development Authorization:** Granted by the Project Owner on 2026-11-13 for completion of the existing project scope across UI/UX, functions, backend and SEO, in the order and boundaries defined by the Master Blueprint and implementation roadmap.  
+**Formal Gate 2 status:** Not approved; final phase readiness, acceptance and release conditions remain open.  
+**Environment / release exclusions:** Feature branches and controlled CI/Preview work only. No merge, staging deployment, production deployment, production configuration changes or real customer data without separate explicit approval. The earlier XC-03/XC-10 authorization remains recorded in DEVELOPMENT_HANDOFF_XC03_XC10.md; R-016 is now being implemented under the Owner instruction recorded in OWNER_AUTHORIZATION_2026-11-13.md.
 
 Gate 2 may be submitted to the Project Owner only after the evidence register in section 5 is reviewed and all blockers are either resolved or explicitly accepted by the Owner with documented scope and risk consequences.
 
@@ -146,7 +147,7 @@ This mapping uses the exact five source files supplied by the Project Owner. It 
 | 2. Analyze | Business baseline, traceability, risk register and 19-module cross-check | Completed as a working analysis; unresolved facts remain visible |
 | 3. Plan | Master Blueprint, URL Map, Feature/UI/UX/Technical/SEO/Performance Blueprints and Roadmap | Draft / partial; Owner acceptance remains required |
 | 4. Validate | Cross-check, traceability, risk review and CI evidence for bounded remediations | Partial; critical/high residual risks remain |
-| 5. Optimize | Bounded remediation XC-03/XC-10 and documented corrections | Partial; no blanket optimization or scope expansion authorized |
+| 5. Optimize | Bounded remediation XC-03/XC-10 and documented corrections | Partial; phase-ordered implementation is authorized within the existing roadmap; unapproved scope expansion remains prohibited |
 | 6. Generate Deliverables | Planning documents and development handoff/report | Partial; not all 19 modules are accepted as final deliverables |
 | 7. Final Review | HDO-019 and outstanding Owner review items | Pending |
 | 8. Handover | Formal Gate 2 submission, approved scope/commit, named owners and acceptance package | Pending |
@@ -161,20 +162,33 @@ The repository review recorded PR #30–#36 as merged. PR #40 (durable lead emai
 
 ### 6.2 Open pull requests
 
-- **PR #42 — authorization and membership revocation:** open, not merged. Its latest recorded code review did not report major issues after a last-owner protection finding was addressed. This is not equivalent to independent QA acceptance or Owner merge approval.
-- **PR #43 — Phase 0 Blueprint/risk review and bounded XC-03/XC-10 work:** open, not merged. Development implementation head reviewed: `d3eed44ed0bd20ffc759e5ca7bf0316b344d9cb1`; subsequent commits update governance documentation only. Both PR-triggered workflows associated with this exact head completed successfully: [Validate website and API — run 43398641260](https://github.com/seokillseo-byte/hoiquanweb/actions/runs/43398641260) and [Build isolated PR preview — run 43398641300](https://github.com/seokillseo-byte/hoiquanweb/actions/runs/43398641300). These are CI results only, not independent QA or runtime/production acceptance.
+- **PR #42 — authorization and membership revocation:** open; the latest source changes include the audit regression fix. Final CI and independent review remain pending.
+- **PR #44 — clean bilingual CMS article routes and prerendering:** open; implementation and SEO regression coverage are being integrated after the Phase 0 documentation baseline was merged.
+- **PR #45–#48:** downstream UI/admin/portal and deployment-documentation workstreams remain stacked behind PR #44 and require integration in dependency order. Staging-only deployment instructions in PR #48 are not part of the approved target; the Project Owner selected direct Production as the eventual deployment model, with no Staging environment.
+- **PR #49 — admin workspace visual refresh:** separate main-based visual workstream; integrate only after comparing its admin.html changes with PR #45/#46 to avoid overwriting functionality.
 
 ### 6.3 XC-03 / R-016 and XC-10 / R-017
 
-- XC-03: generic blog shells emit `noindex,follow` and are excluded from sitemap; generated route and sitemap eligibility are separated. CI evidence records 40 localized HTML routes, 36 indexable and 4 noindex, with SEO-IX-01..07 passing. Independent artifact review confirmed both VI/EN generic article shells remain noindex and outside the sitemap. Dynamic published articles still lack clean-slug URLs and article-specific initial HTML. R-016 remains Critical and open. See `QA_REVIEW_XC03_XC10.md`.
+- XC-03: generic blog shells emit `noindex,follow` and are excluded from sitemap; generated route and sitemap eligibility are separated. PR #44 implements locale-aware CMS eligibility, clean bilingual article URLs, article-specific prerendered HTML and sitemap inclusion tests. Its CI must pass on the final integrated head; live CMS/D1 content fetch and browser/runtime verification remain outstanding. Keep R-016 open until those runtime checks are completed. See `QA_REVIEW_XC03_XC10.md`.
 - XC-10: the public Vietnamese homepage remains at Preview root; SPA is isolated under `/platform/`; final assembled artifact checks PREV-01..06 passed. Independent static artifact QA additionally confirmed 36/36 sitemap URLs return HTTP 200, canonical/indexability consistency and JS/CSS asset resolution. Full visual/browser/responsive QA and Project Owner acceptance remain pending; this was an isolated CI artifact, not a public hosted Preview URL. R-017 remains open. See `QA_REVIEW_XC03_XC10.md`.
 
 ### 6.4 Release restrictions
 
-- PR #42 and PR #43 remain unmerged.
+- PR #42 and PR #44 remain open pending final integrated CI and review.
 - No production deployment is authorized by this document.
 - Do not change production Pages workflow, production secrets, Cloudflare resources, D1 schema/migrations, R2 buckets or infrastructure without separate approval.
 - A downloadable/local static Preview artifact is not a live runtime acceptance environment.
+
+### 6.5 Admin UI refresh — PR #49 (separate, unmerged workstream)
+
+- PR #49 introduces a bounded visual refresh to the existing `admin.html` workspace. It changes presentation and navigation only; API, authentication/session behavior, role checks, data model and business workflows are intended to remain unchanged.
+- Latest implementation commit: `bf8292f289e78842d7a890559d0159cdbf6afa3c`.
+- Validate website/API run 43451427869 and isolated Preview run 43451427714 completed successfully.
+- Codex code review completed without findings on the latest commit; the three earlier inline responsive/contrast/reduced-motion findings are resolved.
+- PR #49 remains Draft and unmerged. Its Preview artifact 14051055530 is based on the current `main` baseline and does not contain the separate PR #43 public-site/SEO changes. A combined full-site Preview has not been generated or CI-verified.
+- Browser-based visual inspection, responsive/accessibility acceptance, Worker/D1 staging integration and authenticated end-to-end workflow tests remain outstanding. Static HTML Preview and CI do not establish operational acceptance.
+
+**Disposition:** PR #49 is ready for bounded Admin UI visual review only; it is not accepted for production. Keep it Draft until the missing review/runtime evidence is completed and the Project Owner accepts the UI. No merge or deployment is authorized.
 
 ## 7. Risk governance
 
@@ -226,16 +240,17 @@ The Project Owner and responsible reviewers should record each item as **Accepte
 **Decision owner:** Project Owner.  
 **Decision date:** Pending.  
 **Authorized next-phase scope/commit:** Pending.  
-**Blanket Development Authorization:** Not granted.  
-**Existing bounded authorization:** XC-03/R-016 and XC-10/R-017 only, per `DEVELOPMENT_HANDOFF_XC03_XC10.md`; no merge/deployment/production authority.
+**Continued Development Authorization:** Granted 2026-11-13 for the existing roadmap scope (UI/UX, functions, backend and SEO), as recorded in OWNER_AUTHORIZATION_2026-11-13.md.  
+**Formal Gate 2:** Not yet approved.  
+**Merge/deployment/production authority:** Not granted; separate approval remains required.
 
 ## 10. Phase 0 / Gate 2 exit decision
 
-Current evidence supports continuing the planning and readiness review, but does not support declaring Phase 0 complete or Gate 2 approved. The two bounded remediation work packages already authorized by the Project Owner remain distinct from the unapproved next-phase authorization.
+Current evidence does not support declaring Phase 0 complete or Gate 2 approved. However, the Project Owner has explicitly authorized continued implementation to completion across UI/UX, functions, backend and SEO, following the existing Master Blueprint and phase roadmap. This development authorization is separate from formal Gate 2, QA acceptance, merge and deployment decisions.
 
 The following remain open: owner review of draft Blueprints; critical Project Input disposition; inquiry privacy/runtime readiness; remaining full QA and Owner disposition for R-016/R-017; security acceptance for PR #42; staging architecture/runtime evidence; performance measurements; named staffing/capacity; and final validation.
 
-The next authorized activity is to close or formally disposition these readiness items and present a precise Gate 2 decision to the Project Owner. Do not start unrelated feature development, merge either open PR or deploy an environment as a consequence of this document.
+The next authorized activity is to continue implementation in roadmap order on feature branches, close the applicable requirements and provide test evidence. Do not invent unresolved business facts or publish unapproved claims; record TBD items and return material decisions to the Owner. Do not merge either open PR, deploy staging/production or change production resources as a consequence of this development authorization.
 
 ---
 
@@ -261,15 +276,3 @@ The next authorized activity is to close or formally disposition these readiness
 - [Independent QA Review XC-03 / XC-10](QA_REVIEW_XC03_XC10.md)
 - [PR #42 — Security and authorization](https://github.com/seokillseo-byte/hoiquanweb/pull/42)
 - [PR #43 — Phase 0 planning and bounded remediation](https://github.com/seokillseo-byte/hoiquanweb/pull/43)
-
-
-### 6.5 Admin UI refresh — PR #49 (separate, unmerged workstream)
-
-- PR #49 introduces a bounded visual refresh to the existing `admin.html` workspace. It changes presentation and navigation only; API, authentication/session behavior, role checks, data model and business workflows are intended to remain unchanged.
-- Latest implementation commit: `bf8292f289e78842d7a890559d0159cdbf6afa3c`.
-- Validate website/API run 43451427869 and isolated Preview run 43451427714 completed successfully.
-- Codex code review completed without findings on the latest commit; the three earlier inline responsive/contrast/reduced-motion findings are resolved.
-- PR #49 remains Draft and unmerged. Its Preview artifact 14051055530 is based on the current `main` baseline and does not contain the separate PR #43 public-site/SEO changes. A combined full-site Preview has not been generated or CI-verified.
-- Browser-based visual inspection, responsive/accessibility acceptance, Worker/D1 staging integration and authenticated end-to-end workflow tests remain outstanding. Static HTML Preview and CI do not establish operational acceptance.
-
-**Disposition:** PR #49 is ready for bounded Admin UI visual review only; it is not accepted for production. Keep it Draft until the missing review/runtime evidence is completed and the Project Owner accepts the UI. No merge or deployment is authorized.

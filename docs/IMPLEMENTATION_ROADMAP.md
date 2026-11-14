@@ -56,7 +56,7 @@ Mục tiêu: dựng nền tảng có thể mở rộng, không chỉ thêm HTML 
 ## Phase 2 — Website dịch vụ nhiều trang + CMS nội dung
 
 - Các trang riêng: home, giới thiệu, dịch vụ, trang dịch vụ chi tiết, giải pháp theo ngành, portfolio/case study, bảng giá, blog/kiến thức, FAQ, liên hệ và pháp lý.
-- CMS cho pages/posts/services có draft, edit, publish/archive và revision snapshots đã có API/UI. Bài viết đã có category/tags, public API lọc theo danh mục/tag/từ khóa, trang blog và trang chi tiết song ngữ; public renderer chỉ lấy nội dung đã xuất bản. Còn thiếu navigation/footer động từ CMS, scheduling, route CMS tùy ý và tối ưu SEO server-render cho bài viết động. CMS revision history + admin-only restore đã được bổ sung ở nhánh feature; restore luôn đưa nội dung về draft và cần publish lại.
+- CMS cho pages/posts/services có draft, edit, publish/archive và revision snapshots đã có API/UI. Bài viết đã có category/tags và public API lọc theo danh mục/tag/từ khóa/ngôn ngữ. Generator đã hỗ trợ prerender bài viết đã xuất bản thành route sạch `/blog/{slug}/` hoặc `/en/blog/{slug}/`, với initial HTML, metadata, Article JSON-LD, hreflang theo bản dịch thực và sitemap theo readiness gate. Còn thiếu cấu hình HQ_API_BASE trên môi trường Pages, kiểm thử với bài viết CMS thật, navigation/footer động từ CMS, scheduling và route CMS tùy ý. CMS revision history + admin-only restore đã được bổ sung ở nhánh feature; restore luôn đưa nội dung về draft và cần publish lại.
 - Nội dung công khai được đọc từ API/database; có fallback lỗi rõ ràng, không âm thầm hiển thị dữ liệu giả.
 - Sitemap và canonical phản ánh các URL thực; metadata và structured data chỉ dùng thông tin đã xác minh.
 - Chuyển các section hiện tại thành nội dung/khối tái sử dụng khi phù hợp, tránh viết lại không cần thiết.
@@ -66,7 +66,7 @@ Mục tiêu: dựng nền tảng có thể mở rộng, không chỉ thêm HTML 
 - [x] Public renderer có API integration tùy chọn cho published CMS page khớp slug route tĩnh, render block bằng textContent.
 - [ ] Cấu hình HQ_API_BASE, deploy Worker/D1 và nghiệm thu thay đổi CMS xuất hiện trên public domain.
 - [x] Blog listing/detail song ngữ: category/tags, tìm kiếm, lọc danh mục, phân trang tải thêm và bài viết published-only; nội dung block dùng renderer an toàn.
-- [ ] Hỗ trợ tạo route CMS mới, media preview và SEO server-render/prerender cho từng bài viết động.
+- [x] Implement generator prerender cho bài viết CMS đã xuất bản, có locale, SEO metadata, nội dung block và indexation approval; generic article shells tiếp tục noindex.\n- [ ] Cấu hình HQ_API_BASE, kiểm thử build với Worker/D1 staging và xác minh từng bài viết thực tế, sitemap, unpublish và refresh.
 - [ ] Public routes hoạt động trực tiếp khi mở URL, gồm refresh và 404.
 - [x] Test quyền xuất bản, revision history và restore; restore không tự xuất bản nội dung.
 - [x] Test media upload: file type/signature, size cap, draft privacy, admin preview, role boundary, publish and archive.

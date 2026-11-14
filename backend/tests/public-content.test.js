@@ -78,6 +78,42 @@ test("public post listing filters by category, tag and search without exposing d
   assert.match(calls[0], /title LIKE/);
 });
 
+test("public blog listing filters by locale and keeps legacy posts in Vietnamese", async () => {
+  const { env, calls } = makeEnv({ posts: [{ slug: "seo-basics", title: "SEO Basics", seo_json: "{\"locale\":\"en\"}" }] });
+  const response = await request("/api/v1/public/posts?locale=en", env);
+  assert.equal(response.status, 200);
+  const body = await response.json();
+  assert.equal(body.meta.locale, "en");
+  assert.match(calls[0], /json_extract\(seo_json, '\$\.locale'\)/);
+  const invalid = await request("/api/v1/public/posts?locale=fr", env);
+  assert.equal(invalid.status, 400);
+});
+
+test("public post listing only advertises indexable articles when supported body blocks exist", async () => {
+  const { env, calls } = makeEnv({
+    posts: [
+      { slug: "empty-body", title: "Empty body", seo_json: '{"locale":"vi","indexable":true}', body_ready: 0 },
+      { slug: "ready-body", title: "Ready body", seo_json: '{"locale":"en","indexable":true}', body_ready: 1 }
+    ]
+  });
+  const response = await request("/api/v1/public/posts", env);
+  assert.equal(response.status, 200);
+  const body = await response.json();
+  assert.equal(body.data[0].seo.indexable, false);
+  assert.equal(body.data[1].seo.indexable, true);
+  assert.equal("body_ready" in body.data[0], false);
+  assert.match(calls[0], /json_each\(body_json, '\$\.blocks'\)/);
+});
+
+test("public category directory supports locale filtering", async () => {
+  const { env, calls } = makeEnv({ categories: [{ category: "SEO", post_count: 1 }] });
+  const response = await request("/api/v1/public/post-categories?locale=vi", env);
+  assert.equal(response.status, 200);
+  assert.match(calls[0], /json_extract\(seo_json, '\$\.locale'\)/);
+  const invalid = await request("/api/v1/public/post-categories?locale=fr", env);
+  assert.equal(invalid.status, 400);
+});
+
 test("public category directory includes only categories with published posts", async () => {
   const { env, calls } = makeEnv({ categories: [{ category: "SEO", post_count: 2 }] });
   const response = await request("/api/v1/public/post-categories", env);

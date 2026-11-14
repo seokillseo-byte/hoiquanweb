@@ -39,7 +39,8 @@ Verified generator behavior:
 | 11 | Projects listing | `/du-an/` | `/en/projects/` | List selected products/projects | Open project details | software projects; digital products | Index only with reviewed, publishable project entries |
 | 12 | Template catalog | `/templates/` | `/en/templates/` | Search and filter published website templates | View catalog item / inquire | website templates; WordPress templates | Conditional: index only when the catalog has useful published inventory |
 | 13 | Blog listing | `/blog/` | `/en/blog/` | Search and filter published knowledge articles | Open an article | website, software, SEO and AI knowledge | Conditional: index when useful published articles are available |
-| 14 | Blog detail shell | `/blog/post/` | `/en/blog/post/` | Generic client-side container that loads an article from a query slug | Return to blog / read loaded article | No independent topic; article-specific topic belongs to each post URL | **Noindex and exclude from sitemap** until replaced by clean per-article routes with initial-HTML content |
+| 14 | Generic blog detail shell | `/blog/post/` | `/en/blog/post/` | Legacy client-side fallback for articles not yet eligible for prerendering | Return to blog / read loaded article | No independent topic; article-specific topic belongs to each post URL | **Noindex and exclude from sitemap** |
+| 14A | Published article detail (dynamic) | `/blog/{slug}/` | `/en/blog/{slug}/` | Serve one approved published CMS article with its body and SEO metadata in initial HTML | Read article / return to blog | Article-specific topic and search intent defined by the approved CMS post | Index only when `seo.indexable=true`, locale, unique SEO title/description and body readiness pass; genuine VI/EN pairs only receive reciprocal hreflang |
 | 15 | FunLink project | `/du-an/funlink/` | `/en/projects/funlink/` | Describe the FunLink URL-shortening SaaS project | Visit product / discuss a project | FunLink; URL shortener SaaS | Conditional on owner approval of description, product status and publication rights |
 | 16 | Entity Manager project | `/du-an/entity-manager/` | `/en/projects/entity-manager/` | Describe the Entity Manager desktop software | Discuss a similar software project | entity management software | Conditional on owner approval of description, product status and publication rights |
 | 17 | Social Media Automation project | `/du-an/social-media-automation/` | `/en/projects/social-media-automation/` | Describe social-platform workflow automation software | Discuss an automation project | social media automation software | Conditional on owner approval of description, capability and publication rights |
@@ -57,6 +58,10 @@ Verified generator behavior:
 5. Query parameters used for filtering, search or tracking must not create duplicate indexable canonical URLs.
 6. If a translation is missing or materially incomplete, do not declare a false hreflang pair.
 7. URL changes require a documented one-to-one 301 redirect where a replacement exists; update internal links, canonical, hreflang and sitemap together.
+8. CMS posts declare `seo.locale` as `vi` or `en`. Legacy posts without a locale are treated as Vietnamese for listing only, but are not eligible for clean-URL indexation until explicitly reviewed.
+9. A post is prerendered only when `seo.indexable=true`, locale is valid, SEO title is 10–240 characters, SEO description is 50–320 characters, and at least one supported content block exists.
+10. `seo.translation_group_id` links genuine translations. Exactly one eligible VI post and one eligible EN post in the same group receive reciprocal `hreflang`; `x-default` points to the Vietnamese URL. A Vietnamese-only article has `vi` + `x-default` pointing to itself; an English-only article has only `en`.
+11. GitHub Pages build uses `HQ_API_BASE` to read published posts and fetch each eligible article body. If configured API reads fail, the build fails rather than publishing an incomplete sitemap. If `HQ_API_BASE` is absent, no dynamic article HTML is generated.
 
 ### Current implementation observation
 The generator currently emits canonical and VI/EN hreflang links on every route. The generated static routes use the configured domain constant. Live host behavior, HTTP status, redirect handling and direct-navigation behavior still require Preview/runtime acceptance.
@@ -88,23 +93,26 @@ The generator currently emits canonical and VI/EN hreflang links on every route.
 - [ ] Every route has final, owner-approved title, description, page copy and CTA.
 - [ ] Every VI/EN pair is a genuine equivalent translation with reciprocal `hreflang="vi"` and `hreflang="en"`; `hreflang="x-default"` points to the corresponding Vietnamese URL as approved by DEC-021. Artifact check passed for 39 available route files; verify the root homepage in the correctly assembled public-site output.
 - [ ] Indexation policy is implemented per route type; the generic blog-detail shell emits `noindex,follow` in initial HTML and is absent from sitemap; validator checks both conditions.
-- [ ] Published CMS/blog posts receive stable clean-slug URLs and server/prerendered initial HTML.
+- [x] Generator supports stable clean-slug routes and article-specific initial HTML for published CMS posts that pass the explicit SEO readiness gate.
+- [ ] Configure `HQ_API_BASE` in the production Pages environment and verify real published articles are generated, refreshed and removed from the sitemap on unpublish.
 - [ ] Sitemap contains every eligible published canonical URL exactly once and no ineligible route.
 - [ ] Direct navigation, refresh, canonical, hreflang, redirects, HTTP status and 404 are tested on an accessible Preview.
 - [ ] Template/project/blog listing pages are not indexed while empty, thin or populated only with unapproved content.
 - [ ] Contact form success/error state reflects actual API acceptance; privacy and consent wording are approved.
 - [ ] No fabricated price, testimonial, customer logo, case-study metric, legal claim or unsupported capability is published.
 
-## 6. Remediation requirements — planning only
+## 6. Article route implementation and acceptance
 
 The current generator adds the two generic `blog-post` shell routes to the same `pages` collection used for both HTML generation and sitemap generation. The validator then asserts sitemap URL count equals all generated HTML routes. This coupling must be removed in the implementation plan: HTML route generation and sitemap eligibility must be evaluated independently.
 
 Required target behavior:
 - Keep the generic `/blog/post/` and `/en/blog/post/` shells available only if the existing browser-side article flow still needs them; emit `noindex,follow` in their initial HTML and do not include them in the sitemap.
 - Keep the blog listing routes eligible only when their content is useful, approved and not empty/thin; do not infer eligibility solely from route existence.
-- Do not publish individual article URLs in sitemap until each has a stable clean URL and initial HTML containing article-specific title, description, canonical, reciprocal language alternates, approved x-default, robots policy and Article structured data.
+- The generator fetches published posts only, then fetches full detail for posts explicitly marked `seo.indexable=true` and emits stable `/blog/{slug}/` or `/en/blog/{slug}/` HTML documents.
+- Each generated article has article-specific initial HTML, title, description, self-canonical, language-appropriate hreflang, Article structured data and sitemap entry.
+- The generic client-side shells remain noindex and excluded. Articles that fail the readiness gate are not emitted as indexable routes and remain accessible only through the legacy fallback flow.
 - Change sitemap validation to assert that every sitemap URL is a unique canonical, public and indexable route, while explicitly permitting generated non-indexable shells to be absent.
-- Add negative tests proving generic shell URLs are absent from sitemap and carry noindex; add positive tests for eligible static routes and real published articles.
+- Unit tests cover readiness, clean slug generation, translation pairing, Vietnamese x-default, and safe server rendering. The public-site validator checks initial article HTML and sitemap consistency whenever article routes are generated.
 - Keep robots.txt crawl rules separate from meta robots; do not block the shell in robots.txt as a substitute for noindex.
 
 ## 7. Open decisions

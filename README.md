@@ -2,10 +2,14 @@
 
 Hội Quán Web được định hướng thành nền tảng vận hành công ty thiết kế website: website dịch vụ nhiều trang, CMS riêng, kho mẫu WordPress + HTML/CSS, quản trị kinh doanh và cổng khách hàng.
 
-**Tình trạng hiện tại:** website công khai song ngữ có 40 trang nội dung, SEO metadata, sitemap và biểu mẫu tư vấn có chế độ dự phòng. CMS có giao diện/API quản lý pages/posts/services, revision history và restore; blog song ngữ có category/tags, tìm kiếm, lọc danh mục và bài viết chi tiết; template catalog song ngữ có admin CRUD, lọc và workflow xuất bản. CRM đã có lead pipeline, lead conversion idempotent, customer workspace, activity timeline, báo giá và phân quyền Better Auth. Customer portal có quote, order, project/milestone/comment và support ticket; admin có quy trình quản lý tương ứng. Lead assignment có migration 0008, API kiểm tra role admin/staff, event history, audit log và giao diện phân công/xem lịch sử trong admin. Cloudflare Worker/D1 chưa được cấu hình và nghiệm thu staging/production; HQ_API_BASE chưa được cấu hình; public CMS renderer chỉ ghi đè trang tĩnh có slug tương ứng. CMS media library có mã nguồn R2-backed với upload ảnh giới hạn MIME/signature/5 MiB, alt text, draft/publish/archive và public delivery chỉ cho asset published; cần tạo R2 bucket và chạy migration 0010 trên Cloudflare. Private customer project files now have membership-scoped upload/download APIs and portal/admin UI, private R2 storage, internal/customer visibility and local integration tests; Cloudflare staging acceptance remains pending. In-app notifications for project/milestone/ticket events now have a user-scoped inbox and read-state API; CRM dashboard provides D1-backed KPIs, lead status breakdown, recent leads and safe activity summaries. Lead email delivery đã có durable D1 outbox, retry scheduler và Resend idempotency ở mức mã nguồn/CI; sender domain/secrets và cron runtime Cloudflare vẫn cần nghiệm thu. Payment/invoicing, template package upload/provisioning và các tích hợp vận hành vẫn còn trong roadmap. Không coi CI xanh là bằng chứng backend đang chạy thực tế.
+**Tình trạng hiện tại:** generator hiện tạo 40 route HTML song ngữ (20 cặp VI/EN); điều này xác nhận route generation, không đồng nghĩa toàn bộ nội dung đã được duyệt hoặc đủ điều kiện index. SEO runtime, sitemap/indexation policy, form end-to-end và Preview acceptance vẫn cần kiểm tra theo Blueprint. CMS có giao diện/API quản lý pages/posts/services, revision history và restore; blog song ngữ có category/tags, tìm kiếm, lọc danh mục và bài viết chi tiết; template catalog song ngữ có admin CRUD, lọc và workflow xuất bản. CRM đã có lead pipeline, lead conversion idempotent, customer workspace, activity timeline, báo giá và phân quyền Better Auth. Customer portal có quote, order, project/milestone/comment và support ticket; admin có quy trình quản lý tương ứng. Lead assignment có migration 0008, API kiểm tra role admin/staff, event history, audit log và giao diện phân công/xem lịch sử trong admin. Cloudflare Worker/D1 chưa được cấu hình và nghiệm thu staging/production; HQ_API_BASE chưa được cấu hình; public CMS renderer chỉ ghi đè trang tĩnh có slug tương ứng. CMS media library có mã nguồn R2-backed với upload ảnh giới hạn MIME/signature/5 MiB, alt text, draft/publish/archive và public delivery chỉ cho asset published; cần tạo R2 bucket và chạy migration 0010 trên Cloudflare. Private customer project files now have membership-scoped upload/download APIs and portal/admin UI, private R2 storage, internal/customer visibility and local integration tests; Cloudflare staging acceptance remains pending. In-app notifications for project/milestone/ticket events now have a user-scoped inbox and read-state API; CRM dashboard provides D1-backed KPIs, lead status breakdown, recent leads and safe activity summaries. Lead email delivery đã có durable D1 outbox, retry scheduler và Resend idempotency ở mức mã nguồn/CI; sender domain/secrets và cron runtime Cloudflare vẫn cần nghiệm thu. Payment/invoicing, template package upload/provisioning và các tích hợp vận hành vẫn còn trong roadmap. Không coi CI xanh là bằng chứng backend đang chạy thực tế.
 
 ## Tài liệu dự án
 
+- [Master Blueprint — nguồn điều hướng Planning](docs/MASTER_BLUEPRINT.md)
+- [Blueprint Cross-check — đối chiếu 19 modules và Phase 0 blockers](docs/BLUEPRINT_CROSS_CHECK.md)
+- [Owner Decision Review — các quyết định chờ Project Owner xác nhận](docs/OWNER_DECISION_REVIEW.md)
+- [BP-17 Risk Assessment](docs/RISK_ASSESSMENT.md)
 - [Kiến trúc đích](docs/ARCHITECTURE.md)
 - [Mô hình dữ liệu logic](docs/DATA_MODEL.md)
 - [API contract ban đầu](docs/API_CONTRACT.md)
@@ -14,6 +18,10 @@ Hội Quán Web được định hướng thành nền tảng vận hành công 
 - [Roadmap và tiêu chí nghiệm thu](docs/IMPLEMENTATION_ROADMAP.md)
 - [Hướng dẫn cấu hình backend lead hiện có](docs/PHASE_2_BACKEND_SETUP.md)
 - [SEO foundation và design system hiện tại](docs/SEO_AND_DESIGN_SYSTEM.md)
+- [URL Map — 40 route song ngữ và indexation matrix](docs/URL_MAP.md)
+- [Feature Blueprint — Core Preview P0](docs/FEATURE_BLUEPRINT.md)
+- [UI Blueprint — public website](docs/UI_BLUEPRINT.md)
+- [UX Blueprint — visitor journey and inquiry flow](docs/UX_BLUEPRINT.md)
 
 ## Preview hiện tại
 
@@ -45,7 +53,7 @@ Repository hiện có migration CRM `0003_crm_foundation.sql`, CMS revisions `00
 1. Website công khai nhiều trang với SEO, dịch vụ, dự án, blog, FAQ và trang pháp lý.
 2. CMS riêng để quản lý trang, bài viết, media, SEO, dịch vụ, giá và nội dung xuất bản.
 3. Kho mẫu WordPress và HTML/CSS, có tìm kiếm, lọc, preview, phiên bản, compatibility và license.
-4. Cổng khách hàng ngay từ bản phát hành đầu tiên: tài khoản an toàn, báo giá, đơn hàng, tiến độ, file, duyệt và hỗ trợ.
+4. Cổng khách hàng ở giai đoạn phát hành nền tảng dài hạn (Phase 4, ngoài Core Preview P0): tài khoản an toàn, báo giá, đơn hàng, tiến độ, file, duyệt và hỗ trợ.
 5. CRM và vận hành: leads, khách hàng, báo giá, dự án, công việc, thông báo và báo cáo.
 6. Giai đoạn sau: page builder, triển khai WordPress có kiểm soát, hosting/domain và AI automation.
 

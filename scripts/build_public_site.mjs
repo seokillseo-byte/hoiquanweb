@@ -1,11 +1,12 @@
 import { copyFile, mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
+import { articleStructuredData, buildPublicArticleRoutes, renderArticleBody } from "./public_articles.mjs";
 
 const OUT = join(process.cwd(), "public-site", "dist");
 const DOMAIN = "https://hoiquanweb.io.vn";
 const BRAND = "HoiQuanWeb";
 const SLOGAN = "Your All-in-One Technology Partner";
-const API_BASE = process.env.HQ_API_BASE || "";
+const API_BASE = (process.env.HQ_API_BASE || "").replace(/\/+$/, "");
 const BASE_PATH = (process.env.HQ_BASE_PATH || "").replace(/\/+$/, "");
 
 const services = [
@@ -131,7 +132,8 @@ function homeBody(page){
 function body(page){
  const vi=page.lang==="vi";
  if(page.kind==="home") return homeBody(page);
- if(page.kind==="blog") return '<section class="page-hero"><div class="container"><span class="eyebrow">'+page.eyebrow+'</span><h1>'+page.heading+'</h1><p>'+page.lead+'</p></div></section><section class="section"><div class="container blog-shell" data-blog-list data-language="'+page.lang+'" data-detail-path="'+url(vi?"/blog/post/":"/en/blog/post/")+'"><form class="blog-toolbar" data-blog-filter><label><span>'+(vi?"Từ khóa":"Search")+'</span><input type="search" name="q" maxlength="100" placeholder="'+(vi?"Tìm bài viết":"Search articles")+'"></label><label><span>'+(vi?"Danh mục":"Category")+'</span><select name="category"><option value="">'+(vi?"Tất cả danh mục":"All categories")+'</option></select></label><button class="button button-primary" type="submit">'+(vi?"Tìm kiếm":"Search")+'</button></form><div class="blog-results" data-blog-results aria-live="polite"><p class="blog-status">'+(vi?"Đang tải bài viết…":"Loading articles…")+'</p></div><div class="blog-more-wrap"><button class="button button-outline" type="button" data-blog-more hidden>'+(vi?"Tải thêm":"Load more")+'</button></div><p class="blog-status" data-blog-status role="status" aria-live="polite"></p></div></section>'+cta(page.lang);
+ if(page.kind==="article") return '<section class="section"><div class="container">'+renderArticleBody(page.article,page.lang)+'</div></section>'+cta(page.lang);
+ if(page.kind==="blog") return '<section class="page-hero"><div class="container"><span class="eyebrow">'+page.eyebrow+'</span><h1>'+page.heading+'</h1><p>'+page.lead+'</p></div></section><section class="section"><div class="container blog-shell" data-blog-list data-language="'+page.lang+'" data-base-path="'+esc(BASE_PATH)+'" data-detail-path="'+url(vi?"/blog/post/":"/en/blog/post/")+'" data-clean-article-slugs="'+esc(JSON.stringify(page.cleanArticleSlugs||[]))+'"><form class="blog-toolbar" data-blog-filter><label><span>'+(vi?"Từ khóa":"Search")+'</span><input type="search" name="q" maxlength="100" placeholder="'+(vi?"Tìm bài viết":"Search articles")+'"></label><label><span>'+(vi?"Danh mục":"Category")+'</span><select name="category"><option value="">'+(vi?"Tất cả danh mục":"All categories")+'</option></select></label><button class="button button-primary" type="submit">'+(vi?"Tìm kiếm":"Search")+'</button></form><div class="blog-results" data-blog-results aria-live="polite"><p class="blog-status">'+(vi?"Đang tải bài viết…":"Loading articles…")+'</p></div><div class="blog-more-wrap"><button class="button button-outline" type="button" data-blog-more hidden>'+(vi?"Tải thêm":"Load more")+'</button></div><p class="blog-status" data-blog-status role="status" aria-live="polite"></p></div></section>'+cta(page.lang);
  if(page.kind==="blog-post") return '<section class="section"><div class="container"><div class="blog-shell" data-blog-post data-language="'+page.lang+'" data-blog-path="'+url(vi?"/blog/":"/en/blog/")+'"><p class="blog-status">'+(vi?"Đang tải bài viết…":"Loading article…")+'</p></div></div></section>';
  if(page.kind==="templates") return '<section class="page-hero"><div class="container"><span class="eyebrow">'+page.eyebrow+'</span><h1>'+page.heading+'</h1><p>'+page.lead+'</p></div></section><section class="section"><div class="container"><div class="template-catalog" data-template-catalog data-language="'+page.lang+'" data-contact="'+(vi?"/lien-he/":"/en/contact/")+'"><form class="template-toolbar" data-template-search><label><span>'+(vi?"Tìm template":"Search templates")+'</span><input type="search" name="q" maxlength="100" placeholder="'+(vi?"Tên, từ khóa hoặc mô tả":"Name, keyword or description")+'"></label><label><span>'+(vi?"Nền tảng":"Platform")+'</span><select name="type"><option value="">'+(vi?"Tất cả":"All platforms")+'</option><option value="wordpress">WordPress</option><option value="html_css">HTML/CSS</option></select></label><button class="button button-primary" type="submit">'+(vi?"Tìm kiếm":"Search")+'</button></form><div class="template-results" data-template-results aria-live="polite"><p class="template-status">'+(vi?"Đang tải catalog…":"Loading catalog…")+'</p></div><div class="template-more-wrap"><button class="button button-outline" type="button" data-template-more hidden>'+(vi?"Tải thêm":"Load more")+'</button></div><p class="template-status" data-template-status role="status" aria-live="polite"></p></div></div></section>'+cta(page.lang);
  if(page.kind==="services") return '<section class="page-hero"><div class="container"><span class="eyebrow">'+page.eyebrow+'</span><h1>'+page.heading+'</h1><p>'+page.lead+'</p></div></section><section class="section"><div class="container">'+cardsServices(page.lang)+'</div></section>'+cta(page.lang);
@@ -147,11 +149,73 @@ function body(page){
 function render(page){
  const canonical=DOMAIN+page.path;
  const otherLang=page.lang==="vi"?"en":"vi";
- const schema={"@context":"https://schema.org","@type":"Organization","name":BRAND,"url":DOMAIN};
- const cmsSlug=["templates","blog","blog-post"].includes(page.kind)?"":page.path==="/"?"home":page.path.split("/").filter(Boolean).pop();
- const html='<!doctype html><html lang="'+page.lang+'"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="theme-color" content="#0B1F3A"><meta name="description" content="'+esc(page.description)+'"><meta name="robots" content="'+(page.indexable===false?"noindex,follow":"index,follow,max-image-preview:large")+'"><link rel="canonical" href="'+canonical+'"><link rel="alternate" hreflang="vi" href="'+DOMAIN+page.viPath+'"><link rel="alternate" hreflang="en" href="'+DOMAIN+(page.lang==="en"?page.path:page.enPath)+'"><link rel="alternate" hreflang="x-default" href="'+DOMAIN+page.viPath+'"><title>'+esc(page.title)+' | HoiQuanWeb</title><meta property="og:type" content="website"><meta property="og:site_name" content="HoiQuanWeb"><meta property="og:title" content="'+esc(page.title)+'"><meta property="og:description" content="'+esc(page.description)+'"><meta property="og:url" content="'+canonical+'"><meta property="og:locale" content="'+(page.lang==="vi"?"vi_VN":"en_US")+'"><link rel="stylesheet" href="/assets/css/site.css"><meta name="hq-api-base" content="'+esc(API_BASE)+'"><script type="application/ld+json">'+JSON.stringify(schema)+'</script></head><body>'+header(page)+'<main id="main" data-cms-page="'+esc(cmsSlug)+'">'+body(page)+'</main>'+footer(page)+'<script src="/assets/js/site.js" defer></script></body></html>';
+ const schema=page.kind==="article"?articleStructuredData(page.article,page.path,page.lang):{"@context":"https://schema.org","@type":"Organization","name":BRAND,"url":DOMAIN};
+ const alternates=page.alternates||[{locale:"vi",path:page.viPath},{locale:"en",path:page.lang==="en"?page.path:page.enPath},{locale:"x-default",path:page.viPath}];
+ const alternateHtml=alternates.map(item=>'<link rel="alternate" hreflang="'+item.locale+'" href="'+DOMAIN+item.path+'">').join("");
+ const cmsSlug=["templates","blog","blog-post","article"].includes(page.kind)?"":page.path==="/"?"home":page.path.split("/").filter(Boolean).pop();
+ const html='<!doctype html><html lang="'+page.lang+'"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="theme-color" content="#0B1F3A"><meta name="description" content="'+esc(page.description)+'"><meta name="robots" content="'+(page.indexable===false?"noindex,follow":"index,follow,max-image-preview:large")+'"><link rel="canonical" href="'+canonical+'">'+alternateHtml+'<title>'+esc(page.title)+' | HoiQuanWeb</title><meta property="og:type" content="'+(page.kind==="article"?"article":"website")+'"><meta property="og:site_name" content="HoiQuanWeb"><meta property="og:title" content="'+esc(page.title)+'"><meta property="og:description" content="'+esc(page.description)+'"><meta property="og:url" content="'+canonical+'"><meta property="og:locale" content="'+(page.lang==="vi"?"vi_VN":"en_US")+'"><link rel="stylesheet" href="/assets/css/site.css"><meta name="hq-api-base" content="'+esc(API_BASE)+'"><script type="application/ld+json">'+JSON.stringify(schema).replace(/</g,"\\u003c")+'</script></head><body>'+header(page)+'<main id="main" data-cms-page="'+esc(cmsSlug)+'">'+body(page)+'</main>'+footer(page)+'<script src="/assets/js/site.js" defer></script></body></html>';
  return html;
 }
+
+async function fetchPublishedArticlePages() {
+  if (!API_BASE) {
+    console.log("CMS article prerendering skipped: HQ_API_BASE is not configured.");
+    return [];
+  }
+  const listed = [];
+  for (let offset = 0; offset < 5000; offset += 50) {
+    const response = await fetch(API_BASE + "/api/v1/public/posts?limit=50&offset=" + offset, {
+      headers: { accept: "application/json" }
+    });
+    if (!response.ok) throw new Error("CMS post listing failed during static build: HTTP " + response.status);
+    const result = await response.json();
+    const items = Array.isArray(result.data) ? result.data : [];
+    listed.push(...items);
+    if (items.length < 50) break;
+    if (offset === 4950) throw new Error("CMS post listing exceeded the 5,000-item static-build safety limit.");
+  }
+  const candidates = listed.filter(post =>
+    post && post.seo && post.seo.indexable === true &&
+    (post.seo.locale === "vi" || post.seo.locale === "en") &&
+    typeof post.slug === "string"
+  );
+  const fullPosts = [];
+  for (const item of candidates) {
+    const response = await fetch(API_BASE + "/api/v1/public/posts/" + encodeURIComponent(item.slug), {
+      headers: { accept: "application/json" }
+    });
+    if (response.status === 404) continue;
+    if (!response.ok) throw new Error("CMS article detail failed for " + item.slug + ": HTTP " + response.status);
+    const result = await response.json();
+    if (result?.data) fullPosts.push(result.data);
+  }
+  return buildPublicArticleRoutes(fullPosts).map(route => {
+    const viPath = route.alternates.find(item => item.locale === "vi")?.path || (route.locale === "vi" ? route.path : "/blog/");
+    const enPath = route.alternates.find(item => item.locale === "en")?.path || (route.locale === "en" ? route.path : "/en/blog/");
+    return {
+      lang: route.locale,
+      path: route.path,
+      enPath: route.locale === "vi" ? enPath : viPath,
+      viPath,
+      kind: "article",
+      indexable: true,
+      title: route.post.seo.title,
+      description: route.post.seo.description,
+      eyebrow: route.locale === "vi" ? "KIẾN THỨC HOIQUANWEB" : "HOIQUANWEB INSIGHTS",
+      heading: route.post.title,
+      lead: route.post.excerpt || "",
+      article: route.post,
+      alternates: route.alternates
+    };
+  });
+}
+const articlePages = await fetchPublishedArticlePages();
+for (const page of pages) {
+  if (page.kind === "blog") {
+    page.cleanArticleSlugs = articlePages.filter(article => article.lang === page.lang).map(article => article.article.slug);
+  }
+}
+pages.push(...articlePages);
 await rm(OUT,{recursive:true,force:true});
 await mkdir(OUT,{recursive:true});
 for(const page of pages){
@@ -166,7 +230,7 @@ await copyFile(join(process.cwd(),"public-site","src","site.js"),join(OUT,"asset
 const portalHtml = await readFile(join(process.cwd(),"portal.html"), "utf8");
 await writeFile(join(OUT, "portal.html"), portalHtml.replace("__HQ_API_BASE__", esc(API_BASE)), "utf8");
 await writeFile(join(OUT,"robots.txt"),"User-agent: *\nAllow: /\nDisallow: "+BASE_PATH+"/admin.html\nSitemap: "+DOMAIN+"/sitemap.xml\n","utf8");
-const urls=pages.filter(p=>p.indexable!==false).map(p=>'<url><loc>'+DOMAIN+p.path+'</loc><lastmod>'+new Date().toISOString().slice(0,10)+'</lastmod><changefreq>monthly</changefreq><priority>'+(p.kind==="home"?"1.0":p.kind==="service"||p.kind==="services"?"0.8":"0.6")+'</priority></url>').join("");
+const urls=pages.filter(p=>p.indexable!==false).map(p=>{const articleDate=p.kind==="article"?(p.article?.updated_at||p.article?.published_at):null;const parsed=articleDate?Date.parse(articleDate):NaN;const lastmod=Number.isFinite(parsed)?new Date(parsed).toISOString().slice(0,10):new Date().toISOString().slice(0,10);return '<url><loc>'+DOMAIN+p.path+'</loc><lastmod>'+lastmod+'</lastmod><changefreq>monthly</changefreq><priority>'+(p.kind==="home"?"1.0":p.kind==="service"||p.kind==="services"?"0.8":"0.6")+'</priority></url>';}).join("");
 await writeFile(join(OUT,"sitemap.xml"),'<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">'+urls+'</urlset>',"utf8");
 await writeFile(join(OUT,"404.html"),withBasePath('<!doctype html><html lang="vi"><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>Không tìm thấy trang | HoiQuanWeb</title><meta name="robots" content="noindex,follow"><link rel="stylesheet" href="/assets/css/site.css"><body><main id="main" class="not-found"><span class="eyebrow">404</span><h1>Không tìm thấy trang.</h1><p>Đường dẫn có thể đã thay đổi hoặc không tồn tại.</p><a class="button button-primary" href="/">Về trang chủ</a></main></body></html>'),"utf8");
 console.log("Generated "+pages.length+" localized pages into "+OUT);
